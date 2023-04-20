@@ -20,78 +20,82 @@
 
 package com.sun.ts.tests.jta.ee.common;
 
-import com.sun.ts.lib.harness.ServiceEETest;
-// TS Specific Utils
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+// Specific Utils
 import com.sun.ts.lib.util.TSNamingContext;
 import com.sun.ts.lib.util.TestUtil;
+import com.sun.ts.tests.jta.ee.usertransaction.begin.UserBeginClientIT;
 
 interface TransactionStatus {
-  public static final String[] transStatusArray = { "STATUS_ACTIVE",
-      "STATUS_MARKED_ROLLBACK", "STATUS_PREPARED", "STATUS_COMMITED",
-      "STATUS_ROLLBACK", "STATUS_UNKNOWN", "STATUS_NO_TRANSACTION",
-      "STATUS_PREPARING", "STATUS_COMMITTING", "STATUS_ROLLING_BACK" };
+	public static final String[] transStatusArray = { "STATUS_ACTIVE", "STATUS_MARKED_ROLLBACK", "STATUS_PREPARED",
+			"STATUS_COMMITED", "STATUS_ROLLBACK", "STATUS_UNKNOWN", "STATUS_NO_TRANSACTION", "STATUS_PREPARING",
+			"STATUS_COMMITTING", "STATUS_ROLLING_BACK" };
 }// End of TransactionStatus
 
-public class Transact extends ServiceEETest implements TransactionStatus {
-  public static TSNamingContext nctx = null;
+public class Transact implements TransactionStatus {
 
-  public Transact() {
-  }
+	private static final Logger logger = LoggerFactory.getLogger(Transact.class.getName());
 
-  private static void prepareTM() throws Exception {
-    // Gets Naming Context
-    nctx = new TSNamingContext();
+	public static TSNamingContext nctx = null;
 
-  }
+	public Transact() {
+	}
 
-  public static final String getStatusString(int status)
-      throws InvalidStatusException {
-    try {
-      return TransactionStatus.transStatusArray[status];
-    } catch (ArrayIndexOutOfBoundsException arryIndex) {
-      TestUtil.printStackTrace(arryIndex);
-      throw new InvalidStatusException();
-    }
-  }// End of getStatusString
+	private static void prepareTM() throws Exception {
+		// Gets Naming Context
+		nctx = new TSNamingContext();
 
-  // This will be called at the start of every test.
-  public static void init() throws InitFailedException {
-    try {
-      prepareTM();
-    } catch (Exception exception) {
-      TestUtil.printStackTrace(exception);
-      throw new InitFailedException("Test Environment Init" + " Failed ");
-    }
-  }// End of init
+	}
 
-  // This will be called in the cleanup method of Every Test
-  // so this version eats the exception.
-  public static void free() {
-    try {
-      // Does nothing for now ...
-    } catch (Exception exception) {
-      TestUtil.logErr("Fail to free the environment", exception);
-    }
-  }
+	public static final String getStatusString(int status) throws InvalidStatusException {
+		try {
+			return TransactionStatus.transStatusArray[status];
+		} catch (ArrayIndexOutOfBoundsException arryIndex) {
+			TestUtil.printStackTrace(arryIndex);
+			throw new InvalidStatusException();
+		}
+	}// End of getStatusString
+
+	// This will be called at the start of every test.
+	public static void init() throws InitFailedException {
+		try {
+			prepareTM();
+		} catch (Exception exception) {
+			TestUtil.printStackTrace(exception);
+			throw new InitFailedException("Test Environment Init" + " Failed ");
+		}
+	}// End of init
+
+	// This will be called in the cleanup method of Every Test
+	// so this version eats the exception.
+	public static void free() {
+		try {
+			// Does nothing for now ...
+		} catch (Exception exception) {
+			logger.error("Fail to free the environment", exception);
+		}
+	}
 }// End of Transact
 
 class InvalidStatusException extends Exception {
-  InvalidStatusException() {
-    super();
-  }
+	InvalidStatusException() {
+		super();
+	}
 
-  InvalidStatusException(String msg) {
-    super(msg);
-  }
+	InvalidStatusException(String msg) {
+		super(msg);
+	}
 }// End of InvalidStatusException
 
 class InitFailedException extends Exception {
 
-  InitFailedException() {
-    super();
-  }
+	InitFailedException() {
+		super();
+	}
 
-  InitFailedException(String msg) {
-    super(msg);
-  }
+	InitFailedException(String msg) {
+		super(msg);
+	}
 }// End of InitFailedException

@@ -30,6 +30,9 @@ import java.util.Vector;
 
 import javax.sql.DataSource;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.sun.ts.lib.util.RemoteLoggingInitException;
 import com.sun.ts.lib.util.TSNamingContext;
 import com.sun.ts.lib.util.TestUtil;
@@ -40,425 +43,423 @@ import jakarta.ejb.SessionBean;
 import jakarta.ejb.SessionContext;
 
 public class TxBeanEJB implements SessionBean {
-  // testProps represent the test specific properties passed in
-  // from the test harness.
-  private Properties testProps = null;
 
-  private SessionContext sctx = null;
+	private static final Logger logger = LoggerFactory.getLogger(TxBeanEJB.class.getName());
 
-  // con1 will be used for the dbTable1 connection
-  // con2 will be used for the dbTable2 connection
-  private transient Connection con1, con2;
+	// testProps represent the test specific properties passed in
+	// from the test harness.
+	private Properties testProps = null;
 
-  private transient Statement stmt;
+	private SessionContext sctx = null;
 
-  private transient PreparedStatement pStmt;
+	// con1 will be used for the dbTable1 connection
+	// con2 will be used for the dbTable2 connection
+	private transient Connection con1, con2;
 
-  // dbUser1 and dbPassword1 are used for con1 - dbTable1
-  // dbUser2 and dbPassword2 are used for con2 - dbTable2
-  private String dbUser1, dbPassword1, dbTable1, dbTable2;
+	private transient Statement stmt;
 
-  // TableSizes
-  // dbSize1 is the size of dbTable1
-  // dbSize1 is the size of dbTable2
-  private Integer dbSize1;
+	private transient PreparedStatement pStmt;
 
-  private Integer dbSize2;
+	// dbUser1 and dbPassword1 are used for con1 - dbTable1
+	// dbUser2 and dbPassword2 are used for con2 - dbTable2
+	private String dbUser1, dbPassword1, dbTable1, dbTable2;
 
-  // DataSources
-  // ds1 is associated with dbTable1
-  // ds2 is associated with dbTable2
-  private DataSource ds1, ds2;
+	// TableSizes
+	// dbSize1 is the size of dbTable1
+	// dbSize1 is the size of dbTable2
+	private Integer dbSize1;
 
-  private TSNamingContext context = null;
+	private Integer dbSize2;
 
-  // Required EJB methods
-  public void ejbCreate(Properties p) throws CreateException {
-    TestUtil.logTrace("ejbCreate");
-    testProps = p;
-    try {
-      TestUtil.init(p);
-      context = new TSNamingContext();
-      // Get the dbTable1 DataSource
-      dbTable1 = TestUtil.getTableName(p.getProperty("JTA_Tab1_Delete"));
-      dbSize1 = (Integer) context.lookup("java:comp/env/size");
-      ds1 = (DataSource) context.lookup("java:comp/env/jdbc/DB1");
-      TestUtil.logTrace("ds1: " + ds1);
-      TestUtil.logMsg(dbTable1 + " DataSource lookup OK!");
+	// DataSources
+	// ds1 is associated with dbTable1
+	// ds2 is associated with dbTable2
+	private DataSource ds1, ds2;
 
-      // Get the dbTable2 DataSource
-      dbTable2 = TestUtil.getTableName(p.getProperty("JTA_Tab2_Delete"));
-      dbSize2 = (Integer) context.lookup("java:comp/env/size");
-      ds2 = (DataSource) context.lookup("java:comp/env/jdbc/DB1");
-      TestUtil.logTrace("ds2: " + ds2);
-      TestUtil.logMsg(dbTable2 + " DataSource lookup OK!");
+	private TSNamingContext context = null;
 
-    } catch (Exception e) {
-      TestUtil.logErr("Unexpected exception getting the DB DataSource", e);
-      throw new CreateException(e.getMessage());
-    }
-  }
+	// Required EJB methods
+	public void ejbCreate(Properties p) throws CreateException {
+		logger.trace("ejbCreate");
+		testProps = p;
+		try {
+			TestUtil.init(p);
+			context = new TSNamingContext();
+			// Get the dbTable1 DataSource
+			dbTable1 = TestUtil.getTableName(p.getProperty("JTA_Tab1_Delete"));
+			dbSize1 = (Integer) context.lookup("java:comp/env/size");
+			ds1 = (DataSource) context.lookup("java:comp/env/jdbc/DB1");
+			logger.trace("ds1: " + ds1);
+			logger.info(dbTable1 + " DataSource lookup OK!");
 
-  public void setSessionContext(SessionContext sc) {
-    TestUtil.logTrace("setSessionContext");
-    this.sctx = sc;
-  }
+			// Get the dbTable2 DataSource
+			dbTable2 = TestUtil.getTableName(p.getProperty("JTA_Tab2_Delete"));
+			dbSize2 = (Integer) context.lookup("java:comp/env/size");
+			ds2 = (DataSource) context.lookup("java:comp/env/jdbc/DB1");
+			logger.trace("ds2: " + ds2);
+			logger.info(dbTable2 + " DataSource lookup OK!");
 
-  public void ejbRemove() {
-    TestUtil.logTrace("ejbRemove");
-  }
+		} catch (Exception e) {
+			logger.error("Unexpected exception getting the DB DataSource", e);
+			throw new CreateException(e.getMessage());
+		}
+	}
 
-  public void ejbActivate() {
-    TestUtil.logTrace("ejbActivate");
-  }
+	public void setSessionContext(SessionContext sc) {
+		logger.trace("setSessionContext");
+		this.sctx = sc;
+	}
 
-  public void ejbPassivate() {
-    TestUtil.logTrace("ejbPassivate");
-  }
+	public void ejbRemove() {
+		logger.trace("ejbRemove");
+	}
 
-  // ===========================================================
-  // The TxBean interface implementation
+	public void ejbActivate() {
+		logger.trace("ejbActivate");
+	}
 
-  // Database methods
-  public void dbConnect(String tName) {
-    TestUtil.logTrace("dbConnect");
-    try {
-      if (tName.equals(dbTable1)) {
-        // Make the dbTable1 connection
-        conTable1();
-        TestUtil.logMsg("Made the JDBC connection to " + dbTable1 + " DB");
-      } else {
-        // Make the dbTable2 connection
-        conTable2();
-        TestUtil.logMsg("Made the JDBC connection to " + dbTable2 + " DB");
-      }
-    } catch (Exception e) {
-      TestUtil.logErr("Unexpected exception on JDBC connection", e);
-      throw new EJBException(e.getMessage());
-    }
-  }
+	public void ejbPassivate() {
+		logger.trace("ejbPassivate");
+	}
 
-  public void createData(String tName) {
-    TestUtil.logTrace("createData");
-    try {
-      if (tName.equals(dbTable1)) {
-        // Create the dbTable1 table
-        createTable1();
-        TestUtil.logMsg("Created the table " + dbTable1 + " ");
-      } else {
-        // Create the dbTable2 table
-        createTable2();
-        TestUtil.logMsg("Created the table " + dbTable2 + " ");
-      }
-    } catch (Exception e) {
-      TestUtil.logErr("Exception creating table", e);
-      throw new EJBException(e.getMessage());
-    }
-  }
+	// ===========================================================
+	// The TxBean interface implementation
 
-  public boolean insert(String tName, int key) {
-    TestUtil.logTrace("insert");
-    // Insert a row into the specified table
-    int newKey = key;
-    String newName = null;
-    float newPrice = (float) .00 + newKey;
+	// Database methods
+	public void dbConnect(String tName) {
+		logger.trace("dbConnect");
+		try {
+			if (tName.equals(dbTable1)) {
+				// Make the dbTable1 connection
+				conTable1();
+				logger.info("Made the JDBC connection to " + dbTable1 + " DB");
+			} else {
+				// Make the dbTable2 connection
+				conTable2();
+				logger.info("Made the JDBC connection to " + dbTable2 + " DB");
+			}
+		} catch (Exception e) {
+			logger.error("Unexpected exception on JDBC connection", e);
+			throw new EJBException(e.getMessage());
+		}
+	}
 
-    try {
-      if (tName.equals(dbTable1)) {
-        // Prepare the new dbTable1 row entry
-        newName = dbTable1 + "-" + newKey;
+	public void createData(String tName) {
+		logger.trace("createData");
+		try {
+			if (tName.equals(dbTable1)) {
+				// Create the dbTable1 table
+				createTable1();
+				logger.info("Created the table " + dbTable1 + " ");
+			} else {
+				// Create the dbTable2 table
+				createTable2();
+				logger.info("Created the table " + dbTable2 + " ");
+			}
+		} catch (Exception e) {
+			logger.error("Exception creating table", e);
+			throw new EJBException(e.getMessage());
+		}
+	}
 
-        String updateString = TestUtil.getProperty("JTA_Tab1_Insert");
-        pStmt = con1.prepareStatement(updateString);
-      } else {
-        // Prepare the new dbTable2 row entry
-        newName = dbTable2 + "-" + newKey;
+	public boolean insert(String tName, int key) {
+		logger.trace("insert");
+		// Insert a row into the specified table
+		int newKey = key;
+		String newName = null;
+		float newPrice = (float) .00 + newKey;
 
-        String updateString = TestUtil.getProperty("JTA_Tab2_Insert");
-        pStmt = con2.prepareStatement(updateString);
-      }
+		try {
+			if (tName.equals(dbTable1)) {
+				// Prepare the new dbTable1 row entry
+				newName = dbTable1 + "-" + newKey;
 
-      // Perform the insert(s)
-      pStmt.setInt(1, newKey);
-      pStmt.setString(2, newName);
-      pStmt.setFloat(3, newPrice);
-      pStmt.executeUpdate();
-      pStmt.close();
+				String updateString = TestUtil.getProperty("JTA_Tab1_Insert");
+				pStmt = con1.prepareStatement(updateString);
+			} else {
+				// Prepare the new dbTable2 row entry
+				newName = dbTable2 + "-" + newKey;
 
-      TestUtil.logTrace("Inserted a row into the table " + tName);
-      return true;
+				String updateString = TestUtil.getProperty("JTA_Tab2_Insert");
+				pStmt = con2.prepareStatement(updateString);
+			}
 
-    } catch (Exception e) {
-      TestUtil.logErr("Exception inserting a row into table " + tName + ";\n"
-          + e.getMessage(), e);
-      return false;
-    }
-  }
+			// Perform the insert(s)
+			pStmt.setInt(1, newKey);
+			pStmt.setString(2, newName);
+			pStmt.setFloat(3, newPrice);
+			pStmt.executeUpdate();
+			pStmt.close();
 
-  public void delete(String tName, int fromKey, int toKey) {
-    TestUtil.logTrace("delete");
-    // Delete row(s) from the specified table
-    try {
-      if (tName.equals(dbTable1)) {
-        String updateString = TestUtil.getProperty("JTA_Delete1");
-        pStmt = con1.prepareStatement(updateString);
-      } else {
-        String updateString = TestUtil.getProperty("JTA_Delete2");
-        pStmt = con2.prepareStatement(updateString);
-      }
+			logger.trace("Inserted a row into the table " + tName);
+			return true;
 
-      // Perform the delete(s)
-      for (int i = fromKey; i <= toKey; i++) {
-        pStmt.setInt(1, i);
-        pStmt.executeUpdate();
-      }
-      pStmt.close();
+		} catch (Exception e) {
+			logger.error("Exception inserting a row into table " + tName + ";\n" + e.getMessage(), e);
+			return false;
+		}
+	}
 
-      TestUtil.logTrace("Deleted row(s) " + fromKey + " thru " + toKey
-          + " from the table " + tName);
+	public void delete(String tName, int fromKey, int toKey) {
+		logger.trace("delete");
+		// Delete row(s) from the specified table
+		try {
+			if (tName.equals(dbTable1)) {
+				String updateString = TestUtil.getProperty("JTA_Delete1");
+				pStmt = con1.prepareStatement(updateString);
+			} else {
+				String updateString = TestUtil.getProperty("JTA_Delete2");
+				pStmt = con2.prepareStatement(updateString);
+			}
 
-    } catch (Exception e) {
-      TestUtil.logErr("Exception deleting row(s) " + fromKey + " thru " + toKey
-          + " from the table " + tName, e);
-      throw new EJBException(e.getMessage());
-    }
-  }
+			// Perform the delete(s)
+			for (int i = fromKey; i <= toKey; i++) {
+				pStmt.setInt(1, i);
+				pStmt.executeUpdate();
+			}
+			pStmt.close();
 
-  public void destroyData(String tName) {
-    TestUtil.logTrace("destroyData");
-    try {
-      if (tName.equals(dbTable1)) {
-        dropTable1();
-        TestUtil.logMsg("Deleted all rows from table " + dbTable1);
-      } else {
-        dropTable2();
-        TestUtil.logMsg("Deleted all rows from table " + dbTable2);
-      }
-    } catch (Exception e) {
-      TestUtil.logErr("Exception occured trying to drop table", e);
-      throw new EJBException(e.getMessage());
-    }
-  }
+			logger.trace("Deleted row(s) " + fromKey + " thru " + toKey + " from the table " + tName);
 
-  public void dbUnConnect(String tName) {
-    TestUtil.logTrace("dbUnConnect");
-    // Close the DB connections
-    try {
-      if (tName.equals(dbTable1)) {
-        con1.close();
-        con1 = null;
-        TestUtil.logTrace("Closed " + dbTable1 + " connection");
-      } else {
-        con2.close();
-        con2 = null;
-        TestUtil.logTrace("Closed " + dbTable2 + " connection");
-      }
-    } catch (Exception e) {
-      TestUtil.logErr("Exception occured trying to close the DB connection", e);
-      throw new EJBException(e.getMessage());
-    }
-  }
+		} catch (Exception e) {
+			logger.error("Exception deleting row(s) " + fromKey + " thru " + toKey + " from the table " + tName, e);
+			throw new EJBException(e.getMessage());
+		}
+	}
 
-  // Test Results methods
-  public Vector getResults(String tName) {
-    TestUtil.logTrace("getResults");
-    ResultSet rs;
-    Vector queryResults = new Vector();
-    int i;
-    String query, s, name;
-    float f;
+	public void destroyData(String tName) {
+		logger.trace("destroyData");
+		try {
+			if (tName.equals(dbTable1)) {
+				dropTable1();
+				logger.info("Deleted all rows from table " + dbTable1);
+			} else {
+				dropTable2();
+				logger.info("Deleted all rows from table " + dbTable2);
+			}
+		} catch (Exception e) {
+			logger.error("Exception occured trying to drop table", e);
+			throw new EJBException(e.getMessage());
+		}
+	}
 
-    try {
-      if (tName.equals(dbTable1)) {
-        query = TestUtil.getProperty("JTA_Tab1_Select");
-        stmt = con1.createStatement();
-        rs = stmt.executeQuery(query);
-        name = "COF_NAME";
-      } else {
-        query = TestUtil.getProperty("JTA_Tab2_Select");
-        stmt = con2.createStatement();
-        rs = stmt.executeQuery(query);
-        name = "CHOC_NAME";
-      }
+	public void dbUnConnect(String tName) {
+		logger.trace("dbUnConnect");
+		// Close the DB connections
+		try {
+			if (tName.equals(dbTable1)) {
+				con1.close();
+				con1 = null;
+				logger.trace("Closed " + dbTable1 + " connection");
+			} else {
+				con2.close();
+				con2 = null;
+				logger.trace("Closed " + dbTable2 + " connection");
+			}
+		} catch (Exception e) {
+			logger.error("Exception occured trying to close the DB connection", e);
+			throw new EJBException(e.getMessage());
+		}
+	}
 
-      while (rs.next()) {
-        i = rs.getInt("KEY_ID");
-        s = rs.getString(name);
-        f = rs.getFloat("PRICE");
-        queryResults.addElement(new Integer(i));
-        queryResults.addElement(s);
-        queryResults.addElement(new Float(f));
-      }
+	// Test Results methods
+	public Vector getResults(String tName) {
+		logger.trace("getResults");
+		ResultSet rs;
+		Vector queryResults = new Vector();
+		int i;
+		String query, s, name;
+		float f;
 
-      stmt.close();
-      TestUtil.logMsg("Obtained " + tName + " table ResultSet");
+		try {
+			if (tName.equals(dbTable1)) {
+				query = TestUtil.getProperty("JTA_Tab1_Select");
+				stmt = con1.createStatement();
+				rs = stmt.executeQuery(query);
+				name = "COF_NAME";
+			} else {
+				query = TestUtil.getProperty("JTA_Tab2_Select");
+				stmt = con2.createStatement();
+				rs = stmt.executeQuery(query);
+				name = "CHOC_NAME";
+			}
 
-    } catch (Exception e) {
-      TestUtil.logErr("Exception obtaining " + tName + " table ResultSet", e);
-      throw new EJBException(e.getMessage());
-    }
-    return queryResults;
-  }
+			while (rs.next()) {
+				i = rs.getInt("KEY_ID");
+				s = rs.getString(name);
+				f = rs.getFloat("PRICE");
+				queryResults.addElement(new Integer(i));
+				queryResults.addElement(s);
+				queryResults.addElement(new Float(f));
+			}
 
-  public void initLogging(Properties p) {
-    TestUtil.logTrace("initLogging");
-    this.testProps = p;
-    try {
-      TestUtil.init(p);
-    } catch (RemoteLoggingInitException e) {
-      TestUtil.printStackTrace(e);
-      throw new EJBException(e.getMessage());
-    }
-  }
+			stmt.close();
+			logger.info("Obtained " + tName + " table ResultSet");
 
-  // private methods
-  private void conTable1() {
-    TestUtil.logTrace("conTable1");
-    try {
-      // Get connection info for dbTable1 DB
-      // dbUser1 = testProps.getProperty("user1");
-      // dbPassword1 = testProps.getProperty("password1");
-      // TestUtil.logTrace("DB user1: " + dbUser1);
-      // TestUtil.logTrace("DB password1: " + dbPassword1);
+		} catch (Exception e) {
+			logger.error("Exception obtaining " + tName + " table ResultSet", e);
+			throw new EJBException(e.getMessage());
+		}
+		return queryResults;
+	}
 
-      // Make the JDBC DB connection to dbTable1 DB
-      // con1 = ds1.getConnection(dbUser1, dbPassword1);
-      con1 = ds1.getConnection();
-      TestUtil.logTrace("con1: " + con1.toString());
-    } catch (SQLException e) {
-      TestUtil.logErr("SQLException connecting to " + dbTable1 + " DB", e);
-      throw new EJBException(e.getMessage());
-    } catch (Exception ee) {
-      TestUtil.logErr("Exception connecting to " + dbTable1 + " DB", ee);
-      throw new EJBException(ee.getMessage());
-    }
-  }
+	public void initLogging(Properties p) {
+		logger.trace("initLogging");
+		this.testProps = p;
+		try {
+			TestUtil.init(p);
+		} catch (RemoteLoggingInitException e) {
+			TestUtil.printStackTrace(e);
+			throw new EJBException(e.getMessage());
+		}
+	}
 
-  private void conTable2() {
-    TestUtil.logTrace("conTable2");
-    try {
-      // Get connection info for dbTable2 DB
-      // dbUser2 = testProps.getProperty("user2");
-      // dbPassword2 = testProps.getProperty("password2");
-      // TestUtil.logTrace("DB user2: " + dbUser2);
-      // TestUtil.logTrace("DB password2: " + dbPassword2);
+	// private methods
+	private void conTable1() {
+		logger.trace("conTable1");
+		try {
+			// Get connection info for dbTable1 DB
+			// dbUser1 = testProps.getProperty("user1");
+			// dbPassword1 = testProps.getProperty("password1");
+			// logger.trace("DB user1: " + dbUser1);
+			// logger.trace("DB password1: " + dbPassword1);
 
-      // Make the JDBC DB connection to dbTable2 DB
-      // con2 = ds2.getConnection(dbUser1, dbPassword1);
-      con2 = ds2.getConnection();
-      TestUtil.logTrace("con2: " + con2.toString());
-    } catch (SQLException e) {
-      TestUtil.logErr("SQLException connecting to " + dbTable2 + " DB", e);
-      throw new EJBException(e.getMessage());
-    } catch (Exception ee) {
-      TestUtil.logErr("Exception connecting to " + dbTable2 + " DB", ee);
-      throw new EJBException(ee.getMessage());
-    }
-  }
+			// Make the JDBC DB connection to dbTable1 DB
+			// con1 = ds1.getConnection(dbUser1, dbPassword1);
+			con1 = ds1.getConnection();
+			logger.trace("con1: " + con1.toString());
+		} catch (SQLException e) {
+			logger.error("SQLException connecting to " + dbTable1 + " DB", e);
+			throw new EJBException(e.getMessage());
+		} catch (Exception ee) {
+			logger.error("Exception connecting to " + dbTable1 + " DB", ee);
+			throw new EJBException(ee.getMessage());
+		}
+	}
 
-  private void createTable1() {
-    TestUtil.logTrace("createTable1");
-    // drop dbTable1 table if it exists
-    try {
-      dropTable1();
-      TestUtil.logTrace("All rows deleted from table " + dbTable1);
-    } catch (Exception e) {
-      TestUtil.printStackTrace(e);
-      TestUtil.logMsg(
-          "SQLException encountered in createTable1: " + e.getMessage());
-    }
+	private void conTable2() {
+		logger.trace("conTable2");
+		try {
+			// Get connection info for dbTable2 DB
+			// dbUser2 = testProps.getProperty("user2");
+			// dbPassword2 = testProps.getProperty("password2");
+			// logger.trace("DB user2: " + dbUser2);
+			// logger.trace("DB password2: " + dbPassword2);
 
-    try {
+			// Make the JDBC DB connection to dbTable2 DB
+			// con2 = ds2.getConnection(dbUser1, dbPassword1);
+			con2 = ds2.getConnection();
+			logger.trace("con2: " + con2.toString());
+		} catch (SQLException e) {
+			logger.error("SQLException connecting to " + dbTable2 + " DB", e);
+			throw new EJBException(e.getMessage());
+		} catch (Exception ee) {
+			logger.error("Exception connecting to " + dbTable2 + " DB", ee);
+			throw new EJBException(ee.getMessage());
+		}
+	}
 
-      // Add the prescribed table rows
-      TestUtil.logMsg("Adding the " + dbTable1 + " table rows");
-      String updateString = TestUtil.getProperty("JTA_Tab1_Insert");
-      pStmt = con1.prepareStatement(updateString);
+	private void createTable1() {
+		logger.trace("createTable1");
+		// drop dbTable1 table if it exists
+		try {
+			dropTable1();
+			logger.trace("All rows deleted from table " + dbTable1);
+		} catch (Exception e) {
+			TestUtil.printStackTrace(e);
+			logger.info("SQLException encountered in createTable1: " + e.getMessage());
+		}
 
-      for (int i = 1; i <= dbSize1.intValue(); i++) {
-        // Perform the insert(s)
-        int newKey = i;
-        String newName = dbTable1 + "-" + i;
-        float newPrice = i + (float) .00;
+		try {
 
-        pStmt.setInt(1, newKey);
-        pStmt.setString(2, newName);
-        pStmt.setFloat(3, newPrice);
+			// Add the prescribed table rows
+			logger.info("Adding the " + dbTable1 + " table rows");
+			String updateString = TestUtil.getProperty("JTA_Tab1_Insert");
+			pStmt = con1.prepareStatement(updateString);
 
-        pStmt.executeUpdate();
-      }
+			for (int i = 1; i <= dbSize1.intValue(); i++) {
+				// Perform the insert(s)
+				int newKey = i;
+				String newName = dbTable1 + "-" + i;
+				float newPrice = i + (float) .00;
 
-      pStmt.close();
-    } catch (SQLException e) {
-      TestUtil.logErr("SQLException creating " + dbTable1 + " table", e);
-      throw new EJBException(e.getMessage());
-    }
-  }
+				pStmt.setInt(1, newKey);
+				pStmt.setString(2, newName);
+				pStmt.setFloat(3, newPrice);
 
-  private void createTable2() {
-    TestUtil.logTrace("createTable2");
-    try {
-      dropTable2();
-      TestUtil.logTrace("All rows deleted from table " + dbTable2);
-    } catch (Exception e) {
-      TestUtil.printStackTrace(e);
-      TestUtil.logMsg(
-          "SQLException encountered in createTable2: " + e.getMessage());
-    }
+				pStmt.executeUpdate();
+			}
 
-    try {
+			pStmt.close();
+		} catch (SQLException e) {
+			logger.error("SQLException creating " + dbTable1 + " table", e);
+			throw new EJBException(e.getMessage());
+		}
+	}
 
-      // Add the prescribed table rows
-      TestUtil.logMsg("Adding the " + dbTable2 + " table rows");
-      String updateString = TestUtil.getProperty("JTA_Tab2_Insert");
+	private void createTable2() {
+		logger.trace("createTable2");
+		try {
+			dropTable2();
+			logger.trace("All rows deleted from table " + dbTable2);
+		} catch (Exception e) {
+			TestUtil.printStackTrace(e);
+			logger.info("SQLException encountered in createTable2: " + e.getMessage());
+		}
 
-      pStmt = con2.prepareStatement(updateString);
+		try {
 
-      for (int i = 1; i <= dbSize2.intValue(); i++) {
-        // Perform the insert(s)
-        int newKey = i;
-        String newName = dbTable2 + "-" + i;
-        float newPrice = i + (float) .00;
+			// Add the prescribed table rows
+			logger.info("Adding the " + dbTable2 + " table rows");
+			String updateString = TestUtil.getProperty("JTA_Tab2_Insert");
 
-        pStmt.setInt(1, newKey);
-        pStmt.setString(2, newName);
-        pStmt.setFloat(3, newPrice);
+			pStmt = con2.prepareStatement(updateString);
 
-        pStmt.executeUpdate();
-      }
+			for (int i = 1; i <= dbSize2.intValue(); i++) {
+				// Perform the insert(s)
+				int newKey = i;
+				String newName = dbTable2 + "-" + i;
+				float newPrice = i + (float) .00;
 
-      pStmt.close();
-    } catch (SQLException e) {
-      TestUtil.logErr("SQLException creating " + dbTable2 + " table", e);
-      throw new EJBException(e.getMessage());
-    }
-  }
+				pStmt.setInt(1, newKey);
+				pStmt.setString(2, newName);
+				pStmt.setFloat(3, newPrice);
 
-  private void dropTable1() {
-    TestUtil.logTrace("dropTable1");
-    // Delete the dbTable1 table
-    String removeString = TestUtil.getProperty("JTA_Tab1_Delete");
-    try {
-      stmt = con1.createStatement();
-      stmt.executeUpdate(removeString);
-      stmt.close();
-    } catch (SQLException e) {
-      // TestUtil.logErr("SQLException dropping "+dbTable1+" table", e);
-      throw new EJBException(e.getMessage());
-    }
-  }
+				pStmt.executeUpdate();
+			}
 
-  private void dropTable2() {
-    TestUtil.logTrace("dropTable2");
-    // Delete the dbTable2 table
-    String removeString = TestUtil.getProperty("JTA_Tab2_Delete");
-    try {
-      stmt = con2.createStatement();
-      stmt.executeUpdate(removeString);
-      stmt.close();
-    } catch (SQLException e) {
-      TestUtil.logErr("SQLException dropping " + dbTable2 + " table", e);
-      throw new EJBException(e.getMessage());
-    }
-  }
+			pStmt.close();
+		} catch (SQLException e) {
+			logger.error("SQLException creating " + dbTable2 + " table", e);
+			throw new EJBException(e.getMessage());
+		}
+	}
+
+	private void dropTable1() {
+		logger.trace("dropTable1");
+		// Delete the dbTable1 table
+		String removeString = TestUtil.getProperty("JTA_Tab1_Delete");
+		try {
+			stmt = con1.createStatement();
+			stmt.executeUpdate(removeString);
+			stmt.close();
+		} catch (SQLException e) {
+			// logger.error("SQLException dropping "+dbTable1+" table", e);
+			throw new EJBException(e.getMessage());
+		}
+	}
+
+	private void dropTable2() {
+		logger.trace("dropTable2");
+		// Delete the dbTable2 table
+		String removeString = TestUtil.getProperty("JTA_Tab2_Delete");
+		try {
+			stmt = con2.createStatement();
+			stmt.executeUpdate(removeString);
+			stmt.close();
+		} catch (SQLException e) {
+			logger.error("SQLException dropping " + dbTable2 + " table", e);
+			throw new EJBException(e.getMessage());
+		}
+	}
 }
