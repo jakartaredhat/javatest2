@@ -19,88 +19,91 @@
  */
 package com.sun.ts.tests.jaxws.wsi.w2j.rpc.literal.R2009;
 
-import java.util.Properties;
-
-import com.sun.javatest.Status;
-import com.sun.ts.tests.jaxws.sharedclients.ClientFactory;
+import java.io.IOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.math.BigInteger;
-import com.sun.ts.lib.harness.*;
 
-public class Client extends ServiceEETest {
-  /**
-   * The string to be echoed.
-   */
-  private static final String NUMBER = "2009";
+import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-  /**
-   * The integer to be echoed.
-   */
-  private static final BigInteger BIGINTEGER = new BigInteger(NUMBER);
+import com.sun.ts.tests.jaxws.common.BaseClient;
+import com.sun.ts.tests.jaxws.sharedclients.ClientFactory;
 
-  /**
-   * The client.
-   */
-  private W2JRLR2009Client client;
+public class Client extends BaseClient {
+	/**
+	 * The string to be echoed.
+	 */
+	private static final String NUMBER = "2009";
 
-  static W2JRLR2009TestService service = null;
+	/**
+	 * The integer to be echoed.
+	 */
+	private static final BigInteger BIGINTEGER = new BigInteger(NUMBER);
 
-  /**
-   * Test entry point.
-   * 
-   * @param args
-   *          the command-line arguments.
-   */
-  public static void main(String[] args) {
-    Client client = new Client();
-    Status status = client.run(args, System.out, System.err);
-    status.exit();
-  }
+	/**
+	 * The client.
+	 */
+	private W2JRLR2009Client client;
 
-  /**
-   * @class.testArgs: -ap jaxws-url-props.dat
-   * @class.setup_props: webServerHost; webServerPort; platform.mode;
-   *
-   * @param args
-   * @param properties
-   *
-   * @throws Fault
-   */
-  public void setup(String[] args, Properties properties) throws Fault {
-    client = (W2JRLR2009Client) ClientFactory.getClient(W2JRLR2009Client.class,
-        properties, this, service);
-    logMsg("setup ok");
-  }
+	static W2JRLR2009TestService service = null;
 
-  public void cleanup() {
-    logMsg("cleanup");
-  }
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  /**
-   * @testName: testBOMUTF16Schema
-   *
-   * @assertion_ids: WSI:SPEC:R2009
-   *
-   * @test_Strategy: The supplied WSDL, imports an XML Schema that uses UTF-16
-   *                 encoding (which contains a BOM) which has been used by the
-   *                 WSDL-to-Java tool to generate an end point. If the tool
-   *                 works correctly, the end-point has been built and deployed,
-   *                 so it should simply be reachable.
-   *
-   * @throws Fault
-   */
-  public void testBOMUTF16Schema() throws Fault {
-    BigInteger result;
-    try {
-      result = client.echoIncludedUTF16IntegerTest(BIGINTEGER);
-    } catch (Exception e) {
-      throw new Fault(
-          "Unable to invoke echoIncludedUTF16IntegerTest operation (BP-R2009)",
-          e);
-    }
-    if (!BIGINTEGER.equals(result)) {
-      throw new Fault("echoIncludedUTF16IntegerTest operation returns '"
-          + result + "' in stead of '" + BIGINTEGER + "' (BP-R2009)");
-    }
-  }
+	@Deployment(testable = false)
+	public static WebArchive createDeployment() throws IOException {
+		return createWebArchive(Client.class);
+	}
+
+	/**
+	 * @class.testArgs: -ap jaxws-url-props.dat
+	 * @class.setup_props: webServerHost; webServerPort; platform.mode;
+	 *
+	 * @param args
+	 * @param properties
+	 *
+	 * @throws Exception
+	 */
+	@BeforeEach
+	public void setup() throws Exception {
+		super.setup();
+		client = (W2JRLR2009Client) ClientFactory.getClient(W2JRLR2009Client.class, service);
+		logger.log(Level.INFO, "setup ok");
+	}
+
+	@AfterEach
+	public void cleanup() {
+		logger.log(Level.INFO, "cleanup");
+	}
+
+	/**
+	 * @testName: testBOMUTF16Schema
+	 *
+	 * @assertion_ids: WSI:SPEC:R2009
+	 *
+	 * @test_Strategy: The supplied WSDL, imports an XML Schema that uses UTF-16
+	 *                 encoding (which contains a BOM) which has been used by the
+	 *                 WSDL-to-Java tool to generate an end point. If the tool works
+	 *                 correctly, the end-point has been built and deployed, so it
+	 *                 should simply be reachable.
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void testBOMUTF16Schema() throws Exception {
+		BigInteger result;
+		try {
+			result = client.echoIncludedUTF16IntegerTest(BIGINTEGER);
+		} catch (Exception e) {
+			throw new Exception("Unable to invoke echoIncludedUTF16IntegerTest operation (BP-R2009)", e);
+		}
+		if (!BIGINTEGER.equals(result)) {
+			throw new Exception("echoIncludedUTF16IntegerTest operation returns '" + result + "' in stead of '"
+					+ BIGINTEGER + "' (BP-R2009)");
+		}
+	}
 
 }

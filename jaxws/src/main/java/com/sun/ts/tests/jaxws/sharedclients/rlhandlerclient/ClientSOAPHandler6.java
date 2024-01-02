@@ -23,13 +23,13 @@ package com.sun.ts.tests.jaxws.sharedclients.rlhandlerclient;
 import com.sun.ts.tests.jaxws.common.SOAPHandlerBase2;
 
 public class ClientSOAPHandler6 extends SOAPHandlerBase2 {
-  private static final String WHICHHANDLERTYPE = "Client";
+	private static final String WHICHHANDLERTYPE = "Client";
 
-  private static final String HANDLERNAME = "ClientSOAPHandler6";
+	private static final String HANDLERNAME = "ClientSOAPHandler6";
 
-  public ClientSOAPHandler6() {
-    super();
-    super.setWhichHandlerType(WHICHHANDLERTYPE);
-    super.setHandlerName(HANDLERNAME);
-  }
+	public ClientSOAPHandler6() {
+		super();
+		super.setWhichHandlerType(WHICHHANDLERTYPE);
+		super.setHandlerName(HANDLERNAME);
+	}
 }

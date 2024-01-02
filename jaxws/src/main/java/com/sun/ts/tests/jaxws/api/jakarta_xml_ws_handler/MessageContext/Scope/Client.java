@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2020 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2024 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -20,128 +20,127 @@
 
 package com.sun.ts.tests.jaxws.api.jakarta_xml_ws_handler.MessageContext.Scope;
 
-import com.sun.ts.lib.util.*;
-import com.sun.ts.lib.porting.*;
-import com.sun.ts.lib.harness.*;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
-import java.rmi.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import jakarta.xml.ws.handler.*;
+import com.sun.ts.lib.util.TestUtil;
 
-import com.sun.javatest.Status;
+import jakarta.xml.ws.handler.MessageContext;
 
-public class Client extends ServiceEETest {
-  // Expected Enum Constant Summary
-  private final static MessageContext.Scope expectedEnums[] = {
-      MessageContext.Scope.APPLICATION, MessageContext.Scope.HANDLER, };
+import com.sun.ts.tests.jaxws.common.BaseClient;
 
-  private boolean findEnums(MessageContext.Scope[] args) {
-    boolean pass = true;
-    boolean found;
-    for (MessageContext.Scope a : args) {
-      found = false;
-      TestUtil.logMsg("Searching expected list of enums for " + a);
-      for (MessageContext.Scope b : expectedEnums) {
-        if (a == b) {
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        pass = false;
-        TestUtil.logErr("No enum found for " + a);
-      } else {
-        TestUtil.logMsg("Enum found for " + a);
-      }
-    }
-    return pass;
-  }
+public class Client extends BaseClient {
 
-  private void printEnums(MessageContext.Scope[] args) {
-    TestUtil.logMsg("Print Enums");
-    TestUtil.logMsg("-----------");
-    for (MessageContext.Scope c : args)
-      TestUtil.logMsg("" + c);
-  }
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  public static void main(String[] args) {
-    Client theTests = new Client();
-    Status s = theTests.run(args, System.out, System.err);
-    s.exit();
-  }
+	// Expected Enum Constant Summary
+	private final static MessageContext.Scope expectedEnums[] = { MessageContext.Scope.APPLICATION,
+			MessageContext.Scope.HANDLER, };
 
-  /* Test setup */
+	private boolean findEnums(MessageContext.Scope[] args) {
+		boolean pass = true;
+		boolean found;
+		for (MessageContext.Scope a : args) {
+			found = false;
+			logger.log(Level.INFO, "Searching expected list of enums for " + a);
+			for (MessageContext.Scope b : expectedEnums) {
+				if (a == b) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				pass = false;
+				TestUtil.logErr("No enum found for " + a);
+			} else {
+				logger.log(Level.INFO, "Enum found for " + a);
+			}
+		}
+		return pass;
+	}
 
-  /*
-   * @class.setup_props:
-   */
+	private void printEnums(MessageContext.Scope[] args) {
+		logger.log(Level.INFO, "Print Enums");
+		logger.log(Level.INFO, "-----------");
+		for (MessageContext.Scope c : args)
+			logger.log(Level.INFO, "" + c);
+	}
 
-  public void setup(String[] args, Properties p) throws Fault {
-    logMsg("setup ok");
-  }
+	/* Test setup */
 
-  public void cleanup() throws Fault {
-    logMsg("cleanup ok");
-  }
+	/*
+	 * @class.setup_props:
+	 */
+	@BeforeEach
+	public void setup() throws Exception {
+		logger.log(Level.INFO, "setup ok");
+	}
 
-  /*
-   * @testName: valuesTest
-   *
-   * @assertion_ids: JAXWS:JAVADOC:95; WS4EE:SPEC:6012;
-   *
-   * @test_Strategy: Verify MessageContext.Scope.values() returns array
-   * containing the constants of this enum type.
-   */
-  public void valuesTest() throws Fault {
-    TestUtil.logTrace("valuesTest");
-    boolean pass = true;
-    try {
-      TestUtil.logMsg("Call MessageContext.Scope.values() ...");
-      MessageContext.Scope[] methods = MessageContext.Scope.values();
-      printEnums(methods);
-      pass = findEnums(methods);
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("valuesTest failed", e);
-    }
+	@AfterEach
+	public void cleanup() throws Exception {
+		logger.log(Level.INFO, "cleanup ok");
+	}
 
-    if (!pass)
-      throw new Fault("valuesTest failed");
-  }
+	/*
+	 * @testName: valuesTest
+	 *
+	 * @assertion_ids: JAXWS:JAVADOC:95; WS4EE:SPEC:6012;
+	 *
+	 * @test_Strategy: Verify MessageContext.Scope.values() returns array containing
+	 * the constants of this enum type.
+	 */
+	@Test
+	public void valuesTest() throws Exception {
+		TestUtil.logTrace("valuesTest");
+		boolean pass = true;
+		try {
+			logger.log(Level.INFO, "Call MessageContext.Scope.values() ...");
+			MessageContext.Scope[] methods = MessageContext.Scope.values();
+			printEnums(methods);
+			pass = findEnums(methods);
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("valuesTest failed", e);
+		}
 
-  /*
-   * @testName: valueOfTest
-   *
-   * @assertion_ids: JAXWS:JAVADOC:94; WS4EE:SPEC:6012;
-   *
-   * @test_Strategy: Verify MessageContext.Scope.valueOf(String name) returns
-   * the enum constant of this type with specified name.
-   */
-  public void valueOfTest() throws Fault {
-    TestUtil.logTrace("valuesTest");
-    boolean pass = true;
-    try {
-      TestUtil.logMsg("Call MessageContext.Scope.valueOf(APPLICATION) ...");
-      MessageContext.Scope method = MessageContext.Scope.valueOf("APPLICATION");
-      if (method != MessageContext.Scope.APPLICATION) {
-        TestUtil.logErr(
-            "MessageContext.Scope.valueOf(APPLICATION) failed:" + " expected: "
-                + MessageContext.Scope.APPLICATION + ", received: " + method);
-        pass = false;
-      } else {
-        TestUtil.logMsg("MessageContext.Scope.valueOf(APPLICATION) passed");
-      }
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("valuesTest failed", e);
-    }
+		if (!pass)
+			throw new Exception("valuesTest failed");
+	}
 
-    if (!pass)
-      throw new Fault("valuesTest failed");
-  }
+	/*
+	 * @testName: valueOfTest
+	 *
+	 * @assertion_ids: JAXWS:JAVADOC:94; WS4EE:SPEC:6012;
+	 *
+	 * @test_Strategy: Verify MessageContext.Scope.valueOf(String name) returns the
+	 * enum constant of this type with specified name.
+	 */
+	@Test
+	public void valueOfTest() throws Exception {
+		TestUtil.logTrace("valuesTest");
+		boolean pass = true;
+		try {
+			logger.log(Level.INFO, "Call MessageContext.Scope.valueOf(APPLICATION) ...");
+			MessageContext.Scope method = MessageContext.Scope.valueOf("APPLICATION");
+			if (method != MessageContext.Scope.APPLICATION) {
+				TestUtil.logErr("MessageContext.Scope.valueOf(APPLICATION) failed:" + " expected: "
+						+ MessageContext.Scope.APPLICATION + ", received: " + method);
+				pass = false;
+			} else {
+				logger.log(Level.INFO, "MessageContext.Scope.valueOf(APPLICATION) passed");
+			}
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("valuesTest failed", e);
+		}
+
+		if (!pass)
+			throw new Exception("valuesTest failed");
+	}
 }

@@ -21,87 +21,74 @@
 package com.sun.ts.tests.jaxws.sharedclients;
 
 import java.lang.reflect.Constructor;
-import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import com.sun.ts.lib.harness.EETest;
 import com.sun.ts.lib.harness.ServiceEETest;
 import com.sun.ts.lib.util.TestUtil;
-import com.sun.ts.tests.jaxws.wsi.utils.PropertyUtils;
 
 import jakarta.xml.ws.Service;
 
 public class ClientFactory {
 
-  public static SOAPClient getClient(Class clazz, Properties properties)
-      throws EETest.Fault {
-    return getClient(clazz, properties, null, null);
-  }
+	private static final Logger logger = (Logger) System.getLogger(ClientFactory.class.getName());
 
-  public static SOAPClient getClient(Class clazz, Properties properties,
-      ServiceEETest theTest, Service theService) throws EETest.Fault {
-    int mode;
-    String property = properties.getProperty("platform.mode");
-    if (property == null) {
-      throw new EETest.Fault(
-          "The 'platform.mode' property value is not defined");
-    }
-    if (property.equalsIgnoreCase("standalone")) {
-      mode = SOAPClient.MODE_STANDALONE;
-    } else if (property.equalsIgnoreCase("jakartaEE")) {
-      mode = SOAPClient.MODE_JavaEE;
+	public static SOAPClient getClient(Class clazz) throws Exception {
+		return getClient(clazz, null);
+	}
 
-    } else {
-      throw new EETest.Fault(
-          "The 'platform.mode' property value '" + property + "' is invalid");
-    }
-    String webServerHost = PropertyUtils.getProperty(properties,
-        "webServerHost");
-    int webServerPort;
-    if (SecureClient.class.isAssignableFrom(clazz)) {
-      webServerPort = PropertyUtils.getIntegerProperty(properties,
-          "secureWebServerPort");
-    } else {
-      webServerPort = PropertyUtils.getIntegerProperty(properties,
-          "webServerPort");
-    }
-    try {
-      if (mode == SOAPClient.MODE_STANDALONE) {
-        Constructor ctr = clazz
-            .getConstructor(new Class[] { String.class, int.class, int.class });
-        return (SOAPClient) ctr.newInstance(new Object[] { webServerHost,
-            Integer.valueOf(webServerPort), Integer.valueOf(mode) });
-      } else {
-        Constructor ctr = clazz.getConstructor(new Class[] { String.class,
-            int.class, int.class, jakarta.xml.ws.Service.class });
-        return (SOAPClient) ctr.newInstance(
-            new Object[] { webServerHost, Integer.valueOf(webServerPort),
-                Integer.valueOf(mode), getWebServiceRef(theTest, theService) });
-      }
-    } catch (NoSuchMethodException e) {
-      throw new EETest.Fault(
-          "Client '" + clazz.getName() + "' does not have required constructor",
-          e);
-    } catch (ClassCastException e) {
-      throw new EETest.Fault("Client '" + clazz.getName()
-          + "' does not extend '" + SOAPClient.class.getName() + "'", e);
-    } catch (Exception e) {
-      TestUtil.printStackTrace(e);
-      throw new EETest.Fault("Unable to instantiate '" + clazz.getName() + "'",
-          e);
-    }
-  }
+	public static SOAPClient getClient(Class clazz, Service theService) throws Exception {
+		int mode;
+		String property = System.getProperty("platform.mode");
+		if (property == null) {
+			throw new Exception("The 'platform.mode' property value is not defined");
+		}
+		if (property.equalsIgnoreCase("standalone")) {
+			mode = SOAPClient.MODE_STANDALONE;
+		} else if (property.equalsIgnoreCase("jakartaEE")) {
+			mode = SOAPClient.MODE_JavaEE;
 
-  private static jakarta.xml.ws.Service getWebServiceRef(ServiceEETest theTest,
-      Service theService) {
-    Service service = theService;
-    TestUtil.logMsg(
-        "WebServiceRef is not set in Client (get it from specific vehicle)");
-    service = (Service) theTest.getSharedObject();
-    TestUtil.logMsg("service=" + service);
-    return service;
-  }
+		} else {
+			throw new Exception("The 'platform.mode' property value '" + property + "' is invalid");
+		}
+		String webServerHost = System.getProperty("webServerHost");
+		int webServerPort;
+		if (SecureClient.class.isAssignableFrom(clazz)) {
+			webServerPort = Integer.parseInt(System.getProperty("secureWebServerPort"));
+		} else {
+			webServerPort = Integer.parseInt(System.getProperty("webServerPort"));
+		}
+		try {
+			if (mode == SOAPClient.MODE_STANDALONE) {
+				Constructor ctr = clazz.getConstructor(new Class[] { String.class, int.class, int.class });
+				return (SOAPClient) ctr.newInstance(
+						new Object[] { webServerHost, Integer.valueOf(webServerPort), Integer.valueOf(mode) });
+			} else {
+				Constructor ctr = clazz.getConstructor(
+						new Class[] { String.class, int.class, int.class, jakarta.xml.ws.Service.class });
+				return (SOAPClient) ctr.newInstance(new Object[] { webServerHost, Integer.valueOf(webServerPort),
+						Integer.valueOf(mode), getWebServiceRef(theService) });
+			}
+		} catch (NoSuchMethodException e) {
+			throw new Exception("Client '" + clazz.getName() + "' does not have required constructor", e);
+		} catch (ClassCastException e) {
+			throw new Exception("Client '" + clazz.getName() + "' does not extend '" + SOAPClient.class.getName() + "'",
+					e);
+		} catch (Exception e) {
+			TestUtil.printStackTrace(e);
+			throw new Exception("Unable to instantiate '" + clazz.getName() + "'", e);
+		}
+	}
 
-  private ClientFactory() {
-    super();
-  }
+	private static jakarta.xml.ws.Service getWebServiceRef(Service theService) {
+		Service service = theService;
+		logger.log(Level.INFO, "WebServiceRef is not set in Client (get it from specific vehicle)");
+		//service = (Service) theTest.getSharedObject();
+		logger.log(Level.INFO, "service=" + service);
+		return null;
+	}
+
+	private ClientFactory() {
+		super();
+	}
 }

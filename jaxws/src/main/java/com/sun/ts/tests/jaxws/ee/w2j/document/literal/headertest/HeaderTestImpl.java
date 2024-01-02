@@ -20,53 +20,47 @@
 
 package com.sun.ts.tests.jaxws.ee.w2j.document.literal.headertest;
 
-import jakarta.xml.ws.WebServiceException;
 import jakarta.jws.WebService;
 
 @WebService(portName = "HeaderTestPort", serviceName = "HeaderTestService", targetNamespace = "http://headertestservice.org/HeaderTestService.wsdl", wsdlLocation = "WEB-INF/wsdl/WSW2JDLHeaderTestService.wsdl", endpointInterface = "com.sun.ts.tests.jaxws.ee.w2j.document.literal.headertest.HeaderTest")
 
 public class HeaderTestImpl implements HeaderTest {
 
-  public ProductOrderResponse submitOrder(ProductOrderRequest poRequest,
-      ConfigHeader configHeader) throws BadOrderFault, ConfigFault {
-    ProductOrderResponse poResponse = null;
-    poResponse = new ProductOrderResponse();
-    String testName = configHeader.getTestName();
-    ConfigFaultType cft = new ConfigFaultType();
-    cft.setMessage(testName);
-    cft.setMustUnderstand(true);
-    if (testName.equals("GoodOrderTestWithSoapHeaderAndMUFalse")) {
-      if (!ValidHeader(configHeader, false, "Config Header", testName))
-        throw new ConfigFault("Invalid ConfigHeader: mustUnderstand="
-            + configHeader.isMustUnderstand() + ", message="
-            + configHeader.getMessage() + ", testName=" + testName, cft);
-      poResponse.getItem().addAll(poRequest.getItem());
-    } else if (testName.equals("GoodOrderTestWithSoapHeaderAndMUTrue")) {
-      if (!ValidHeader(configHeader, true, "Config Header", testName))
-        throw new ConfigFault("Invalid ConfigHeader: mustUnderstand="
-            + configHeader.isMustUnderstand() + ", message="
-            + configHeader.getMessage() + ", testName=" + testName, cft);
-      poResponse.getItem().addAll(poRequest.getItem());
-    } else if (testName.equals("SoapHeaderFaultTest")) {
-      throw new ConfigFault("This is a soap header fault ConfigFault", cft);
-    } else if (testName.equals("SoapFaultTest")) {
-      BadOrderFaultType bft = new BadOrderFaultType();
-      bft.setMessage(testName);
-      throw new BadOrderFault("This is a soap fault BadOrderFault", bft);
-    } else {
-      throw new ConfigFault("Invalid ConfigHeader: mustUnderstand="
-          + configHeader.isMustUnderstand() + ", message="
-          + configHeader.getMessage() + ", testName=" + testName, cft);
-    }
-    return poResponse;
-  }
+	public ProductOrderResponse submitOrder(ProductOrderRequest poRequest, ConfigHeader configHeader)
+			throws BadOrderFault, ConfigFault {
+		ProductOrderResponse poResponse = null;
+		poResponse = new ProductOrderResponse();
+		String testName = configHeader.getTestName();
+		ConfigFaultType cft = new ConfigFaultType();
+		cft.setMessage(testName);
+		cft.setMustUnderstand(true);
+		if (testName.equals("GoodOrderTestWithSoapHeaderAndMUFalse")) {
+			if (!ValidHeader(configHeader, false, "Config Header", testName))
+				throw new ConfigFault("Invalid ConfigHeader: mustUnderstand=" + configHeader.isMustUnderstand()
+						+ ", message=" + configHeader.getMessage() + ", testName=" + testName, cft);
+			poResponse.getItem().addAll(poRequest.getItem());
+		} else if (testName.equals("GoodOrderTestWithSoapHeaderAndMUTrue")) {
+			if (!ValidHeader(configHeader, true, "Config Header", testName))
+				throw new ConfigFault("Invalid ConfigHeader: mustUnderstand=" + configHeader.isMustUnderstand()
+						+ ", message=" + configHeader.getMessage() + ", testName=" + testName, cft);
+			poResponse.getItem().addAll(poRequest.getItem());
+		} else if (testName.equals("SoapHeaderFaultTest")) {
+			throw new ConfigFault("This is a soap header Exception ConfigFault", cft);
+		} else if (testName.equals("SoapFaultTest")) {
+			BadOrderFaultType bft = new BadOrderFaultType();
+			bft.setMessage(testName);
+			throw new BadOrderFault("This is a soap Exception BadOrderFault", bft);
+		} else {
+			throw new ConfigFault("Invalid ConfigHeader: mustUnderstand=" + configHeader.isMustUnderstand()
+					+ ", message=" + configHeader.getMessage() + ", testName=" + testName, cft);
+		}
+		return poResponse;
+	}
 
-  private boolean ValidHeader(ConfigHeader ch, boolean mu, String msg,
-      String test) {
-    if (ch.isMustUnderstand() == mu && ch.getMessage().equals(msg)
-        && ch.getTestName().equals(test))
-      return true;
-    else
-      return false;
-  }
+	private boolean ValidHeader(ConfigHeader ch, boolean mu, String msg, String test) {
+		if (ch.isMustUnderstand() == mu && ch.getMessage().equals(msg) && ch.getTestName().equals(test))
+			return true;
+		else
+			return false;
+	}
 }

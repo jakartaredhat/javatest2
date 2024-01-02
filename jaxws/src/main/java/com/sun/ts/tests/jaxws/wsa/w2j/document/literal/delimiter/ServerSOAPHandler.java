@@ -14,36 +14,38 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  */
 
-/*
- * $Id: ServerSOAPHandler.java 52501 2007-01-24 02:29:49Z lschwenk $
- */
-
 package com.sun.ts.tests.jaxws.wsa.w2j.document.literal.delimiter;
 
-import com.sun.ts.tests.jaxws.wsa.common.WsaBaseSOAPHandler;
 import com.sun.ts.tests.jaxws.wsa.common.ActionNotSupportedException;
+import com.sun.ts.tests.jaxws.wsa.common.WsaBaseSOAPHandler;
+
 import jakarta.xml.ws.handler.soap.SOAPMessageContext;
-import com.sun.ts.lib.util.*;
+
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+
 
 public class ServerSOAPHandler extends WsaBaseSOAPHandler {
-  protected void checkInboundAction(SOAPMessageContext context, String oper,
-      String action) {
-    TestUtil.logMsg("ServerSOAPHandler.checkInboundAction: [operation=" + oper
-        + ", input action=" + action + "]");
-    System.out.println("ServerSOAPHandler.checkInboundAction: [operation="
-        + oper + ", input action=" + action + "]");
-    if (oper.equals("addNumbers")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS_IN_ACTION)) {
-        throw new ActionNotSupportedException(action);
-      }
-    } else if (oper.equals("addNumbers2")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS2_IN_ACTION)) {
-        throw new ActionNotSupportedException(action);
-      }
-    }
-  }
 
-  protected String whichHandler() {
-    return "ServerSOAPHandler";
-  }
+			private static final Logger logger = (Logger) System.getLogger(ServerSOAPHandler.class.getName());
+
+	protected void checkInboundAction(SOAPMessageContext context, String oper, String action) {
+		logger.log(Level.INFO,
+				"ServerSOAPHandler.checkInboundAction: [operation=" + oper + ", input action=" + action + "]");
+		System.out
+				.println("ServerSOAPHandler.checkInboundAction: [operation=" + oper + ", input action=" + action + "]");
+		if (oper.equals("addNumbers")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS_IN_ACTION)) {
+				throw new ActionNotSupportedException(action);
+			}
+		} else if (oper.equals("addNumbers2")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS2_IN_ACTION)) {
+				throw new ActionNotSupportedException(action);
+			}
+		}
+	}
+
+	protected String whichHandler() {
+		return "ServerSOAPHandler";
+	}
 }

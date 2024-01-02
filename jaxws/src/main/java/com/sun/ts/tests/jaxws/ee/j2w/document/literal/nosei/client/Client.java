@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2020 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2024 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -20,212 +20,167 @@
 
 package com.sun.ts.tests.jaxws.ee.j2w.document.literal.nosei.client;
 
-import com.sun.ts.lib.util.*;
-import com.sun.ts.lib.porting.*;
-import com.sun.ts.lib.harness.*;
-
-import java.net.*;
+import java.io.IOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.net.URL;
+import java.util.List;
 
 import javax.xml.namespace.QName;
 
-import java.util.*;
+import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import com.sun.javatest.Status;
+import com.sun.ts.lib.util.TestUtil;
+import com.sun.ts.tests.jaxws.common.BaseClient;
+import com.sun.ts.tests.jaxws.common.JAXWS_Data;
+import com.sun.ts.tests.jaxws.common.JAXWS_Util;
 
-import com.sun.ts.tests.jaxws.common.*;
+public class Client extends BaseClient {
 
-public class Client extends ServiceEETest {
-  // The webserver defaults (overidden by harness properties)
-  private static final String PROTOCOL = "http";
+	private static final String PKG_NAME = "com.sun.ts.tests.jaxws.ee.j2w.document.literal.nosei.client.";
 
-  private static final String HOSTNAME = "localhost";
+	// URL properties used by the test
+	private static final String ENDPOINT_URL = "j2wdlnosei.endpoint.1";
 
-  private static final int PORTNUM = 8000;
+	private static final String WSDLLOC_URL = "j2wdlnosei.wsdlloc.1";
 
-  // The webserver host and port property names (harness properties)
-  private static final String WEBSERVERHOSTPROP = "webServerHost";
+	private String url = null;
 
-  private static final String WEBSERVERPORTPROP = "webServerPort";
+	private URL wsdlurl = null;
 
-  private static final String MODEPROP = "platform.mode";
+	// ServiceName and PortName mapping configuration going java-to-wsdl
+	private static final String SERVICE_NAME = "EchoService";
 
-  private static final String PKG_NAME = "com.sun.ts.tests.jaxws.ee.j2w.document.literal.nosei.client.";
+	private static final String PORT_NAME = "EchoPort";
 
-  private TSURL ctsurl = new TSURL();
+	private static final String NAMESPACEURI = "http://echo.org/wsdl";
 
-  private String hostname = HOSTNAME;
+	private QName SERVICE_QNAME = new QName(NAMESPACEURI, SERVICE_NAME);
 
-  private int portnum = PORTNUM;
+	private QName PORT_QNAME = new QName(NAMESPACEURI, PORT_NAME);
 
-  // URL properties used by the test
-  private static final String ENDPOINT_URL = "j2wdlnosei.endpoint.1";
+	Echo port = null;
 
-  private static final String WSDLLOC_URL = "j2wdlnosei.wsdlloc.1";
+	static EchoService service = null;
 
-  private String url = null;
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  private URL wsdlurl = null;
+	@Deployment(testable = false)
+	public static WebArchive createDeployment() throws IOException {
+		return createWebArchive(Client.class);
+	}
 
-  // ServiceName and PortName mapping configuration going java-to-wsdl
-  private static final String SERVICE_NAME = "EchoService";
+	protected void getService() {
+		logger.log(Level.INFO, "WebServiceRef is not set in Client (get it from specific vehicle)");
+		service = (EchoService) getSharedObject();
+	}
 
-  private static final String PORT_NAME = "EchoPort";
+	protected void getTestURLs() throws Exception {
+		logger.log(Level.INFO, "Get URL's used by the test");
+		String file = JAXWS_Util.getURLFromProp(ENDPOINT_URL);
+		url = ctsurl.getURLString(PROTOCOL, hostname, portnum, file);
+		file = JAXWS_Util.getURLFromProp(WSDLLOC_URL);
+		wsdlurl = ctsurl.getURL(PROTOCOL, hostname, portnum, file);
+		logger.log(Level.INFO, "Service Endpoint URL: " + url);
+		logger.log(Level.INFO, "WSDL Location URL:    " + wsdlurl);
+	}
 
-  private static final String NAMESPACEURI = "http://echo.org/wsdl";
+	protected void getPortStandalone() throws Exception {
+		port = (Echo) JAXWS_Util.getPort(wsdlurl, SERVICE_QNAME, EchoService.class, PORT_QNAME, Echo.class);
+		JAXWS_Util.setTargetEndpointAddress(port, url);
+	}
 
-  private QName SERVICE_QNAME = new QName(NAMESPACEURI, SERVICE_NAME);
+	protected void getPortJavaEE() throws Exception {
+		logger.log(Level.INFO, "Obtain service via WebServiceRef annotation");
+		logger.log(Level.INFO, "service=" + service);
+		port = (Echo) service.getPort(Echo.class);
+		logger.log(Level.INFO, "port=" + port);
+		logger.log(Level.INFO, "Obtained port");
+		getTargetEndpointAddress(port);
+		// JAXWS_Util.setTargetEndpointAddress(port, url);
+	}
 
-  private QName PORT_QNAME = new QName(NAMESPACEURI, PORT_NAME);
+	private void getTargetEndpointAddress(Object port) throws Exception {
+		logger.log(Level.INFO, "Get Target Endpoint Address for port=" + port);
+		String url = JAXWS_Util.getTargetEndpointAddress(port);
+		logger.log(Level.INFO, "Target Endpoint Address=" + url);
+	}
 
-  String modeProperty = null; // platform.mode -> (standalone|jakartaEE)
+	/* Test setup */
 
-  Echo port = null;
+	/*
+	 * @class.testArgs: -ap jaxws-url-props.dat
+	 * 
+	 * @class.setup_props: webServerHost; webServerPort; platform.mode;
+	 */
+	@BeforeEach
+	public void setup() throws Exception {
+		super.setup();
+	}
 
-  static EchoService service = null;
+	@AfterEach
+	public void cleanup() throws Exception {
+		logger.log(Level.INFO, "cleanup ok");
+	}
 
-  private void getTestURLs() throws Exception {
-    TestUtil.logMsg("Get URL's used by the test");
-    String file = JAXWS_Util.getURLFromProp(ENDPOINT_URL);
-    url = ctsurl.getURLString(PROTOCOL, hostname, portnum, file);
-    file = JAXWS_Util.getURLFromProp(WSDLLOC_URL);
-    wsdlurl = ctsurl.getURL(PROTOCOL, hostname, portnum, file);
-    TestUtil.logMsg("Service Endpoint URL: " + url);
-    TestUtil.logMsg("WSDL Location URL:    " + wsdlurl);
-  }
+	/*
+	 * @testName: test
+	 *
+	 * @assertion_ids: JAXWS:SPEC:3000; JAXWS:SPEC:3012; JAXWS:SPEC:3036;
+	 *
+	 * @test_Strategy:
+	 *
+	 * Description
+	 */
+	@Test
+	public void test() throws Exception {
+		logger.log(Level.INFO, "test");
+		boolean pass = true;
 
-  private void getPortStandalone() throws Exception {
-    port = (Echo) JAXWS_Util.getPort(wsdlurl, SERVICE_QNAME, EchoService.class,
-        PORT_QNAME, Echo.class);
-    JAXWS_Util.setTargetEndpointAddress(port, url);
-  }
+		if (!stringTest())
+			pass = false;
+		if (!stringArrayTest())
+			pass = false;
 
-  private void getPortJavaEE() throws Exception {
-    TestUtil.logMsg("Obtain service via WebServiceRef annotation");
-    TestUtil.logMsg("service=" + service);
-    port = (Echo) service.getPort(Echo.class);
-    TestUtil.logMsg("port=" + port);
-    TestUtil.logMsg("Obtained port");
-    getTargetEndpointAddress(port);
-    // JAXWS_Util.setTargetEndpointAddress(port, url);
-  }
+		if (!pass)
+			throw new Exception("test failed");
+	}
 
-  private void getTargetEndpointAddress(Object port) throws Exception {
-    TestUtil.logMsg("Get Target Endpoint Address for port=" + port);
-    String url = JAXWS_Util.getTargetEndpointAddress(port);
-    TestUtil.logMsg("Target Endpoint Address=" + url);
-  }
+	public boolean stringTest() throws Exception {
+		logger.log(Level.INFO, "stringTest");
+		boolean pass = true;
+		String request = "Mary";
 
-  public static void main(String[] args) {
-    Client theTests = new Client();
-    Status s = theTests.run(args, System.out, System.err);
-    s.exit();
-  }
+		try {
+			String response = port.echoString(request);
+			if (!JAXWS_Data.compareValues(request, response, "String"))
+				pass = false;
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("stringTest failed", e);
+		}
+		return pass;
+	}
 
-  /* Test setup */
+	public boolean stringArrayTest() throws Exception {
+		logger.log(Level.INFO, "stringArrayTest");
+		boolean pass = true;
+		List<String> request = JAXWS_Data.list_String_nonull_data;
 
-  /*
-   * @class.testArgs: -ap jaxws-url-props.dat
-   * 
-   * @class.setup_props: webServerHost; webServerPort; platform.mode;
-   */
-
-  public void setup(String[] args, Properties p) throws Fault {
-    boolean pass = true;
-
-    try {
-      hostname = p.getProperty(WEBSERVERHOSTPROP);
-      if (hostname == null)
-        pass = false;
-      else if (hostname.equals(""))
-        pass = false;
-      try {
-        portnum = Integer.parseInt(p.getProperty(WEBSERVERPORTPROP));
-      } catch (Exception e) {
-        TestUtil.printStackTrace(e);
-        pass = false;
-      }
-      modeProperty = p.getProperty(MODEPROP);
-      if (modeProperty.equals("standalone")) {
-        getTestURLs();
-        getPortStandalone();
-      } else {
-        TestUtil.logMsg(
-            "WebServiceRef is not set in Client (get it from specific vehicle)");
-        service = (EchoService) getSharedObject();
-        getTestURLs();
-        getPortJavaEE();
-      }
-    } catch (Exception e) {
-      TestUtil.printStackTrace(e);
-      throw new Fault("setup failed:", e);
-    }
-
-    if (!pass) {
-      TestUtil.logErr(
-          "Please specify host & port of web server " + "in config properties: "
-              + WEBSERVERHOSTPROP + ", " + WEBSERVERPORTPROP);
-      throw new Fault("setup failed:");
-    }
-    logMsg("setup ok");
-  }
-
-  public void cleanup() throws Fault {
-    logMsg("cleanup ok");
-  }
-
-  /*
-   * @testName: test
-   *
-   * @assertion_ids: JAXWS:SPEC:3000; JAXWS:SPEC:3012; JAXWS:SPEC:3036;
-   *
-   * @test_Strategy:
-   *
-   * Description
-   */
-  public void test() throws Fault {
-    TestUtil.logMsg("test");
-    boolean pass = true;
-
-    if (!stringTest())
-      pass = false;
-    if (!stringArrayTest())
-      pass = false;
-
-    if (!pass)
-      throw new Fault("test failed");
-  }
-
-  public boolean stringTest() throws Fault {
-    TestUtil.logMsg("stringTest");
-    boolean pass = true;
-    String request = "Mary";
-
-    try {
-      String response = port.echoString(request);
-      if (!JAXWS_Data.compareValues(request, response, "String"))
-        pass = false;
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("stringTest failed", e);
-    }
-    return pass;
-  }
-
-  public boolean stringArrayTest() throws Fault {
-    TestUtil.logMsg("stringArrayTest");
-    boolean pass = true;
-    List<String> request = JAXWS_Data.list_String_nonull_data;
-
-    try {
-      List<String> response = port.echoStringArray(request);
-      if (!JAXWS_Data.compareArrayValues(request, response, "String"))
-        pass = false;
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("stringArrayTest failed", e);
-    }
-    return pass;
-  }
+		try {
+			List<String> response = port.echoStringArray(request);
+			if (!JAXWS_Data.compareArrayValues(request, response, "String"))
+				pass = false;
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("stringArrayTest failed", e);
+		}
+		return pass;
+	}
 }

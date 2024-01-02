@@ -20,81 +20,81 @@
 
 package com.sun.ts.tests.jaxws.ee.w2j.document.literal.handlerchaintest;
 
-import com.sun.ts.lib.util.*;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 
-import jakarta.xml.soap.*;
-import jakarta.xml.ws.handler.*;
-import jakarta.xml.ws.handler.soap.*;
 import javax.xml.namespace.QName;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.Iterator;
-
+import com.sun.ts.lib.util.TestUtil;
 import com.sun.ts.tests.jaxws.common.Handler_Util;
 
-public class SOAPHandler
-    implements jakarta.xml.ws.handler.soap.SOAPHandler<SOAPMessageContext> {
+import jakarta.xml.soap.Name;
+import jakarta.xml.soap.SOAPBody;
+import jakarta.xml.soap.SOAPElement;
+import jakarta.xml.soap.SOAPEnvelope;
+import jakarta.xml.soap.SOAPMessage;
+import jakarta.xml.ws.handler.MessageContext;
+import jakarta.xml.ws.handler.soap.SOAPMessageContext;
 
-  private static final String HANDLER_NAME = "ServerSOAPHandler";
+public class SOAPHandler implements jakarta.xml.ws.handler.soap.SOAPHandler<SOAPMessageContext> {
 
-  public Set<QName> getHeaders() {
-    return new HashSet<QName>();
-  }
+	private static final String HANDLER_NAME = "ServerSOAPHandler";
 
-  public boolean handleMessage(SOAPMessageContext context) {
-    System.out.println("in " + HANDLER_NAME + ":handleMessage");
+	public Set<QName> getHeaders() {
+		return new HashSet<QName>();
+	}
 
-    String direction = Handler_Util.getDirection(context);
-    if (Handler_Util.checkForMsg(this, context, "HandlerChainOnProviderTest")) {
-      HandlerChainOnProviderTest(context, direction);
-    } else {
-      System.out.println(
-          "didn't find HandlerChainOnProviderTest message, handler will ignore");
-    }
-    System.out.println("exiting " + HANDLER_NAME + ":handleMessage");
-    return true;
-  }
+	public boolean handleMessage(SOAPMessageContext context) {
+		System.out.println("in " + HANDLER_NAME + ":handleMessage");
 
-  public void HandlerChainOnProviderTest(MessageContext context,
-      String direction) {
-    System.out.println("in " + HANDLER_NAME + ":HandlerChainOnProviderTest");
-    try {
-      System.out.println("direction=" + direction);
-      SOAPMessage msg = ((SOAPMessageContext) context).getMessage();
-      SOAPEnvelope env = msg.getSOAPPart().getEnvelope();
-      SOAPBody body = env.getBody();
-      Iterator it = body.getChildElements();
-      while (it.hasNext()) {
-        SOAPElement elem = (SOAPElement) it.next();
-        Name elemName = elem.getElementName();
-        Iterator it2 = ((SOAPElement) elem).getChildElements();
-        while (it2.hasNext()) {
-          SOAPElement elem2 = (SOAPElement) it2.next();
-          String value = elem2.getValue();
-          if (value.indexOf("HandlerChainOnProviderTest") >= 0) {
-            value = value + direction + HANDLER_NAME;
-            elem2.setValue(value);
-          }
-        }
-      }
-      msg.saveChanges();
-      Handler_Util.dumpMsg(context);
-    } catch (Exception e) {
-      TestUtil.printStackTrace(e);
-      e.printStackTrace();
-    }
-    System.out
-        .println("exiting " + HANDLER_NAME + ":HandlerChainOnProviderTest");
-  }
+		String direction = Handler_Util.getDirection(context);
+		if (Handler_Util.checkForMsg(this, context, "HandlerChainOnProviderTest")) {
+			HandlerChainOnProviderTest(context, direction);
+		} else {
+			System.out.println("didn't find HandlerChainOnProviderTest message, handler will ignore");
+		}
+		System.out.println("exiting " + HANDLER_NAME + ":handleMessage");
+		return true;
+	}
 
-  public void close(MessageContext context) {
-    System.out.println("in " + HANDLER_NAME + ":close");
-  }
+	public void HandlerChainOnProviderTest(MessageContext context, String direction) {
+		System.out.println("in " + HANDLER_NAME + ":HandlerChainOnProviderTest");
+		try {
+			System.out.println("direction=" + direction);
+			SOAPMessage msg = ((SOAPMessageContext) context).getMessage();
+			SOAPEnvelope env = msg.getSOAPPart().getEnvelope();
+			SOAPBody body = env.getBody();
+			Iterator it = body.getChildElements();
+			while (it.hasNext()) {
+				SOAPElement elem = (SOAPElement) it.next();
+				Name elemName = elem.getElementName();
+				Iterator it2 = ((SOAPElement) elem).getChildElements();
+				while (it2.hasNext()) {
+					SOAPElement elem2 = (SOAPElement) it2.next();
+					String value = elem2.getValue();
+					if (value.indexOf("HandlerChainOnProviderTest") >= 0) {
+						value = value + direction + HANDLER_NAME;
+						elem2.setValue(value);
+					}
+				}
+			}
+			msg.saveChanges();
+			Handler_Util.dumpMsg(context);
+		} catch (Exception e) {
+			TestUtil.printStackTrace(e);
+			e.printStackTrace();
+		}
+		System.out.println("exiting " + HANDLER_NAME + ":HandlerChainOnProviderTest");
+	}
 
-  public boolean handleFault(SOAPMessageContext context) {
-    System.out.println("in " + HANDLER_NAME + ":handleFault");
-    return true;
-  }
+	public void close(MessageContext context) {
+		System.out.println("in " + HANDLER_NAME + ":close");
+	}
+
+	public boolean handleFault(SOAPMessageContext context) {
+		System.out.println("in " + HANDLER_NAME + ":handleFault");
+		return true;
+	}
 
 }

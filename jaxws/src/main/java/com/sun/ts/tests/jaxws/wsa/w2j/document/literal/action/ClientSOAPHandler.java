@@ -20,122 +20,97 @@
 
 package com.sun.ts.tests.jaxws.wsa.w2j.document.literal.action;
 
-import com.sun.ts.lib.util.*;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 
-import com.sun.ts.tests.jaxws.wsa.common.WsaBaseSOAPHandler;
 import com.sun.ts.tests.jaxws.wsa.common.ActionNotSupportedException;
+import com.sun.ts.tests.jaxws.wsa.common.WsaBaseSOAPHandler;
+
 import jakarta.xml.ws.handler.soap.SOAPMessageContext;
 
 public class ClientSOAPHandler extends WsaBaseSOAPHandler {
-  protected void checkInboundAction(SOAPMessageContext context, String oper,
-      String action) {
-    TestUtil.logMsg("ClientSOAPHandler.checkInboundAction: [operation=" + oper
-        + ", action=" + action + "]");
-    TestUtil.logMsg("Verify output action: [" + action + "]");
-    if (oper.equals("addNumbersResponse2")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS2_OUT_ACTION)) {
-        ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS2_OUT_ACTION,
-            action);
-      }
-    } else if (oper.equals("addNumbersResponse3")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS3_OUT_ACTION)) {
-        ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS3_OUT_ACTION,
-            action);
-      }
-    } else if (oper.equals("addNumbersResponse4")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS4_OUT_ACTION)) {
-        ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS4_OUT_ACTION,
-            action);
-      }
-    } else if (oper.equals("addNumbersResponse5")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS5_OUT_ACTION)) {
-        ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS5_OUT_ACTION,
-            action);
-      }
-    } else if (oper.equals("addNumbersReeponse6")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS6_OUT_ACTION)) {
-        ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS6_OUT_ACTION,
-            action);
-      }
-    }
-  }
 
-  @Override
-  protected void checkFaultActions(String requestName, String detailName,
-      String action) {
-    TestUtil.logMsg("ClientSOAPHandler.checkFaultActions: [input=" + requestName
-        + ", fault=" + detailName + ", action=" + action + "]");
-    TestUtil.logMsg("Verify fault action: [" + action + "]");
-    if (requestName.equals("addNumbers")
-        && detailName.equals("AddNumbersFault")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS_ADDNUMBERS_ACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS_ADDNUMBERS_ACTION, action);
-      }
-    } else if (requestName.equals("addNumbers")
-        && detailName.equals("TooBigNumbersFault")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS_TOOBIGNUMBERS_ACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS_TOOBIGNUMBERS_ACTION, action);
-      }
-    } else if (requestName.equals("addNumbers2")
-        && detailName.equals("AddNumbers2Fault")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS2_ADDNUMBERS_ACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS2_ADDNUMBERS_ACTION, action);
-      }
-    } else if (requestName.equals("addNumbers2")
-        && detailName.equals("TooBigNumbers2Fault")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS2_TOOBIGNUMBERS_ACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS2_TOOBIGNUMBERS_ACTION, action);
-      }
-    } else if (requestName.equals("addNumbers3")
-        && detailName.equals("AddNumbers3Fault")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS3_ADDNUMBERS_ACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS3_ADDNUMBERS_ACTION, action);
-      }
-    } else if (requestName.equals("addNumbers3")
-        && detailName.equals("TooBigNumbers3Fault")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS3_TOOBIGNUMBERS_ACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS3_TOOBIGNUMBERS_ACTION, action);
-      }
-    } else if (requestName.equals("addNumbers4")
-        && detailName.equals("AddNumbers4Fault")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS4_ADDNUMBERS_ACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS4_ADDNUMBERS_ACTION, action);
-      }
-    } else if (requestName.equals("addNumbers4")
-        && detailName.equals("TooBigNumbers4Fault")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS4_TOOBIGNUMBERS_ACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS4_TOOBIGNUMBERS_ACTION, action);
-      }
-    } else if (requestName.equals("addNumbers5")
-        && detailName.equals("AdNumbers5Fault")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS5_ADDNUMBERS_ACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS5_ADDNUMBERS_ACTION, action);
-      }
-    } else if (requestName.equals("addNumbers6")
-        && detailName.equals("AddNumbers6Fault")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS6_ADDNUMBERS_ACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS6_ADDNUMBERS_ACTION, action);
-      }
-    }
-  }
+	private static final Logger logger = (Logger) System.getLogger(ClientSOAPHandler.class.getName());
 
-  private void ThrowActionNotSupportedException(String expected,
-      String actual) {
-    throw new ActionNotSupportedException(
-        "Expected:" + expected + ", Actual:" + actual);
-  }
+	protected void checkInboundAction(SOAPMessageContext context, String oper, String action) {
+		logger.log(Level.INFO, "ClientSOAPHandler.checkInboundAction: [operation=" + oper + ", action=" + action + "]");
+		logger.log(Level.INFO, "Verify output action: [" + action + "]");
+		if (oper.equals("addNumbersResponse2")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS2_OUT_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS2_OUT_ACTION, action);
+			}
+		} else if (oper.equals("addNumbersResponse3")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS3_OUT_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS3_OUT_ACTION, action);
+			}
+		} else if (oper.equals("addNumbersResponse4")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS4_OUT_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS4_OUT_ACTION, action);
+			}
+		} else if (oper.equals("addNumbersResponse5")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS5_OUT_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS5_OUT_ACTION, action);
+			}
+		} else if (oper.equals("addNumbersReeponse6")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS6_OUT_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS6_OUT_ACTION, action);
+			}
+		}
+	}
 
-  protected String whichHandler() {
-    return "ClientSOAPHandler";
-  }
+	@Override
+	protected void checkFaultActions(String requestName, String detailName, String action) {
+		logger.log(Level.INFO, "ClientSOAPHandler.checkFaultActions: [input=" + requestName + ", Exception="
+				+ detailName + ", action=" + action + "]");
+		logger.log(Level.INFO, "Verify Exception action: [" + action + "]");
+		if (requestName.equals("addNumbers") && detailName.equals("AddNumbersFault")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS_ADDNUMBERS_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS_ADDNUMBERS_ACTION, action);
+			}
+		} else if (requestName.equals("addNumbers") && detailName.equals("TooBigNumbersFault")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS_TOOBIGNUMBERS_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS_TOOBIGNUMBERS_ACTION, action);
+			}
+		} else if (requestName.equals("addNumbers2") && detailName.equals("AddNumbers2Fault")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS2_ADDNUMBERS_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS2_ADDNUMBERS_ACTION, action);
+			}
+		} else if (requestName.equals("addNumbers2") && detailName.equals("TooBigNumbers2Fault")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS2_TOOBIGNUMBERS_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS2_TOOBIGNUMBERS_ACTION, action);
+			}
+		} else if (requestName.equals("addNumbers3") && detailName.equals("AddNumbers3Fault")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS3_ADDNUMBERS_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS3_ADDNUMBERS_ACTION, action);
+			}
+		} else if (requestName.equals("addNumbers3") && detailName.equals("TooBigNumbers3Fault")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS3_TOOBIGNUMBERS_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS3_TOOBIGNUMBERS_ACTION, action);
+			}
+		} else if (requestName.equals("addNumbers4") && detailName.equals("AddNumbers4Fault")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS4_ADDNUMBERS_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS4_ADDNUMBERS_ACTION, action);
+			}
+		} else if (requestName.equals("addNumbers4") && detailName.equals("TooBigNumbers4Fault")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS4_TOOBIGNUMBERS_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS4_TOOBIGNUMBERS_ACTION, action);
+			}
+		} else if (requestName.equals("addNumbers5") && detailName.equals("AdNumbers5Fault")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS5_ADDNUMBERS_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS5_ADDNUMBERS_ACTION, action);
+			}
+		} else if (requestName.equals("addNumbers6") && detailName.equals("AddNumbers6Fault")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS6_ADDNUMBERS_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS6_ADDNUMBERS_ACTION, action);
+			}
+		}
+	}
+
+	private void ThrowActionNotSupportedException(String expected, String actual) {
+		throw new ActionNotSupportedException("Expected:" + expected + ", Actual:" + actual);
+	}
+
+	protected String whichHandler() {
+		return "ClientSOAPHandler";
+	}
 }

@@ -20,16 +20,18 @@
 
 package com.sun.ts.tests.jaxws.wsa.j2w.document.literal.anonymous;
 
-import jakarta.xml.ws.soap.SOAPBinding;
-import jakarta.xml.ws.*;
-import jakarta.xml.soap.SOAPMessage;
-import jakarta.xml.soap.SOAPException;
+import java.io.IOException;
 import java.util.Calendar;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.io.IOException;
+
+import jakarta.xml.soap.SOAPException;
+import jakarta.xml.soap.SOAPMessage;
+import jakarta.xml.ws.Provider;
+import jakarta.xml.ws.Service;
+import jakarta.xml.ws.ServiceMode;
+import jakarta.xml.ws.WebServiceProvider;
 
 /**
  * This class handles the non-anonymous ReplyTo responses
@@ -39,34 +41,32 @@ import java.io.IOException;
 @WebServiceProvider
 @ServiceMode(value = Service.Mode.MESSAGE)
 public class NonAnonymousRespProcessor implements Provider<SOAPMessage> {
-  Exchanger<SOAPMessage> msgExchanger;
+	Exchanger<SOAPMessage> msgExchanger;
 
-  public NonAnonymousRespProcessor() {
-  }
+	public NonAnonymousRespProcessor() {
+	}
 
-  public NonAnonymousRespProcessor(Exchanger<SOAPMessage> msgExchanger) {
-    this.msgExchanger = msgExchanger;
-  }
+	public NonAnonymousRespProcessor(Exchanger<SOAPMessage> msgExchanger) {
+		this.msgExchanger = msgExchanger;
+	}
 
-  public SOAPMessage invoke(SOAPMessage request) {
-    System.out.printf("====%s[start:%tc]====\n", getClass().getName(),
-        Calendar.getInstance());
-    try {
-      request.writeTo(System.out);
-    } catch (SOAPException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    System.out.printf("====%s[end:%tc]====\n", getClass().getName(),
-        Calendar.getInstance());
-    try {
-      msgExchanger.exchange(request, 30L, TimeUnit.SECONDS);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    } catch (TimeoutException e) {
-      e.printStackTrace();
-    }
-    return null;
-  }
+	public SOAPMessage invoke(SOAPMessage request) {
+		System.out.printf("====%s[start:%tc]====\n", getClass().getName(), Calendar.getInstance());
+		try {
+			request.writeTo(System.out);
+		} catch (SOAPException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		System.out.printf("====%s[end:%tc]====\n", getClass().getName(), Calendar.getInstance());
+		try {
+			msgExchanger.exchange(request, 30L, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (TimeoutException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
 }

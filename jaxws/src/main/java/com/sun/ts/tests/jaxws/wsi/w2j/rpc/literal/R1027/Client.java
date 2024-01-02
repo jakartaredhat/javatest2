@@ -20,104 +20,104 @@
 
 package com.sun.ts.tests.jaxws.wsi.w2j.rpc.literal.R1027;
 
-import com.sun.ts.lib.harness.*;
+import java.io.IOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 
+import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.sun.ts.tests.jaxws.common.BaseClient;
 import com.sun.ts.tests.jaxws.sharedclients.ClientFactory;
-import com.sun.ts.tests.jaxws.wsi.utils.SOAPUtils;
 import com.sun.ts.tests.jaxws.wsi.requests.SOAPRequests;
-import com.sun.javatest.Status;
+import com.sun.ts.tests.jaxws.wsi.utils.SOAPUtils;
 
-import jakarta.xml.soap.SOAPMessage;
 import jakarta.xml.soap.SOAPException;
+import jakarta.xml.soap.SOAPMessage;
 import jakarta.xml.ws.soap.SOAPFaultException;
-import java.util.Properties;
-import java.rmi.ServerException;
 
-public class Client extends ServiceEETest implements SOAPRequests {
+public class Client extends BaseClient implements SOAPRequests {
 
-  private W2JRLR1027Client client;
+	private W2JRLR1027Client client;
 
-  static SimpleTest service;
+	static SimpleTest service;
 
-  /**
-   * Test entry point.
-   *
-   * @param args
-   *          the command-line arguments.
-   */
-  public static void main(String[] args) {
-    Client tests = new Client();
-    Status status = tests.run(args, System.out, System.err);
-    status.exit();
-  }
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  /**
-   * @class.testArgs: -ap jaxws-url-props.dat
-   * @class.setup_props: webServerHost; webServerPort; platform.mode;
-   *
-   * @param args
-   * @param properties
-   *
-   * @throws com.sun.ts.lib.harness.EETest.Fault
-   */
-  public void setup(String[] args, Properties properties) throws EETest.Fault {
-    client = (W2JRLR1027Client) ClientFactory.getClient(W2JRLR1027Client.class,
-        properties, this, service);
-    logMsg("setup ok");
-  }
+	@Deployment(testable = false)
+	public static WebArchive createDeployment() throws IOException {
+		return createWebArchive(Client.class);
+	}
 
-  public void cleanup() {
-    logMsg("cleanup");
-  }
+	/**
+	 * @class.testArgs: -ap jaxws-url-props.dat
+	 * @class.setup_props: webServerHost; webServerPort; platform.mode;
+	 *
+	 * @param args
+	 * @param properties
+	 *
+	 * @throws Exception
+	 */
+	@BeforeEach
+	public void setup() throws Exception {
+		super.setup();
+		client = (W2JRLR1027Client) ClientFactory.getClient(W2JRLR1027Client.class, service);
+		logger.log(Level.INFO, "setup ok");
+	}
 
-  /**
-   * @testName: testNotUnderstoodHeaderInRequest
-   *
-   * @assertion_ids: WSI:SPEC:R1027
-   *
-   * @test_Strategy: Make a request with envelope with soap header with
-   *                 mustUnderstnad = 1, that the server doesn't understand.
-   *                 Inspect repsonse to ensure it is a soap:Fault with
-   *                 faultcode of "MustUnderstand"
-   *
-   * @throws com.sun.ts.lib.harness.EETest.Fault
-   */
-  public void testNotUnderstoodHeaderInRequest() throws EETest.Fault {
-    SOAPMessage response = null;
-    try {
-      response = client.makeSaajRequest(MUST_UNDERSTAND_HEADER);
-    } catch (Exception e) {
-      client.logMessageInHarness(response);
-      throw new EETest.Fault("Test didn't complete properly: ", e);
-    }
-    try {
-      client.logMessageInHarness(response);
-      validateIsMustUnderstandFault(response);
-    } catch (SOAPException se) {
-      throw new EETest.Fault("Error creating response object", se);
-    }
+	@AfterEach
+	public void cleanup() {
+		logger.log(Level.INFO, "cleanup");
+	}
 
-  }
+	/**
+	 * @testName: testNotUnderstoodHeaderInRequest
+	 *
+	 * @assertion_ids: WSI:SPEC:R1027
+	 *
+	 * @test_Strategy: Make a request with envelope with soap header with
+	 *                 mustUnderstnad = 1, that the server doesn't understand.
+	 *                 Inspect repsonse to ensure it is a soap:Fault with
+	 *                 Exceptioncode of "MustUnderstand"
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void testNotUnderstoodHeaderInRequest() throws Exception {
+		SOAPMessage response = null;
+		try {
+			response = client.makeSaajRequest(MUST_UNDERSTAND_HEADER);
+		} catch (Exception e) {
+			client.logMessageInHarness(response);
+			throw new Exception("Test didn't complete properly: ", e);
+		}
+		try {
+			client.logMessageInHarness(response);
+			validateIsMustUnderstandException(response);
+		} catch (SOAPException se) {
+			throw new Exception("Error creating response object", se);
+		}
 
-  private void validateIsMustUnderstandFault(SOAPMessage response)
-      throws EETest.Fault, SOAPException {
-    if (!SOAPUtils.isMustUnderstandFaultcode(response)) {
-      throw new EETest.Fault(
-          "Invalid response: instances must generate a \"MustUnderstand\" "
-              + "soap:Fault when a request contains a soap header with \"mustUnderstand=1\" "
-              + "that is not understood (BP-R1027)");
-    }
+	}
 
-  }
+	private void validateIsMustUnderstandException(SOAPMessage response) throws Exception, SOAPException {
+		if (!SOAPUtils.isMustUnderstandFaultcode(response)) {
+			throw new Exception("Invalid response: instances must generate a \"MustUnderstand\" "
+					+ "soap:Fault when a request contains a soap header with \"mustUnderstand=1\" "
+					+ "that is not understood (BP-R1027)");
+		}
 
-  private void validateIsMustUnderstandFault(SOAPFaultException se)
-      throws EETest.Fault {
-    if (!SOAPUtils.isMustUnderstandFaultcode(se)) {
-      throw new EETest.Fault(
-          "Invalid response: instances must generate a \"MustUnderstand\" "
-              + "soap:Fault when a request contains a soap header with \"mustUnderstand=1\" "
-              + "that is not understood (BP-R1027)");
-    }
+	}
 
-  }
+	private void validateIsMustUnderstandException(SOAPFaultException se) throws Exception {
+		if (!SOAPUtils.isMustUnderstandFaultcode(se)) {
+			throw new Exception("Invalid response: instances must generate a \"MustUnderstand\" "
+					+ "soap:Fault when a request contains a soap header with \"mustUnderstand=1\" "
+					+ "that is not understood (BP-R1027)");
+		}
+
+	}
 }

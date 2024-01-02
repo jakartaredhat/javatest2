@@ -20,179 +20,178 @@
 
 package com.sun.ts.tests.jaxws.api.jakarta_xml_ws.Holder;
 
-import com.sun.ts.lib.util.*;
-import com.sun.ts.lib.porting.*;
-import com.sun.ts.lib.harness.*;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
-import java.rmi.*;
-import java.math.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.sun.ts.lib.util.TestUtil;
 
 import jakarta.xml.ws.Holder;
 
-import com.sun.javatest.Status;
+import com.sun.ts.tests.jaxws.common.BaseClient;
 
-public class Client extends ServiceEETest {
+public class Client extends BaseClient {
 
-  private final static Byte myByte = Byte.valueOf(Byte.MAX_VALUE);
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  public static void main(String[] args) {
-    Client theTests = new Client();
-    Status s = theTests.run(args, System.out, System.err);
-    s.exit();
-  }
+	private final static Byte myByte = Byte.valueOf(Byte.MAX_VALUE);
 
-  /* Test setup */
+	/* Test setup */
 
-  /*
-   * @class.setup_props:
-   */
+	/*
+	 * @class.setup_props:
+	 */
+	@BeforeEach
+	public void setup() throws Exception {
+		logger.log(Level.INFO, "setup ok");
+	}
 
-  public void setup(String[] args, Properties p) throws Fault {
-    logMsg("setup ok");
-  }
+	@AfterEach
+	public void cleanup() throws Exception {
+		logger.log(Level.INFO, "cleanup ok");
+	}
 
-  public void cleanup() throws Fault {
-    logMsg("cleanup ok");
-  }
+	/*
+	 * @testName: HolderConstructorTest1
+	 *
+	 * @assertion_ids: JAXWS:JAVADOC:28;
+	 *
+	 * @test_Strategy: Create instance via Holder() constructor. Verify Holder
+	 * object created successfully.
+	 */
+	@Test
+	public void HolderConstructorTest1() throws Exception {
+		TestUtil.logTrace("HolderConstructorTest1");
+		boolean pass = true;
+		try {
+			logger.log(Level.INFO, "Create instance via Holder() ...");
+			Holder n = new Holder();
+			if (n != null) {
+				logger.log(Level.INFO, "Holder object created successfully");
+			} else {
+				TestUtil.logErr("Holder object not created");
+				pass = false;
+			}
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("HolderConstructorTest1 failed", e);
+		}
 
-  /*
-   * @testName: HolderConstructorTest1
-   *
-   * @assertion_ids: JAXWS:JAVADOC:28;
-   *
-   * @test_Strategy: Create instance via Holder() constructor. Verify Holder
-   * object created successfully.
-   */
-  public void HolderConstructorTest1() throws Fault {
-    TestUtil.logTrace("HolderConstructorTest1");
-    boolean pass = true;
-    try {
-      TestUtil.logMsg("Create instance via Holder() ...");
-      Holder n = new Holder();
-      if (n != null) {
-        TestUtil.logMsg("Holder object created successfully");
-      } else {
-        TestUtil.logErr("Holder object not created");
-        pass = false;
-      }
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("HolderConstructorTest1 failed", e);
-    }
+		if (!pass)
+			throw new Exception("HolderConstructorTest1 failed");
+	}
 
-    if (!pass)
-      throw new Fault("HolderConstructorTest1 failed");
-  }
+	/*
+	 * @testName: HolderConstructorTest2
+	 *
+	 * @assertion_ids: JAXWS:JAVADOC:29;
+	 *
+	 * @test_Strategy: Create instance via Holder(byte) constructor. Verify Holder
+	 * object created successfully.
+	 */
+	@Test
+	public void HolderConstructorTest2() throws Exception {
+		TestUtil.logTrace("HolderConstructorTest2");
+		boolean pass = true;
+		try {
+			logger.log(Level.INFO, "Create instance via Holder(byte) ...");
+			Holder n = new Holder(myByte);
+			if (n != null) {
+				logger.log(Level.INFO, "Holder object created successfully");
+			} else {
+				TestUtil.logErr("Holder object not created");
+				pass = false;
+			}
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("HolderConstructorTest2 failed", e);
+		}
 
-  /*
-   * @testName: HolderConstructorTest2
-   *
-   * @assertion_ids: JAXWS:JAVADOC:29;
-   *
-   * @test_Strategy: Create instance via Holder(byte) constructor. Verify Holder
-   * object created successfully.
-   */
-  public void HolderConstructorTest2() throws Fault {
-    TestUtil.logTrace("HolderConstructorTest2");
-    boolean pass = true;
-    try {
-      TestUtil.logMsg("Create instance via Holder(byte) ...");
-      Holder n = new Holder(myByte);
-      if (n != null) {
-        TestUtil.logMsg("Holder object created successfully");
-      } else {
-        TestUtil.logErr("Holder object not created");
-        pass = false;
-      }
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("HolderConstructorTest2 failed", e);
-    }
+		if (!pass)
+			throw new Exception("HolderConstructorTest2 failed");
+	}
 
-    if (!pass)
-      throw new Fault("HolderConstructorTest2 failed");
-  }
+	/*
+	 * @testName: getValueTest
+	 *
+	 * @assertion_ids: JAXWS:JAVADOC:28; JAXWS:JAVADOC:29;
+	 *
+	 * @test_Strategy: Test using both constructors. Verify value is set correct in
+	 * each case.
+	 */
+	@Test
+	public void getValueTest() throws Exception {
+		TestUtil.logTrace("getValueTest");
+		boolean pass = true;
 
-  /*
-   * @testName: getValueTest
-   *
-   * @assertion_ids: JAXWS:JAVADOC:28; JAXWS:JAVADOC:29;
-   *
-   * @test_Strategy: Test using both constructors. Verify value is set correct
-   * in each case.
-   */
-  public void getValueTest() throws Fault {
-    TestUtil.logTrace("getValueTest");
-    boolean pass = true;
+		if (!getValueTest1())
+			pass = false;
+		if (!getValueTest2())
+			pass = false;
 
-    if (!getValueTest1())
-      pass = false;
-    if (!getValueTest2())
-      pass = false;
+		if (!pass)
+			throw new Exception("getValueTest failed");
+	}
 
-    if (!pass)
-      throw new Fault("getValueTest failed");
-  }
+	/*
+	 * Create instance via Holder(). Verify value is set to default.
+	 */
+	private boolean getValueTest1() throws Exception {
+		TestUtil.logTrace("getValueTest1");
+		boolean pass = true;
+		try {
+			logger.log(Level.INFO, "Create instance via Holder() ...");
+			Holder n = new Holder();
+			if (n != null) {
+				if (n.value == null)
+					logger.log(Level.INFO, "value set as expected to null");
+				else {
+					logger.log(Level.INFO, "value set unexpected to non-null");
+					pass = false;
+				}
+			} else {
+				TestUtil.logErr("Holder object not created");
+				pass = false;
+			}
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			pass = false;
+		}
+		return pass;
+	}
 
-  /*
-   * Create instance via Holder(). Verify value is set to default.
-   */
-  private boolean getValueTest1() throws Fault {
-    TestUtil.logTrace("getValueTest1");
-    boolean pass = true;
-    try {
-      TestUtil.logMsg("Create instance via Holder() ...");
-      Holder n = new Holder();
-      if (n != null) {
-        if (n.value == null)
-          TestUtil.logMsg("value set as expected to null");
-        else {
-          TestUtil.logMsg("value set unexpected to non-null");
-          pass = false;
-        }
-      } else {
-        TestUtil.logErr("Holder object not created");
-        pass = false;
-      }
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      pass = false;
-    }
-    return pass;
-  }
-
-  /*
-   * Create instance via Holder(byte). Verify value is set to default.
-   */
-  private boolean getValueTest2() throws Fault {
-    TestUtil.logTrace("getValueTest2");
-    boolean pass = true;
-    try {
-      TestUtil.logMsg("Create instance via Holder(byte) ...");
-      Holder n = new Holder(myByte);
-      if (n != null) {
-        Byte v = (Byte) n.value;
-        if (myByte.equals(v))
-          TestUtil.logMsg("value set as expected: " + myByte);
-        else {
-          TestUtil.logErr("value: expected - " + myByte + ", received - " + v);
-          pass = false;
-        }
-      } else {
-        TestUtil.logErr("Holder object not created");
-        pass = false;
-      }
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      pass = false;
-    }
-    return pass;
-  }
+	/*
+	 * Create instance via Holder(byte). Verify value is set to default.
+	 */
+	private boolean getValueTest2() throws Exception {
+		TestUtil.logTrace("getValueTest2");
+		boolean pass = true;
+		try {
+			logger.log(Level.INFO, "Create instance via Holder(byte) ...");
+			Holder n = new Holder(myByte);
+			if (n != null) {
+				Byte v = (Byte) n.value;
+				if (myByte.equals(v))
+					logger.log(Level.INFO, "value set as expected: " + myByte);
+				else {
+					TestUtil.logErr("value: expected - " + myByte + ", received - " + v);
+					pass = false;
+				}
+			} else {
+				TestUtil.logErr("Holder object not created");
+				pass = false;
+			}
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			pass = false;
+		}
+		return pass;
+	}
 }

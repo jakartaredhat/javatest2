@@ -20,213 +20,202 @@
 
 package com.sun.ts.tests.jaxws.sharedclients;
 
-import com.sun.ts.lib.harness.EETest;
-import com.sun.ts.lib.util.TestUtil;
-
-import jakarta.xml.soap.SOAPMessage;
-import jakarta.xml.soap.SOAPException;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.w3c.dom.Document;
 
+import jakarta.xml.soap.SOAPException;
+import jakarta.xml.soap.SOAPMessage;
+
 public abstract class SOAPClient extends Client {
 
-  private final static String DEFAULT_CHARSET = "UTF-8";
+	private static final Logger logger = (Logger) System.getLogger(SOAPClient.class.getName());
 
-  public static final int MODE_STANDALONE = 0;
+	private final static String DEFAULT_CHARSET = "UTF-8";
 
-  public static final int MODE_JavaEE = 1;
+	public static final int MODE_STANDALONE = 0;
 
-  private HttpClient httpClient;
+	public static final int MODE_JavaEE = 1;
 
-  private SaajClient saajClient;
+	private HttpClient httpClient;
 
-  private DescriptionClient descriptionClient;
+	private SaajClient saajClient;
 
-  private String endpointURL;
+	private DescriptionClient descriptionClient;
 
-  private String wsdlURL;
+	private String endpointURL;
 
-  protected StubContext stubContext;
+	private String wsdlURL;
 
-  public SOAPClient(String webServerHost, int webServerPort, int mode)
-      throws EETest.Fault {
-    super(webServerHost, webServerPort, mode);
-    endpointURL = getEndpointURLString();
-    wsdlURL = getWSDLURLString();
-    httpClient = new HttpClient();
-    httpClient.setUrl(endpointURL);
-    saajClient = new SaajClient();
-    saajClient.setUrl(endpointURL);
-    descriptionClient = new DescriptionClient();
-    descriptionClient.setURL(wsdlURL);
-    initStubContext(mode);
-  }
+	protected StubContext stubContext;
 
-  public String getEndpointURL() {
-    return endpointURL;
-  }
+	public SOAPClient(String webServerHost, int webServerPort, int mode) throws Exception {
+		super(webServerHost, webServerPort, mode);
+		endpointURL = getEndpointURLString();
+		wsdlURL = getWSDLURLString();
+		httpClient = new HttpClient();
+		httpClient.setUrl(endpointURL);
+		saajClient = new SaajClient();
+		saajClient.setUrl(endpointURL);
+		descriptionClient = new DescriptionClient();
+		descriptionClient.setURL(wsdlURL);
+		initStubContext(mode);
+	}
 
-  public String getWSDLURL() {
-    return wsdlURL;
-  }
+	public String getEndpointURL() {
+		return endpointURL;
+	}
 
-  private void initStubContext(int mode) {
-    stubContext = new StubContext();
-    stubContext.setMode(mode);
-    stubContext.setEndpointURL(endpointURL);
-    stubContext.setWsdllocURL(wsdlURL);
-  }
+	public String getWSDLURL() {
+		return wsdlURL;
+	}
 
-  private ByteArrayOutputStream getInputStreamAsOutputStream(InputStream is)
-      throws IOException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    byte[] buffer = new byte[1024];
-    int length;
-    do {
-      length = is.read(buffer);
-      if (length > 0) {
-        baos.write(buffer, 0, length);
-      }
-    } while (length > 0);
-    return baos;
-  }
+	private void initStubContext(int mode) {
+		stubContext = new StubContext();
+		stubContext.setMode(mode);
+		stubContext.setEndpointURL(endpointURL);
+		stubContext.setWsdllocURL(wsdlURL);
+	}
 
-  public SOAPMessage makeSaajRequest(String request)
-      throws SOAPException, IOException {
-    return makeSaajRequest(request, null);
-  }
+	private ByteArrayOutputStream getInputStreamAsOutputStream(InputStream is) throws IOException {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		byte[] buffer = new byte[1024];
+		int length;
+		do {
+			length = is.read(buffer);
+			if (length > 0) {
+				baos.write(buffer, 0, length);
+			}
+		} while (length > 0);
+		return baos;
+	}
 
-  public SOAPMessage makeSaajRequest(SOAPMessage request)
-      throws SOAPException, IOException {
-    return makeSaajRequest(request, null);
-  }
+	public SOAPMessage makeSaajRequest(String request) throws SOAPException, IOException {
+		return makeSaajRequest(request, null);
+	}
 
-  public SOAPMessage makeSaajRequest(String request, Charset cs)
-      throws SOAPException, IOException {
-    saajClient.setCharset(cs);
-    LoggingSOAPRequest(request);
-    SOAPMessage response = saajClient
-        .makeRequest(getInputStreamForString(request, cs));
-    LoggingSOAPResponse(getResponseAsString(response));
-    return response;
-  }
+	public SOAPMessage makeSaajRequest(SOAPMessage request) throws SOAPException, IOException {
+		return makeSaajRequest(request, null);
+	}
 
-  public SOAPMessage makeSaajRequest(SOAPMessage request, Charset cs)
-      throws SOAPException, IOException {
-    saajClient.setCharset(cs);
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    request.writeTo(baos);
-    String requestAsString = baos.toString();
-    LoggingSOAPRequest(requestAsString);
-    SOAPMessage response = saajClient
-        .makeRequest(getInputStreamForString(requestAsString, cs));
-    LoggingSOAPResponse(getResponseAsString(response));
-    return response;
-  }
+	public SOAPMessage makeSaajRequest(String request, Charset cs) throws SOAPException, IOException {
+		saajClient.setCharset(cs);
+		LoggingSOAPRequest(request);
+		SOAPMessage response = saajClient.makeRequest(getInputStreamForString(request, cs));
+		LoggingSOAPResponse(getResponseAsString(response));
+		return response;
+	}
 
-  public InputStream makeHTTPRequest(String request) throws IOException {
-    return makeHTTPRequest(request, null);
-  }
+	public SOAPMessage makeSaajRequest(SOAPMessage request, Charset cs) throws SOAPException, IOException {
+		saajClient.setCharset(cs);
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		request.writeTo(baos);
+		String requestAsString = baos.toString();
+		LoggingSOAPRequest(requestAsString);
+		SOAPMessage response = saajClient.makeRequest(getInputStreamForString(requestAsString, cs));
+		LoggingSOAPResponse(getResponseAsString(response));
+		return response;
+	}
 
-  public InputStream makeHTTPRequest(String request, Charset cs)
-      throws IOException {
-    LoggingSOAPRequest(request);
-    httpClient.setCharset(cs);
-    InputStream response = httpClient
-        .makeRequest(getInputStreamForString(request, cs));
-    ByteArrayOutputStream baos = getInputStreamAsOutputStream(response);
-    ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
-    LoggingSOAPResponse(baos.toString());
-    LoggingHTTPStatusCode();
-    return bais;
-  }
+	public InputStream makeHTTPRequest(String request) throws IOException {
+		return makeHTTPRequest(request, null);
+	}
 
-  public void logMessageInHarness(SOAPMessage message) {
-    saajClient.logMessageInHarness(message);
-  }
+	public InputStream makeHTTPRequest(String request, Charset cs) throws IOException {
+		LoggingSOAPRequest(request);
+		httpClient.setCharset(cs);
+		InputStream response = httpClient.makeRequest(getInputStreamForString(request, cs));
+		ByteArrayOutputStream baos = getInputStreamAsOutputStream(response);
+		ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+		LoggingSOAPResponse(baos.toString());
+		LoggingHTTPStatusCode();
+		return bais;
+	}
 
-  public void logMessageInHarness(InputStream message) {
-    httpClient.logMessageInHarness(message);
-  }
+	public void logMessageInHarness(SOAPMessage message) {
+		saajClient.logMessageInHarness(message);
+	}
 
-  public int getStatusCode() throws IOException {
-    return httpClient.getStatusCode();
-  }
+	public void logMessageInHarness(InputStream message) {
+		httpClient.logMessageInHarness(message);
+	}
 
-  public Document getDocument() throws EETest.Fault {
-    return descriptionClient.getDocument();
-  }
+	public int getStatusCode() throws IOException {
+		return httpClient.getStatusCode();
+	}
 
-  public String getDescriptionURL() {
-    return descriptionClient.getURL();
-  }
+	public Document getDocument() throws Exception {
+		return descriptionClient.getDocument();
+	}
 
-  public void addHeader(String name, String value) {
-    httpClient.addHeader(name, value);
-  }
+	public String getDescriptionURL() {
+		return descriptionClient.getURL();
+	}
 
-  public void setHeader(String name, String value) {
-    httpClient.setHeader(name, value);
-  }
+	public void addHeader(String name, String value) {
+		httpClient.addHeader(name, value);
+	}
 
-  public void setHeaderCaseASIs(String name, String value) {
-    httpClient.setHeaderCaseAsIs(name, value);
-  }
+	public void setHeader(String name, String value) {
+		httpClient.setHeader(name, value);
+	}
 
-  public String getResponseHeader(String name) {
-    return httpClient.getResponseHeader(name);
-  }
+	public void setHeaderCaseASIs(String name, String value) {
+		httpClient.setHeaderCaseAsIs(name, value);
+	}
 
-  private ByteArrayInputStream getInputStreamForString(String request,
-      Charset cs) throws IOException {
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    OutputStreamWriter osw;
-    if (cs != null) {
-      osw = new OutputStreamWriter(bos, cs);
-    } else {
-      osw = new OutputStreamWriter(bos, Charset.forName(DEFAULT_CHARSET));
-    }
-    osw.write(request);
-    osw.flush();
-    ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
-    return bis;
-  }
+	public String getResponseHeader(String name) {
+		return httpClient.getResponseHeader(name);
+	}
 
-  private String getResponseAsString(SOAPMessage response)
-      throws SOAPException, IOException {
-    if (response == null)
-      return null;
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    response.writeTo(baos);
-    return baos.toString();
-  }
+	private ByteArrayInputStream getInputStreamForString(String request, Charset cs) throws IOException {
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		OutputStreamWriter osw;
+		if (cs != null) {
+			osw = new OutputStreamWriter(bos, cs);
+		} else {
+			osw = new OutputStreamWriter(bos, Charset.forName(DEFAULT_CHARSET));
+		}
+		osw.write(request);
+		osw.flush();
+		ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
+		return bis;
+	}
 
-  private void LoggingSOAPRequest(String request) {
-    if (request == null)
-      return;
-    TestUtil.logMsg("-------------------");
-    TestUtil.logMsg("Logging SOAPRequest");
-    TestUtil.logMsg("-------------------");
-    TestUtil.logMsg(request);
-  }
+	private String getResponseAsString(SOAPMessage response) throws SOAPException, IOException {
+		if (response == null)
+			return null;
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		response.writeTo(baos);
+		return baos.toString();
+	}
 
-  private void LoggingSOAPResponse(String response) {
-    if (response == null)
-      return;
-    TestUtil.logMsg("--------------------");
-    TestUtil.logMsg("Logging SOAPResponse");
-    TestUtil.logMsg("--------------------");
-    TestUtil.logMsg(response);
-  }
+	private void LoggingSOAPRequest(String request) {
+		if (request == null)
+			return;
+		logger.log(Level.INFO, "-------------------");
+		logger.log(Level.INFO, "Logging SOAPRequest");
+		logger.log(Level.INFO, "-------------------");
+		logger.log(Level.INFO, request);
+	}
 
-  private void LoggingHTTPStatusCode() throws IOException {
-    TestUtil.logMsg("HTTPStatusCode=" + getStatusCode());
-  }
+	private void LoggingSOAPResponse(String response) {
+		if (response == null)
+			return;
+		logger.log(Level.INFO, "--------------------");
+		logger.log(Level.INFO, "Logging SOAPResponse");
+		logger.log(Level.INFO, "--------------------");
+		logger.log(Level.INFO, response);
+	}
+
+	private void LoggingHTTPStatusCode() throws IOException {
+		logger.log(Level.INFO, "HTTPStatusCode=" + getStatusCode());
+	}
 }

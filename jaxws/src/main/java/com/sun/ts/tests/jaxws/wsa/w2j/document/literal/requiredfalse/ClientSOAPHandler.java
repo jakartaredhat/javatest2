@@ -20,52 +20,57 @@
 
 package com.sun.ts.tests.jaxws.wsa.w2j.document.literal.requiredfalse;
 
-import com.sun.ts.tests.jaxws.wsa.common.WsaBaseSOAPHandler;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+
+
 import com.sun.ts.tests.jaxws.wsa.common.ActionNotSupportedException;
+import com.sun.ts.tests.jaxws.wsa.common.WsaBaseSOAPHandler;
+
 import jakarta.xml.ws.handler.soap.SOAPMessageContext;
-import com.sun.ts.lib.util.*;
 
 public class ClientSOAPHandler extends WsaBaseSOAPHandler {
-  protected void checkInboundAction(SOAPMessageContext context, String oper,
-      String action) {
-    TestUtil.logMsg("ClientSOAPHandler.checkInboundAction: [operation=" + oper
-        + ", action=" + action + "]");
-    if (oper.equals("addNumbersResponse")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS_OUT_ACTION)) {
-        throw new ActionNotSupportedException(action);
-      }
-    } else if (oper.equals("addNumbers2Response")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS2_OUT_ACTION)) {
-        throw new ActionNotSupportedException(action);
-      }
-    } else if (oper.equals("addNumbers3Response")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS3_OUT_ACTION)) {
-        throw new ActionNotSupportedException(action);
-      }
-    } else if (oper.equals("addNumbers4Response")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS4_OUT_ACTION)) {
-        throw new ActionNotSupportedException(action);
-      }
-    } else if (oper.equals("addNumbers5Response")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS5_OUT_ACTION)) {
-        throw new ActionNotSupportedException(action);
-      }
-    } else if (oper.equals("addNumbers6Response")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS6_OUT_ACTION)) {
-        throw new ActionNotSupportedException(action);
-      }
-    } else if (oper.equals("addNumbers7Response")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS7_OUT_ACTION)) {
-        throw new ActionNotSupportedException(action);
-      }
-    } else if (oper.equals("addNumbers8Response")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS8_OUT_ACTION)) {
-        throw new ActionNotSupportedException(action);
-      }
-    }
-  }
+	
+	private static final Logger logger = (Logger) System.getLogger(ClientSOAPHandler.class.getName());
 
-  protected String whichHandler() {
-    return "ClientSOAPHandler";
-  }
+	protected void checkInboundAction(SOAPMessageContext context, String oper, String action) {
+		logger.log(Level.INFO, "ClientSOAPHandler.checkInboundAction: [operation=" + oper + ", action=" + action + "]");
+		if (oper.equals("addNumbersResponse")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS_OUT_ACTION)) {
+				throw new ActionNotSupportedException(action);
+			}
+		} else if (oper.equals("addNumbers2Response")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS2_OUT_ACTION)) {
+				throw new ActionNotSupportedException(action);
+			}
+		} else if (oper.equals("addNumbers3Response")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS3_OUT_ACTION)) {
+				throw new ActionNotSupportedException(action);
+			}
+		} else if (oper.equals("addNumbers4Response")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS4_OUT_ACTION)) {
+				throw new ActionNotSupportedException(action);
+			}
+		} else if (oper.equals("addNumbers5Response")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS5_OUT_ACTION)) {
+				throw new ActionNotSupportedException(action);
+			}
+		} else if (oper.equals("addNumbers6Response")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS6_OUT_ACTION)) {
+				throw new ActionNotSupportedException(action);
+			}
+		} else if (oper.equals("addNumbers7Response")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS7_OUT_ACTION)) {
+				throw new ActionNotSupportedException(action);
+			}
+		} else if (oper.equals("addNumbers8Response")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS8_OUT_ACTION)) {
+				throw new ActionNotSupportedException(action);
+			}
+		}
+	}
+
+	protected String whichHandler() {
+		return "ClientSOAPHandler";
+	}
 }

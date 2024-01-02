@@ -20,29 +20,32 @@
 
 package com.sun.ts.tests.jaxws.wsi.w2j.rpc.literal.R1014;
 
+import java.util.Iterator;
+
 import com.sun.ts.tests.jaxws.common.RequestConformanceChecker;
 
+import jakarta.xml.soap.SOAPBody;
+import jakarta.xml.soap.SOAPElement;
+import jakarta.xml.soap.SOAPException;
 import jakarta.xml.ws.handler.soap.SOAPMessageContext;
-import jakarta.xml.soap.*;
-import java.util.Iterator;
 
 public class R1014ConformanceChecker extends RequestConformanceChecker {
 
-  public void test(SOAPMessageContext context) throws SOAPException {
-    SOAPBody body = getBody(context);
-    Iterator children = body.getChildElements();
-    SOAPElement element;
-    String uri;
-    while (children.hasNext() && response == null) {
-      element = (SOAPElement) children.next();
-      uri = element.getElementName().getURI();
-      if (uri == null || uri.equals("")) {
-        response = "failed. Children of soap:Body must be qualified";
-      }
-    }
-  }
+	public void test(SOAPMessageContext context) throws SOAPException {
+		SOAPBody body = getBody(context);
+		Iterator children = body.getChildElements();
+		SOAPElement element;
+		String uri;
+		while (children.hasNext() && response == null) {
+			element = (SOAPElement) children.next();
+			uri = element.getElementName().getURI();
+			if (uri == null || uri.equals("")) {
+				response = "failed. Children of soap:Body must be qualified";
+			}
+		}
+	}
 
-  private SOAPBody getBody(SOAPMessageContext context) throws SOAPException {
-    return context.getMessage().getSOAPPart().getEnvelope().getBody();
-  }
+	private SOAPBody getBody(SOAPMessageContext context) throws SOAPException {
+		return context.getMessage().getSOAPPart().getEnvelope().getBody();
+	}
 }

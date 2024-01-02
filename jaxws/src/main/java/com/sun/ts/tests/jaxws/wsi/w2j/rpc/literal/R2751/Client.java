@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2020 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2024 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -20,73 +20,74 @@
 
 package com.sun.ts.tests.jaxws.wsi.w2j.rpc.literal.R2751;
 
-import com.sun.ts.lib.harness.*;
+import java.io.IOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 
+import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.sun.ts.tests.jaxws.common.BaseClient;
 import com.sun.ts.tests.jaxws.sharedclients.ClientFactory;
 import com.sun.ts.tests.jaxws.wsi.requests.SOAPRequests;
-import com.sun.javatest.Status;
 
 import jakarta.xml.soap.SOAPMessage;
-import jakarta.xml.soap.SOAPException;
-import jakarta.xml.soap.SOAPElement;
-import java.util.Properties;
-import java.util.Iterator;
-import java.io.InputStream;
 
-public class Client extends ServiceEETest implements SOAPRequests {
+public class Client extends BaseClient implements SOAPRequests {
 
-  private W2JRLR2751Client client;
+	private W2JRLR2751Client client;
 
-  static W2JRLR2751TestService service = null;
+	static W2JRLR2751TestService service = null;
 
-  /**
-   * Test entry point.
-   *
-   * @param args
-   *          the command-line arguments.
-   */
-  public static void main(String[] args) {
-    Client tests = new Client();
-    Status status = tests.run(args, System.out, System.err);
-    status.exit();
-  }
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  /**
-   * @class.testArgs: -ap jaxws-url-props.dat
-   * @class.setup_props: webServerHost; webServerPort; platform.mode;
-   *
-   * @param args
-   * @param properties
-   *
-   * @throws com.sun.ts.lib.harness.EETest.Fault
-   */
-  public void setup(String[] args, Properties properties) throws EETest.Fault {
-    client = (W2JRLR2751Client) ClientFactory.getClient(W2JRLR2751Client.class,
-        properties, this, service);
-    logMsg("setup ok");
-  }
+	@Deployment(testable = false)
+	public static WebArchive createDeployment() throws IOException {
+		return createWebArchive(Client.class);
+	}
 
-  public void cleanup() {
-    logMsg("cleanup");
-  }
+	/**
+	 * @class.testArgs: -ap jaxws-url-props.dat
+	 * @class.setup_props: webServerHost; webServerPort; platform.mode;
+	 *
+	 * @param args
+	 * @param properties
+	 *
+	 * @throws Exception
+	 */
+	@BeforeEach
+	public void setup() throws Exception {
+		super.setup();
+		client = (W2JRLR2751Client) ClientFactory.getClient(W2JRLR2751Client.class, service);
+		logger.log(Level.INFO, "setup ok");
+	}
 
-  /**
-   * @testName: IndependentOrderOfHeadersTest
-   *
-   * @assertion_ids: WSI:SPEC:R2751
-   *
-   * @test_Strategy: Send a SOAP request that has the headers in a different
-   *                 order than they are defined in the wsdl. The endpoint
-   *                 checks for their correctness.
-   *
-   * @throws com.sun.ts.lib.harness.EETest.Fault
-   */
-  public void IndependentOrderOfHeadersTest() throws EETest.Fault {
-    SOAPMessage response;
-    try {
-      response = client.makeSaajRequest(R2751_REQUEST);
-    } catch (Exception e) {
-      throw new EETest.Fault("Test didn't complete properly: ", e);
-    }
-  }
+	@AfterEach
+	public void cleanup() {
+		logger.log(Level.INFO, "cleanup");
+	}
+
+	/**
+	 * @testName: IndependentOrderOfHeadersTest
+	 *
+	 * @assertion_ids: WSI:SPEC:R2751
+	 *
+	 * @test_Strategy: Send a SOAP request that has the headers in a different order
+	 *                 than they are defined in the wsdl. The endpoint checks for
+	 *                 their correctness.
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void IndependentOrderOfHeadersTest() throws Exception {
+		SOAPMessage response;
+		try {
+			response = client.makeSaajRequest(R2751_REQUEST);
+		} catch (Exception e) {
+			throw new Exception("Test didn't complete properly: ", e);
+		}
+	}
 }

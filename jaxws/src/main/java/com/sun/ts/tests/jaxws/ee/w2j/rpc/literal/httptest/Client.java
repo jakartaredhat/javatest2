@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2020 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2024 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -20,475 +20,422 @@
 
 package com.sun.ts.tests.jaxws.ee.w2j.rpc.literal.httptest;
 
-import com.sun.ts.lib.util.*;
-import com.sun.ts.lib.porting.*;
-import com.sun.ts.lib.harness.*;
-
-import java.io.*;
-import java.net.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Iterator;
 
 import javax.xml.namespace.QName;
 
-import com.sun.javatest.Status;
+import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import com.sun.ts.tests.jaxws.common.*;
+import com.sun.ts.lib.util.TestUtil;
+import com.sun.ts.tests.jaxws.common.BaseClient;
+import com.sun.ts.tests.jaxws.common.JAXWS_Util;
 
-public class Client extends ServiceEETest {
-  // The webserver defaults (overidden by harness properties)
-  private static final String PROTOCOL = "http";
+public class Client extends BaseClient {
 
-  private static final String HOSTNAME = "localhost";
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  private static final int PORTNUM = 8000;
+	private static final String PKG_NAME = "com.sun.ts.tests.jaxws.ee.w2j.rpc.literal.httptest.";
 
-  // The webserver host and port property names (harness properties)
-  private static final String WEBSERVERHOSTPROP = "webServerHost";
+	// service and port information
+	private static final String NAMESPACEURI = "http://httptestservice.org/wsdl";
 
-  private static final String WEBSERVERPORTPROP = "webServerPort";
+	private static final String SERVICE_NAME = "HttpTestService";
 
-  private static final String MODEPROP = "platform.mode";
+	private static final String PORT_NAME = "HelloPort";
 
-  String modeProperty = null; // platform.mode -> (standalone|jakartaEE)
+	private QName SERVICE_QNAME = new QName(NAMESPACEURI, SERVICE_NAME);
 
-  private static final String PKG_NAME = "com.sun.ts.tests.jaxws.ee.w2j.rpc.literal.httptest.";
+	private QName PORT_QNAME = new QName(NAMESPACEURI, PORT_NAME);
 
-  // service and port information
-  private static final String NAMESPACEURI = "http://httptestservice.org/wsdl";
+	private static final Class PORT_CLASS = Hello.class;
 
-  private static final String SERVICE_NAME = "HttpTestService";
+	// URL properties used by the test
+	private static final String ENDPOINT_URL = "w2jrlhttptest.endpoint.1";
 
-  private static final String PORT_NAME = "HelloPort";
+	private static final String WSDLLOC_URL = "w2jrlhttptest.wsdlloc.1";
 
-  private QName SERVICE_QNAME = new QName(NAMESPACEURI, SERVICE_NAME);
+	private String url = null;
 
-  private QName PORT_QNAME = new QName(NAMESPACEURI, PORT_NAME);
+	private URL wsdlurl = null;
 
-  private static final Class PORT_CLASS = Hello.class;
+	Hello port = null;
 
-  private TSURL ctsurl = new TSURL();
+	static HttpTestService service = null;
 
-  private String hostname = HOSTNAME;
+	@Deployment(testable = false)
+	public static WebArchive createDeployment() throws IOException {
+		return createWebArchive(Client.class);
+	}
 
-  private int portnum = PORTNUM;
+	protected void getService() {
+		service = (HttpTestService) getSharedObject();
+	}
 
-  // URL properties used by the test
-  private static final String ENDPOINT_URL = "w2jrlhttptest.endpoint.1";
+	/************************************************************************
+	 * Below are defined good and bad SOAP messages which are sent to a web *
+	 * service endpoint (HttpTestService) over a HttpURLConnection in order * to
+	 * verify whether we get the correct HTTP status codes as required * and
+	 * specified in the WSI Basic Profile Version 1.0 Specification. *
+	 ************************************************************************/
+	// expect 2xx http status code
+	String GoodSoapMessage = "<?xml version=\"1.0\" encoding=\"utf-8\"?><soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:enc=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns=\"http://httptestservice.org/wsdl\"><soap:Body><ns:hello><parameters><string>World</string></parameters></ns:hello></soap:Body></soap:Envelope>";
 
-  private static final String WSDLLOC_URL = "w2jrlhttptest.wsdlloc.1";
+	// expect 2xx http status code
+	String GoodSoapMessageNoXMLDeclaration = "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:enc=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns=\"http://httptestservice.org/wsdl\"><soap:Body><ns:hello><parameters><string>World</string></parameters></ns:hello></soap:Body></soap:Envelope>";
 
-  private String url = null;
+	// expect 2xx http status code
+	String GoodOneWaySoapMessage = "<?xml version=\"1.0\" encoding=\"utf-8\"?><soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:enc=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns=\"http://httptestservice.org/wsdl\"><soap:Body><ns:helloOneWay><parameters><string>World</string></parameters></ns:helloOneWay></soap:Body></soap:Envelope>";
 
-  private URL wsdlurl = null;
+	// expect 2xx http status code
+	String GoodOneWaySoapMessageNoXMLDeclaration = "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:enc=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns=\"http://httptestservice.org/wsdl\"><soap:Body><ns:helloOneWay><parameters><string>World</string></parameters></ns:helloOneWay></soap:Body></soap:Envelope>";
 
-  Hello port = null;
+	// expect 2xx http status code
+	String SoapMessageUsingUTF16Encoding = "<?xml version=\"1.0\" encoding=\"utf-16\"?><soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:enc=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns=\"http://httptestservice.org/wsdl\"><soap:Body><ns:hello><parameters><string>World</string></parameters></ns:hello></soap:Body></soap:Envelope>";
 
-  static HttpTestService service = null;
+	protected void getTestURLs() throws Exception {
+		logger.log(Level.INFO, "Get URL's used by the test");
+		String file = JAXWS_Util.getURLFromProp(ENDPOINT_URL);
+		url = ctsurl.getURLString(PROTOCOL, hostname, portnum, file);
+		file = JAXWS_Util.getURLFromProp(WSDLLOC_URL);
+		wsdlurl = ctsurl.getURL(PROTOCOL, hostname, portnum, file);
+		logger.log(Level.INFO, "Service Endpoint URL: " + url);
+		logger.log(Level.INFO, "WSDL Location URL:    " + wsdlurl);
+	}
 
-  /************************************************************************
-   * Below are defined good and bad SOAP messages which are sent to a web *
-   * service endpoint (HttpTestService) over a HttpURLConnection in order * to
-   * verify whether we get the correct HTTP status codes as required * and
-   * specified in the WSI Basic Profile Version 1.0 Specification. *
-   ************************************************************************/
-  // expect 2xx http status code
-  String GoodSoapMessage = "<?xml version=\"1.0\" encoding=\"utf-8\"?><soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:enc=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns=\"http://httptestservice.org/wsdl\"><soap:Body><ns:hello><parameters><string>World</string></parameters></ns:hello></soap:Body></soap:Envelope>";
+	protected void getPortStandalone() throws Exception {
+		port = (Hello) JAXWS_Util.getPort(wsdlurl, SERVICE_QNAME, HttpTestService.class, PORT_QNAME, Hello.class);
+		JAXWS_Util.setTargetEndpointAddress(port, url);
+	}
 
-  // expect 2xx http status code
-  String GoodSoapMessageNoXMLDeclaration = "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:enc=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns=\"http://httptestservice.org/wsdl\"><soap:Body><ns:hello><parameters><string>World</string></parameters></ns:hello></soap:Body></soap:Envelope>";
+	protected void getPortJavaEE() throws Exception {
+		logger.log(Level.INFO, "Obtain service via WebServiceRef annotation");
+		logger.log(Level.INFO, "service=" + service);
+		port = (Hello) service.getPort(Hello.class);
+		logger.log(Level.INFO, "port=" + port);
+		logger.log(Level.INFO, "Obtained port");
+		JAXWS_Util.dumpTargetEndpointAddress(port);
+		// JAXWS_Util.setSOAPLogging(port);
+	}
 
-  // expect 2xx http status code
-  String GoodOneWaySoapMessage = "<?xml version=\"1.0\" encoding=\"utf-8\"?><soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:enc=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns=\"http://httptestservice.org/wsdl\"><soap:Body><ns:helloOneWay><parameters><string>World</string></parameters></ns:helloOneWay></soap:Body></soap:Envelope>";
+	/* Test setup */
 
-  // expect 2xx http status code
-  String GoodOneWaySoapMessageNoXMLDeclaration = "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:enc=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns=\"http://httptestservice.org/wsdl\"><soap:Body><ns:helloOneWay><parameters><string>World</string></parameters></ns:helloOneWay></soap:Body></soap:Envelope>";
+	/*
+	 * @class.testArgs: -ap jaxws-url-props.dat
+	 * 
+	 * @class.setup_props: webServerHost; webServerPort; platform.mode;
+	 */
+	@BeforeEach
+	public void setup() throws Exception {
+		super.setup();
+	}
 
-  // expect 2xx http status code
-  String SoapMessageUsingUTF16Encoding = "<?xml version=\"1.0\" encoding=\"utf-16\"?><soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:enc=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns=\"http://httptestservice.org/wsdl\"><soap:Body><ns:hello><parameters><string>World</string></parameters></ns:hello></soap:Body></soap:Envelope>";
+	@AfterEach
+	public void cleanup() throws Exception {
+		logger.log(Level.INFO, "cleanup ok");
+	}
 
-  private void getTestURLs() throws Exception {
-    TestUtil.logMsg("Get URL's used by the test");
-    String file = JAXWS_Util.getURLFromProp(ENDPOINT_URL);
-    url = ctsurl.getURLString(PROTOCOL, hostname, portnum, file);
-    file = JAXWS_Util.getURLFromProp(WSDLLOC_URL);
-    wsdlurl = ctsurl.getURL(PROTOCOL, hostname, portnum, file);
-    TestUtil.logMsg("Service Endpoint URL: " + url);
-    TestUtil.logMsg("WSDL Location URL:    " + wsdlurl);
-  }
+	/*
+	 * @testName: TestGoodSoapMessage
+	 *
+	 * @assertion_ids: WSI:SPEC:R1125; WSI:SPEC:R1111; WSI:SPEC:R4004;
+	 * WS4EE:SPEC:113; WS4EE:SPEC:114; WS4EE:SPEC:115; WS4EE:SPEC:117;
+	 * WS4EE:SPEC:213; WS4EE:SPEC:219; WS4EE:SPEC:221; WS4EE:SPEC:223;
+	 * WS4EE:SPEC:224; WS4EE:SPEC:228; WS4EE:SPEC:248; WS4EE:SPEC:249;
+	 * WS4EE:SPEC:183; WS4EE:SPEC:184; WS4EE:SPEC:185; WS4EE:SPEC:186;
+	 * WS4EE:SPEC:187; WS4EE:SPEC:4000; WS4EE:SPEC:4002; WS4EE:SPEC:5000;
+	 * WS4EE:SPEC:5002;
+	 *
+	 * @test_Strategy: Send a good SOAP RPC request over an HttpURLConnection.
+	 * Verify that we get a correct HTTP status code of 2xx.
+	 */
+	@Test
+	public void TestGoodSoapMessage() throws Exception {
+		boolean pass = true;
+		Iterator iterator = null;
+		try {
+			logger.log(Level.INFO, "TestGoodSoapMessage");
+			logger.log(Level.INFO, "Send good SOAP RPC request (expect 2xx status code)");
+			HttpURLConnection conn = openHttpConnection(url);
+			int httpStatusCode = sendRequest(conn, GoodSoapMessage, "utf-8");
+			closeHttpConnection(conn);
+			if (httpStatusCode < 200 || httpStatusCode > 299) {
+				TestUtil.logErr("Expected 2xx status code, instead got " + httpStatusCode);
+				pass = false;
+			} else
+				TestUtil.logMsg("Received expected 2xx status code of " + httpStatusCode);
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("TestGoodSoapMessage failed", e);
+		}
 
-  private void getPortStandalone() throws Exception {
-    port = (Hello) JAXWS_Util.getPort(wsdlurl, SERVICE_QNAME,
-        HttpTestService.class, PORT_QNAME, Hello.class);
-    JAXWS_Util.setTargetEndpointAddress(port, url);
-  }
+		if (!pass)
+			throw new Exception("TestGoodSoapMessage failed");
+	}
 
-  private void getPortJavaEE() throws Exception {
-    TestUtil.logMsg("Obtain service via WebServiceRef annotation");
-    TestUtil.logMsg("service=" + service);
-    port = (Hello) service.getPort(Hello.class);
-    TestUtil.logMsg("port=" + port);
-    TestUtil.logMsg("Obtained port");
-    JAXWS_Util.dumpTargetEndpointAddress(port);
-    // JAXWS_Util.setSOAPLogging(port);
-  }
+	/*
+	 * @testName: TestGoodSoapMessageNoXMLDeclaration
+	 *
+	 * @assertion_ids: WSI:SPEC:R1125; WSI:SPEC:R1111; WS4EE:SPEC:113;
+	 * WS4EE:SPEC:114; WS4EE:SPEC:115; WS4EE:SPEC:117; WS4EE:SPEC:213;
+	 * WS4EE:SPEC:219; WS4EE:SPEC:221; WS4EE:SPEC:223; WS4EE:SPEC:224;
+	 * WS4EE:SPEC:228; WS4EE:SPEC:248; WS4EE:SPEC:249; WS4EE:SPEC:183;
+	 * WS4EE:SPEC:184; WS4EE:SPEC:185; WS4EE:SPEC:186; WS4EE:SPEC:187;
+	 * WS4EE:SPEC:4000; WS4EE:SPEC:4002; WS4EE:SPEC:5000; WS4EE:SPEC:5002;
+	 *
+	 * @test_Strategy: Send a good SOAP RPC request over an HttpURLConnection. Soap
+	 * message does not contain the XML declaration. Verify that we get a correct
+	 * HTTP status code of 2xx.
+	 */
+	@Test
+	public void TestGoodSoapMessageNoXMLDeclaration() throws Exception {
+		boolean pass = true;
+		Iterator iterator = null;
+		try {
+			logger.log(Level.INFO, "TestGoodSoapMessageNoXMLDeclaration");
+			logger.log(Level.INFO, "Send good SOAP RPC request (expect 2xx status code)");
+			HttpURLConnection conn = openHttpConnection(url);
+			int httpStatusCode = sendRequest(conn, GoodSoapMessageNoXMLDeclaration, "utf-8");
+			closeHttpConnection(conn);
+			if (httpStatusCode < 200 || httpStatusCode > 299) {
+				TestUtil.logErr("Expected 2xx status code, instead got " + httpStatusCode);
+				pass = false;
+			} else
+				TestUtil.logMsg("Received expected 2xx status code of " + httpStatusCode);
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("TestGoodSoapMessageNoXMLDeclaration failed", e);
+		}
 
-  public static void main(String[] args) {
-    Client theTests = new Client();
-    Status s = theTests.run(args, System.out, System.err);
-    s.exit();
-  }
+		if (!pass)
+			throw new Exception("TestGoodSoapMessageNoXMLDeclaration failed");
+	}
 
-  /* Test setup */
+	/*
+	 * @testName: TestGoodOneWaySoapMessage
+	 *
+	 * @assertion_ids: WSI:SPEC:R1125; WSI:SPEC:R1111; WSI:SPEC:R1112;
+	 * WSI:SPEC:R4004; JAXWS:SPEC:11005; JAXWS:SPEC:10016; WS4EE:SPEC:113;
+	 * WS4EE:SPEC:114; WS4EE:SPEC:115; WS4EE:SPEC:117; WS4EE:SPEC:213;
+	 * WS4EE:SPEC:219; WS4EE:SPEC:221; WS4EE:SPEC:223; WS4EE:SPEC:224;
+	 * WS4EE:SPEC:228; WS4EE:SPEC:248; WS4EE:SPEC:249; WS4EE:SPEC:183;
+	 * WS4EE:SPEC:184; WS4EE:SPEC:185; WS4EE:SPEC:186; WS4EE:SPEC:187;
+	 * WS4EE:SPEC:4000; WS4EE:SPEC:4002; WS4EE:SPEC:5000; WS4EE:SPEC:5002;
+	 *
+	 * @test_Strategy: Send a good SOAP RPC request over an HttpURLConnection.
+	 * Verify that we get a correct HTTP status code of 2xx.
+	 */
+	@Test
+	public void TestGoodOneWaySoapMessage() throws Exception {
+		boolean pass = true;
+		Iterator iterator = null;
+		try {
+			logger.log(Level.INFO, "TestGoodOneWaySoapMessage");
+			logger.log(Level.INFO, "Send good SOAP RPC request (expect 2xx status code)");
+			HttpURLConnection conn = openHttpConnection(url);
+			int httpStatusCode = sendRequest(conn, GoodOneWaySoapMessage, "utf-8");
+			closeHttpConnection(conn);
+			if (httpStatusCode < 200 || httpStatusCode > 299) {
+				TestUtil.logErr("Expected 2xx status code, instead got " + httpStatusCode);
+				pass = false;
+			} else
+				TestUtil.logMsg("Received expected 2xx status code of " + httpStatusCode);
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("TestGoodOneWaySoapMessage failed", e);
+		}
 
-  /*
-   * @class.testArgs: -ap jaxws-url-props.dat
-   * 
-   * @class.setup_props: webServerHost; webServerPort; platform.mode;
-   */
+		if (!pass)
+			throw new Exception("TestGoodOneWaySoapMessage failed");
+	}
 
-  public void setup(String[] args, Properties p) throws Fault {
-    boolean pass = true;
+	/*
+	 * @testName: TestGoodOneWaySoapMessageNoXMLDeclaration
+	 *
+	 * @assertion_ids: WSI:SPEC:R1125; WSI:SPEC:R1111; WSI:SPEC:R1112;
+	 * JAXWS:SPEC:11005; JAXWS:SPEC:10016; WS4EE:SPEC:113; WS4EE:SPEC:114;
+	 * WS4EE:SPEC:115; WS4EE:SPEC:117; WS4EE:SPEC:213; WS4EE:SPEC:219;
+	 * WS4EE:SPEC:221; WS4EE:SPEC:223; WS4EE:SPEC:224; WS4EE:SPEC:228;
+	 * WS4EE:SPEC:248; WS4EE:SPEC:249; WS4EE:SPEC:183; WS4EE:SPEC:184;
+	 * WS4EE:SPEC:185; WS4EE:SPEC:186; WS4EE:SPEC:187; WS4EE:SPEC:4000;
+	 * WS4EE:SPEC:4002; WS4EE:SPEC:5000; WS4EE:SPEC:5002;
+	 *
+	 * @test_Strategy: Send a good SOAP RPC request over an HttpURLConnection. Soap
+	 * message does not contain the XML declaration. Verify that we get a correct
+	 * HTTP status code of 2xx.
+	 */
+	@Test
+	public void TestGoodOneWaySoapMessageNoXMLDeclaration() throws Exception {
+		boolean pass = true;
+		Iterator iterator = null;
+		try {
+			logger.log(Level.INFO, "TestGoodOneWaySoapMessageNoXMLDeclaration");
+			logger.log(Level.INFO, "Send good SOAP RPC request (expect 2xx status code)");
+			HttpURLConnection conn = openHttpConnection(url);
+			int httpStatusCode = sendRequest(conn, GoodOneWaySoapMessageNoXMLDeclaration, "utf-8");
+			closeHttpConnection(conn);
+			if (httpStatusCode < 200 || httpStatusCode > 299) {
+				TestUtil.logErr("Expected 2xx status code, instead got " + httpStatusCode);
+				pass = false;
+			} else
+				TestUtil.logMsg("Received expected 2xx status code of " + httpStatusCode);
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("TestGoodOneWaySoapMessageNoXMLDeclaration failed", e);
+		}
 
-    try {
-      hostname = p.getProperty(WEBSERVERHOSTPROP);
-      if (hostname == null)
-        pass = false;
-      else if (hostname.equals(""))
-        pass = false;
-      try {
-        portnum = Integer.parseInt(p.getProperty(WEBSERVERPORTPROP));
-      } catch (Exception e) {
-        TestUtil.printStackTrace(e);
-        pass = false;
-      }
-      TestUtil.logMsg("Creating stub instance ...");
-      modeProperty = p.getProperty(MODEPROP);
-      if (modeProperty.equals("standalone")) {
-        getTestURLs();
-        getPortStandalone();
-      } else {
-        TestUtil.logMsg(
-            "WebServiceRef is not set in Client (get it from specific vehicle)");
-        service = (HttpTestService) getSharedObject();
-        getTestURLs();
-        getPortJavaEE();
-      }
-    } catch (Exception e) {
-      throw new Fault("setup failed:", e);
-    }
-    if (!pass) {
-      TestUtil.logErr(
-          "Please specify host & port of web server " + "in config properties: "
-              + WEBSERVERHOSTPROP + ", " + WEBSERVERPORTPROP);
-      throw new Fault("setup failed:");
-    }
-    logMsg("setup ok");
-  }
+		if (!pass)
+			throw new Exception("TestGoodOneWaySoapMessageNoXMLDeclaration failed");
+	}
 
-  public void cleanup() throws Fault {
-    logMsg("cleanup ok");
-  }
+	/*
+	 * @testName: TestSoapMessageUsingUTF16Encoding
+	 *
+	 * @assertion_ids: WSI:SPEC:R1125; WSI:SPEC:R1111; WSI:SPEC:R4003;
+	 * WSI:SPEC:R4004; WS4EE:SPEC:113; WS4EE:SPEC:114; WS4EE:SPEC:115;
+	 * WS4EE:SPEC:117; WS4EE:SPEC:213; WS4EE:SPEC:219; WS4EE:SPEC:221;
+	 * WS4EE:SPEC:223; WS4EE:SPEC:224; WS4EE:SPEC:228; WS4EE:SPEC:248;
+	 * WS4EE:SPEC:249; WS4EE:SPEC:183; WS4EE:SPEC:184; WS4EE:SPEC:185;
+	 * WS4EE:SPEC:186; WS4EE:SPEC:187; WS4EE:SPEC:4000; WS4EE:SPEC:4002;
+	 * WS4EE:SPEC:5000; WS4EE:SPEC:5002;
+	 *
+	 * @test_Strategy: Send a good SOAP RPC request over an HttpURLConnection. Send
+	 * SOAP RPC request using utf-16 encoding. Verify that we get a correct HTTP
+	 * status code of 2xx.
+	 */
+	@Test
+	public void TestSoapMessageUsingUTF16Encoding() throws Exception {
+		boolean pass = true;
+		Iterator iterator = null;
+		try {
+			logger.log(Level.INFO, "TestSoapMessageUsingUTF16Encoding");
+			logger.log(Level.INFO, "Send SOAP RPC request using utf-16 encoding " + "(expect 2xx status code)");
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			OutputStreamWriter out = new OutputStreamWriter(baos, "utf-16");
+			out.write(SoapMessageUsingUTF16Encoding);
+			out.flush();
+			out.close();
+			boolean debug = false;
+			if (debug) {
+				FileOutputStream faos = new FileOutputStream("/tmp/foo");
+				out = new OutputStreamWriter(faos, "utf-16");
+				out.write(SoapMessageUsingUTF16Encoding);
+				out.flush();
+				out.close();
+				faos.close();
+			}
+			logger.log(Level.INFO, "Original SOAP message length=" + SoapMessageUsingUTF16Encoding.length());
+			TestUtil.logMsg("Encoded SOAP message length=" + baos.toByteArray().length);
+			HttpURLConnection conn = openHttpConnection(url);
+			conn.setRequestProperty("Content-Type", "text/xml; charset=utf-16");
+			int httpStatusCode = sendRequest(conn, baos.toByteArray(), "utf-16");
+			closeHttpConnection(conn);
+			if (httpStatusCode < 200 || httpStatusCode > 299) {
+				TestUtil.logErr("Expected 2xx status code, instead got " + httpStatusCode);
+				pass = false;
+			} else
+				TestUtil.logMsg("Received expected 2xx status code of " + httpStatusCode);
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("TestSoapMessageUsingUTF16Encoding failed", e);
+		}
 
-  /*
-   * @testName: TestGoodSoapMessage
-   *
-   * @assertion_ids: WSI:SPEC:R1125; WSI:SPEC:R1111; WSI:SPEC:R4004;
-   * WS4EE:SPEC:113; WS4EE:SPEC:114; WS4EE:SPEC:115; WS4EE:SPEC:117;
-   * WS4EE:SPEC:213; WS4EE:SPEC:219; WS4EE:SPEC:221; WS4EE:SPEC:223;
-   * WS4EE:SPEC:224; WS4EE:SPEC:228; WS4EE:SPEC:248; WS4EE:SPEC:249;
-   * WS4EE:SPEC:183; WS4EE:SPEC:184; WS4EE:SPEC:185; WS4EE:SPEC:186;
-   * WS4EE:SPEC:187; WS4EE:SPEC:4000; WS4EE:SPEC:4002; WS4EE:SPEC:5000;
-   * WS4EE:SPEC:5002;
-   *
-   * @test_Strategy: Send a good SOAP RPC request over an HttpURLConnection.
-   * Verify that we get a correct HTTP status code of 2xx.
-   */
-  public void TestGoodSoapMessage() throws Fault {
-    boolean pass = true;
-    Iterator iterator = null;
-    try {
-      TestUtil.logMsg("TestGoodSoapMessage");
-      TestUtil.logMsg("Send good SOAP RPC request (expect 2xx status code)");
-      HttpURLConnection conn = openHttpConnection(url);
-      int httpStatusCode = sendRequest(conn, GoodSoapMessage, "utf-8");
-      closeHttpConnection(conn);
-      if (httpStatusCode < 200 || httpStatusCode > 299) {
-        TestUtil
-            .logErr("Expected 2xx status code, instead got " + httpStatusCode);
-        pass = false;
-      } else
-        TestUtil
-            .logMsg("Received expected 2xx status code of " + httpStatusCode);
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("TestGoodSoapMessage failed", e);
-    }
+		if (!pass)
+			throw new Exception("TestSoapMessageUsingUTF16Encoding failed");
+	}
 
-    if (!pass)
-      throw new Fault("TestGoodSoapMessage failed");
-  }
+	private HttpURLConnection openHttpConnection(String s) throws IOException {
+		HttpURLConnection conn = (HttpURLConnection) new URL(s).openConnection();
+		conn.setDoOutput(true);
+		conn.setDoInput(true);
+		conn.setRequestMethod("POST");
+		conn.setRequestProperty("HTTP-Version", "HTTP/1.1");
+		conn.setRequestProperty("Content-Type", "text/xml");
+		conn.setRequestProperty("SOAPAction", "\"\"");
+		return conn;
+	}
 
-  /*
-   * @testName: TestGoodSoapMessageNoXMLDeclaration
-   *
-   * @assertion_ids: WSI:SPEC:R1125; WSI:SPEC:R1111; WS4EE:SPEC:113;
-   * WS4EE:SPEC:114; WS4EE:SPEC:115; WS4EE:SPEC:117; WS4EE:SPEC:213;
-   * WS4EE:SPEC:219; WS4EE:SPEC:221; WS4EE:SPEC:223; WS4EE:SPEC:224;
-   * WS4EE:SPEC:228; WS4EE:SPEC:248; WS4EE:SPEC:249; WS4EE:SPEC:183;
-   * WS4EE:SPEC:184; WS4EE:SPEC:185; WS4EE:SPEC:186; WS4EE:SPEC:187;
-   * WS4EE:SPEC:4000; WS4EE:SPEC:4002; WS4EE:SPEC:5000; WS4EE:SPEC:5002;
-   *
-   * @test_Strategy: Send a good SOAP RPC request over an HttpURLConnection.
-   * Soap message does not contain the XML declaration. Verify that we get a
-   * correct HTTP status code of 2xx.
-   */
-  public void TestGoodSoapMessageNoXMLDeclaration() throws Fault {
-    boolean pass = true;
-    Iterator iterator = null;
-    try {
-      TestUtil.logMsg("TestGoodSoapMessageNoXMLDeclaration");
-      TestUtil.logMsg("Send good SOAP RPC request (expect 2xx status code)");
-      HttpURLConnection conn = openHttpConnection(url);
-      int httpStatusCode = sendRequest(conn, GoodSoapMessageNoXMLDeclaration,
-          "utf-8");
-      closeHttpConnection(conn);
-      if (httpStatusCode < 200 || httpStatusCode > 299) {
-        TestUtil
-            .logErr("Expected 2xx status code, instead got " + httpStatusCode);
-        pass = false;
-      } else
-        TestUtil
-            .logMsg("Received expected 2xx status code of " + httpStatusCode);
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("TestGoodSoapMessageNoXMLDeclaration failed", e);
-    }
+	private void closeHttpConnection(HttpURLConnection conn) throws IOException {
+		conn.disconnect();
+	}
 
-    if (!pass)
-      throw new Fault("TestGoodSoapMessageNoXMLDeclaration failed");
-  }
+	private int sendRequest(HttpURLConnection conn, String request, String charsetName) throws IOException {
 
-  /*
-   * @testName: TestGoodOneWaySoapMessage
-   *
-   * @assertion_ids: WSI:SPEC:R1125; WSI:SPEC:R1111; WSI:SPEC:R1112;
-   * WSI:SPEC:R4004; JAXWS:SPEC:11005; JAXWS:SPEC:10016; WS4EE:SPEC:113;
-   * WS4EE:SPEC:114; WS4EE:SPEC:115; WS4EE:SPEC:117; WS4EE:SPEC:213;
-   * WS4EE:SPEC:219; WS4EE:SPEC:221; WS4EE:SPEC:223; WS4EE:SPEC:224;
-   * WS4EE:SPEC:228; WS4EE:SPEC:248; WS4EE:SPEC:249; WS4EE:SPEC:183;
-   * WS4EE:SPEC:184; WS4EE:SPEC:185; WS4EE:SPEC:186; WS4EE:SPEC:187;
-   * WS4EE:SPEC:4000; WS4EE:SPEC:4002; WS4EE:SPEC:5000; WS4EE:SPEC:5002;
-   *
-   * @test_Strategy: Send a good SOAP RPC request over an HttpURLConnection.
-   * Verify that we get a correct HTTP status code of 2xx.
-   */
-  public void TestGoodOneWaySoapMessage() throws Fault {
-    boolean pass = true;
-    Iterator iterator = null;
-    try {
-      TestUtil.logMsg("TestGoodOneWaySoapMessage");
-      TestUtil.logMsg("Send good SOAP RPC request (expect 2xx status code)");
-      HttpURLConnection conn = openHttpConnection(url);
-      int httpStatusCode = sendRequest(conn, GoodOneWaySoapMessage, "utf-8");
-      closeHttpConnection(conn);
-      if (httpStatusCode < 200 || httpStatusCode > 299) {
-        TestUtil
-            .logErr("Expected 2xx status code, instead got " + httpStatusCode);
-        pass = false;
-      } else
-        TestUtil
-            .logMsg("Received expected 2xx status code of " + httpStatusCode);
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("TestGoodOneWaySoapMessage failed", e);
-    }
+		logger.log(Level.INFO, "Request=" + request);
+		return _sendRequest(conn, request.getBytes(charsetName));
+	}
 
-    if (!pass)
-      throw new Fault("TestGoodOneWaySoapMessage failed");
-  }
+	private int sendRequest(HttpURLConnection conn, byte[] request, String encoding) throws IOException {
 
-  /*
-   * @testName: TestGoodOneWaySoapMessageNoXMLDeclaration
-   *
-   * @assertion_ids: WSI:SPEC:R1125; WSI:SPEC:R1111; WSI:SPEC:R1112;
-   * JAXWS:SPEC:11005; JAXWS:SPEC:10016; WS4EE:SPEC:113; WS4EE:SPEC:114;
-   * WS4EE:SPEC:115; WS4EE:SPEC:117; WS4EE:SPEC:213; WS4EE:SPEC:219;
-   * WS4EE:SPEC:221; WS4EE:SPEC:223; WS4EE:SPEC:224; WS4EE:SPEC:228;
-   * WS4EE:SPEC:248; WS4EE:SPEC:249; WS4EE:SPEC:183; WS4EE:SPEC:184;
-   * WS4EE:SPEC:185; WS4EE:SPEC:186; WS4EE:SPEC:187; WS4EE:SPEC:4000;
-   * WS4EE:SPEC:4002; WS4EE:SPEC:5000; WS4EE:SPEC:5002;
-   *
-   * @test_Strategy: Send a good SOAP RPC request over an HttpURLConnection.
-   * Soap message does not contain the XML declaration. Verify that we get a
-   * correct HTTP status code of 2xx.
-   */
-  public void TestGoodOneWaySoapMessageNoXMLDeclaration() throws Fault {
-    boolean pass = true;
-    Iterator iterator = null;
-    try {
-      TestUtil.logMsg("TestGoodOneWaySoapMessageNoXMLDeclaration");
-      TestUtil.logMsg("Send good SOAP RPC request (expect 2xx status code)");
-      HttpURLConnection conn = openHttpConnection(url);
-      int httpStatusCode = sendRequest(conn,
-          GoodOneWaySoapMessageNoXMLDeclaration, "utf-8");
-      closeHttpConnection(conn);
-      if (httpStatusCode < 200 || httpStatusCode > 299) {
-        TestUtil
-            .logErr("Expected 2xx status code, instead got " + httpStatusCode);
-        pass = false;
-      } else
-        TestUtil
-            .logMsg("Received expected 2xx status code of " + httpStatusCode);
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("TestGoodOneWaySoapMessageNoXMLDeclaration failed", e);
-    }
+		logger.log(Level.INFO, "Request=" + new String(request, encoding));
+		return _sendRequest(conn, request);
+	}
 
-    if (!pass)
-      throw new Fault("TestGoodOneWaySoapMessageNoXMLDeclaration failed");
-  }
+	private int _sendRequest(HttpURLConnection conn, byte[] data) throws IOException {
 
-  /*
-   * @testName: TestSoapMessageUsingUTF16Encoding
-   *
-   * @assertion_ids: WSI:SPEC:R1125; WSI:SPEC:R1111; WSI:SPEC:R4003;
-   * WSI:SPEC:R4004; WS4EE:SPEC:113; WS4EE:SPEC:114; WS4EE:SPEC:115;
-   * WS4EE:SPEC:117; WS4EE:SPEC:213; WS4EE:SPEC:219; WS4EE:SPEC:221;
-   * WS4EE:SPEC:223; WS4EE:SPEC:224; WS4EE:SPEC:228; WS4EE:SPEC:248;
-   * WS4EE:SPEC:249; WS4EE:SPEC:183; WS4EE:SPEC:184; WS4EE:SPEC:185;
-   * WS4EE:SPEC:186; WS4EE:SPEC:187; WS4EE:SPEC:4000; WS4EE:SPEC:4002;
-   * WS4EE:SPEC:5000; WS4EE:SPEC:5002;
-   *
-   * @test_Strategy: Send a good SOAP RPC request over an HttpURLConnection.
-   * Send SOAP RPC request using utf-16 encoding. Verify that we get a correct
-   * HTTP status code of 2xx.
-   */
-  public void TestSoapMessageUsingUTF16Encoding() throws Fault {
-    boolean pass = true;
-    Iterator iterator = null;
-    try {
-      TestUtil.logMsg("TestSoapMessageUsingUTF16Encoding");
-      TestUtil.logMsg("Send SOAP RPC request using utf-16 encoding "
-          + "(expect 2xx status code)");
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      OutputStreamWriter out = new OutputStreamWriter(baos, "utf-16");
-      out.write(SoapMessageUsingUTF16Encoding);
-      out.flush();
-      out.close();
-      boolean debug = false;
-      if (debug) {
-        FileOutputStream faos = new FileOutputStream("/tmp/foo");
-        out = new OutputStreamWriter(faos, "utf-16");
-        out.write(SoapMessageUsingUTF16Encoding);
-        out.flush();
-        out.close();
-        faos.close();
-      }
-      TestUtil.logMsg("Original SOAP message length="
-          + SoapMessageUsingUTF16Encoding.length());
-      TestUtil
-          .logMsg("Encoded SOAP message length=" + baos.toByteArray().length);
-      HttpURLConnection conn = openHttpConnection(url);
-      conn.setRequestProperty("Content-Type", "text/xml; charset=utf-16");
-      int httpStatusCode = sendRequest(conn, baos.toByteArray(), "utf-16");
-      closeHttpConnection(conn);
-      if (httpStatusCode < 200 || httpStatusCode > 299) {
-        TestUtil
-            .logErr("Expected 2xx status code, instead got " + httpStatusCode);
-        pass = false;
-      } else
-        TestUtil
-            .logMsg("Received expected 2xx status code of " + httpStatusCode);
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("TestSoapMessageUsingUTF16Encoding failed", e);
-    }
+		conn.setRequestProperty("Content-Length", Integer.valueOf(data.length).toString());
+		OutputStream outputStream = conn.getOutputStream();
+		try {
+			outputStream = conn.getOutputStream();
+			outputStream.write(data);
+		} finally {
+			try {
+				outputStream.close();
+			} catch (Throwable t) {
+			}
+		}
 
-    if (!pass)
-      throw new Fault("TestSoapMessageUsingUTF16Encoding failed");
-  }
+		boolean isFailure = true;
+		int responseCode = conn.getResponseCode();
 
-  private HttpURLConnection openHttpConnection(String s) throws IOException {
-    HttpURLConnection conn = (HttpURLConnection) new URL(s).openConnection();
-    conn.setDoOutput(true);
-    conn.setDoInput(true);
-    conn.setRequestMethod("POST");
-    conn.setRequestProperty("HTTP-Version", "HTTP/1.1");
-    conn.setRequestProperty("Content-Type", "text/xml");
-    conn.setRequestProperty("SOAPAction", "\"\"");
-    return conn;
-  }
+		String responseMessage = conn.getResponseMessage();
 
-  private void closeHttpConnection(HttpURLConnection conn) throws IOException {
-    conn.disconnect();
-  }
-
-  private int sendRequest(HttpURLConnection conn, String request,
-      String charsetName) throws IOException {
-
-    TestUtil.logMsg("Request=" + request);
-    return _sendRequest(conn, request.getBytes(charsetName));
-  }
-
-  private int sendRequest(HttpURLConnection conn, byte[] request,
-      String encoding) throws IOException {
-
-    TestUtil.logMsg("Request=" + new String(request, encoding));
-    return _sendRequest(conn, request);
-  }
-
-  private int _sendRequest(HttpURLConnection conn, byte[] data)
-      throws IOException {
-
-    conn.setRequestProperty("Content-Length",
-        Integer.valueOf(data.length).toString());
-    OutputStream outputStream = conn.getOutputStream();
-    try {
-      outputStream = conn.getOutputStream();
-      outputStream.write(data);
-    } finally {
-      try {
-        outputStream.close();
-      } catch (Throwable t) {
-      }
-    }
-
-    boolean isFailure = true;
-    int responseCode = conn.getResponseCode();
-
-    String responseMessage = conn.getResponseMessage();
-
-    TestUtil.logMsg("ResponseCode=" + responseCode);
-    TestUtil.logMsg("ResponseMessage=" + responseMessage);
-    if (responseCode == HttpURLConnection.HTTP_OK) {
-      isFailure = false;
-    }
-    InputStream istream = null;
-    BufferedReader reader = null;
-    try {
-      istream = !isFailure ? conn.getInputStream() : conn.getErrorStream();
-      if (istream != null) {
-        StringBuilder response = new StringBuilder();
-        String buf = null;
-        reader = new BufferedReader(new InputStreamReader(istream));
-        while ((buf = reader.readLine()) != null) {
-          response.append(buf);
-        }
-        if (response.length() != 0)
-          TestUtil.logMsg("Response=" + response.toString());
-      }
-    } finally {
-      try {
-        reader.close();
-        istream.close();
-      } catch (Throwable t) {
-      }
-    }
-    return responseCode;
-  }
+		logger.log(Level.INFO, "ResponseCode=" + responseCode);
+		logger.log(Level.INFO, "ResponseMessage=" + responseMessage);
+		if (responseCode == HttpURLConnection.HTTP_OK) {
+			isFailure = false;
+		}
+		InputStream istream = null;
+		BufferedReader reader = null;
+		try {
+			istream = !isFailure ? conn.getInputStream() : conn.getErrorStream();
+			if (istream != null) {
+				StringBuilder response = new StringBuilder();
+				String buf = null;
+				reader = new BufferedReader(new InputStreamReader(istream));
+				while ((buf = reader.readLine()) != null) {
+					response.append(buf);
+				}
+				if (response.length() != 0)
+					logger.log(Level.INFO, "Response=" + response.toString());
+			}
+		} finally {
+			try {
+				reader.close();
+				istream.close();
+			} catch (Throwable t) {
+			}
+		}
+		return responseCode;
+	}
 }

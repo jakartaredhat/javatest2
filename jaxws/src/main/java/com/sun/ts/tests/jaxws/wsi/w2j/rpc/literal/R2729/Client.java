@@ -20,96 +20,96 @@
 
 package com.sun.ts.tests.jaxws.wsi.w2j.rpc.literal.R2729;
 
+import java.io.IOException;
 import java.io.InputStream;
-import java.util.Properties;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
-import com.sun.javatest.Status;
+import com.sun.ts.tests.jaxws.common.BaseClient;
 import com.sun.ts.tests.jaxws.sharedclients.ClientFactory;
 import com.sun.ts.tests.jaxws.wsi.requests.SOAPRequests;
 
-import com.sun.ts.lib.harness.*;
+public class Client extends BaseClient implements SOAPRequests {
+	/**
+	 * The string to be echoed.
+	 */
+	private static final String STRING = "R2729";
 
-public class Client extends ServiceEETest implements SOAPRequests {
-  /**
-   * The string to be echoed.
-   */
-  private static final String STRING = "R2729";
+	/**
+	 * The client.
+	 */
+	private W2JRLR2729Client client;
 
-  /**
-   * The client.
-   */
-  private W2JRLR2729Client client;
+	static W2JRLR2729TestService service = null;
 
-  static W2JRLR2729TestService service = null;
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  /**
-   * Test entry point.
-   * 
-   * @param args
-   *          the command-line arguments.
-   */
-  public static void main(String[] args) {
-    Client client = new Client();
-    Status status = client.run(args, System.out, System.err);
-    status.exit();
-  }
+	@Deployment(testable = false)
+	public static WebArchive createDeployment() throws IOException {
+		return createWebArchive(Client.class);
+	}
 
-  /**
-   * @class.testArgs: -ap jaxws-url-props.dat
-   * @class.setup_props: webServerHost; webServerPort; platform.mode;
-   *
-   * @param args
-   * @param properties
-   *
-   * @throws Fault
-   */
-  public void setup(String[] args, Properties properties) throws Fault {
-    client = (W2JRLR2729Client) ClientFactory.getClient(W2JRLR2729Client.class,
-        properties, this, service);
-    logMsg("setup ok");
-  }
+	/**
+	 * @class.testArgs: -ap jaxws-url-props.dat
+	 * @class.setup_props: webServerHost; webServerPort; platform.mode;
+	 *
+	 * @param args
+	 * @param properties
+	 *
+	 * @throws Exception
+	 */
+	@BeforeEach
+	public void setup() throws Exception {
+		super.setup();
+		client = (W2JRLR2729Client) ClientFactory.getClient(W2JRLR2729Client.class, service);
+		logger.log(Level.INFO, "setup ok");
+	}
 
-  public void cleanup() {
-    logMsg("cleanup");
-  }
+	@AfterEach
+	public void cleanup() {
+		logger.log(Level.INFO, "cleanup");
+	}
 
-  /**
-   * @testName: testResponseWrapperElement
-   *
-   * @assertion_ids: WSI:SPEC:R2729
-   *
-   * @test_Strategy: A request to the echoString operation is made and the
-   *                 returned wrapper element must be "echoStringResponse".
-   *
-   * @throws Fault
-   */
-  public void testResponseWrapperElement() throws Fault {
-    Document document;
-    try {
-      InputStream is = client.makeHTTPRequest(R2729_REQUEST);
-      DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-      factory.setNamespaceAware(true);
-      DocumentBuilder builder = factory.newDocumentBuilder();
-      document = builder.parse(is);
-    } catch (Exception e) {
-      throw new Fault("Unable to invoke 'echoString' operation (BP-R2729)", e);
-    }
-    Element envelope = document.getDocumentElement();
-    System.out.println(
-        "got " + envelope.getNamespaceURI() + ":" + envelope.getLocalName());
-    NodeList list = envelope.getElementsByTagNameNS(
-        "http://w2jrlr2729testservice.org/W2JRLR2729TestService.wsdl",
-        "echoStringResponse");
-    if (list.getLength() == 0) {
-      throw new Fault(
-          "Required 'echoStringResponse' element not present in message (BP-R2729)");
-    }
-  }
+	/**
+	 * @testName: testResponseWrapperElement
+	 *
+	 * @assertion_ids: WSI:SPEC:R2729
+	 *
+	 * @test_Strategy: A request to the echoString operation is made and the
+	 *                 returned wrapper element must be "echoStringResponse".
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void testResponseWrapperElement() throws Exception {
+		Document document;
+		try {
+			InputStream is = client.makeHTTPRequest(R2729_REQUEST);
+			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			factory.setNamespaceAware(true);
+			DocumentBuilder builder = factory.newDocumentBuilder();
+			document = builder.parse(is);
+		} catch (Exception e) {
+			throw new Exception("Unable to invoke 'echoString' operation (BP-R2729)", e);
+		}
+		Element envelope = document.getDocumentElement();
+		System.out.println("got " + envelope.getNamespaceURI() + ":" + envelope.getLocalName());
+		NodeList list = envelope.getElementsByTagNameNS("http://w2jrlr2729testservice.org/W2JRLR2729TestService.wsdl",
+				"echoStringResponse");
+		if (list.getLength() == 0) {
+			throw new Exception("Required 'echoStringResponse' element not present in message (BP-R2729)");
+		}
+	}
 }

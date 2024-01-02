@@ -20,89 +20,89 @@
 
 package com.sun.ts.tests.jaxws.sharedclients;
 
-import com.sun.ts.lib.harness.EETest;
+import java.io.Serializable;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+
 import com.sun.ts.lib.porting.TSURL;
-import com.sun.ts.lib.util.TestUtil;
 import com.sun.ts.tests.jaxws.common.JAXWS_Util;
 
-import java.io.Serializable;
-
 public abstract class Client implements Serializable {
-  private static final String DEFAULT_SCHEME = "http";
 
-  private String webServerHost;
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  private int webServerPort;
+	private static final String DEFAULT_SCHEME = "http";
 
-  private int mode;
+	private String webServerHost;
 
-  private TSURL ctsURL;
+	private int webServerPort;
 
-  public Client(String webServerHost, int webServerPort, int mode)
-      throws EETest.Fault {
-    this.webServerHost = webServerHost;
-    this.webServerPort = webServerPort;
-    this.mode = mode;
-    ctsURL = new TSURL();
-  }
+	private int mode;
 
-  protected String getWebServerHost() {
-    return webServerHost;
-  }
+	private TSURL ctsURL;
 
-  protected int getWebServerPort() {
-    return webServerPort;
-  }
+	public Client(String webServerHost, int webServerPort, int mode) throws Exception {
+		this.webServerHost = webServerHost;
+		this.webServerPort = webServerPort;
+		this.mode = mode;
+		ctsURL = new TSURL();
+	}
 
-  protected String getScheme() {
-    return DEFAULT_SCHEME;
-  }
+	protected String getWebServerHost() {
+		return webServerHost;
+	}
 
-  protected TSURL getCTSURL() {
-    return ctsURL;
-  }
+	protected int getWebServerPort() {
+		return webServerPort;
+	}
 
-  /**
-   * Returns the endpoint URL string.
-   *
-   * @return the endpoint URL string.
-   *
-   * @throws java.lang.Exception
-   */
-  protected String getEndpointURLString() throws EETest.Fault {
-    String file = null;
-    try {
-      file = JAXWS_Util.getURLFromProp(getEndpointURLProperty());
-    } catch (Exception e) {
-      throw new EETest.Fault("Unable to obtain endpoint URL string", e);
-    }
-    String url = null;
-    if (file != null) {
-      url = ctsURL.getURLString(getScheme(), getWebServerHost(),
-          getWebServerPort(), file);
-      TestUtil.logMsg("endpoint url=" + url);
-    }
-    return url;
-  }
+	protected String getScheme() {
+		return DEFAULT_SCHEME;
+	}
 
-  protected String getWSDLURLString() throws EETest.Fault {
-    String file = null;
-    try {
-      file = JAXWS_Util.getURLFromProp(getWSDLURLProperty());
-    } catch (Exception e) {
-      throw new EETest.Fault("Unable to obtain wsdl URL string", e);
-    }
-    String url = null;
-    if (file != null) {
-      url = ctsURL.getURLString(getScheme(), getWebServerHost(),
-          getWebServerPort(), file);
-      TestUtil.logMsg("wsdl url=" + url);
-    }
-    return url;
-  }
+	protected TSURL getCTSURL() {
+		return ctsURL;
+	}
 
-  protected abstract String getEndpointURLProperty();
+	/**
+	 * Returns the endpoint URL string.
+	 *
+	 * @return the endpoint URL string.
+	 *
+	 * @throws java.lang.Exception
+	 */
+	protected String getEndpointURLString() throws Exception {
+		String file = null;
+		try {
+			file = JAXWS_Util.getURLFromProp(getEndpointURLProperty());
+		} catch (Exception e) {
+			throw new Exception("Unable to obtain endpoint URL string", e);
+		}
+		String url = null;
+		if (file != null) {
+			url = ctsURL.getURLString(getScheme(), getWebServerHost(), getWebServerPort(), file);
+			logger.log(Level.INFO, "endpoint url=" + url);
+		}
+		return url;
+	}
 
-  protected abstract String getWSDLURLProperty();
+	protected String getWSDLURLString() throws Exception {
+		String file = null;
+		try {
+			file = JAXWS_Util.getURLFromProp(getWSDLURLProperty());
+		} catch (Exception e) {
+			throw new Exception("Unable to obtain wsdl URL string", e);
+		}
+		String url = null;
+		if (file != null) {
+			url = ctsURL.getURLString(getScheme(), getWebServerHost(), getWebServerPort(), file);
+			logger.log(Level.INFO, "wsdl url=" + url);
+		}
+		return url;
+	}
+
+	protected abstract String getEndpointURLProperty();
+
+	protected abstract String getWSDLURLProperty();
 
 }

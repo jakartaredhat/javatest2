@@ -20,45 +20,50 @@
 
 package com.sun.ts.tests.jaxws.api.jakarta_xml_ws.AsyncHandler;
 
-import com.sun.ts.lib.util.*;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+
+import javax.xml.transform.Source;
 
 import jakarta.xml.ws.AsyncHandler;
 import jakarta.xml.ws.Response;
-import javax.xml.transform.Source;
 
 public class XMLAsyncHandler implements AsyncHandler<Source> {
-  private boolean dataReady = false;
+	
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  private Source theData;
+	private boolean dataReady = false;
 
-  private java.util.Map<String, Object> theContext;
+	private Source theData;
 
-  public XMLAsyncHandler() {
-    TestUtil.logMsg("in XMLAsyncHandler");
-  }
+	private java.util.Map<String, Object> theContext;
 
-  public synchronized boolean isDataReady() {
-    return dataReady;
-  }
+	public XMLAsyncHandler() {
+		logger.log(Level.INFO, "in XMLAsyncHandler");
+	}
 
-  public Source getData() {
-    return theData;
-  }
+	public synchronized boolean isDataReady() {
+		return dataReady;
+	}
 
-  public java.util.Map<String, Object> getContext() {
-    return theContext;
-  }
+	public Source getData() {
+		return theData;
+	}
 
-  public void handleResponse(Response<Source> res) {
-    TestUtil.logMsg("in XMLAsyncHandler.handleResponse()");
-    try {
-      theData = res.get();
-      theContext = res.getContext();
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    synchronized (this) {
-      dataReady = true;
-    }
-  }
+	public java.util.Map<String, Object> getContext() {
+		return theContext;
+	}
+
+	public void handleResponse(Response<Source> res) {
+		logger.log(Level.INFO, "in XMLAsyncHandler.handleResponse()");
+		try {
+			theData = res.get();
+			theContext = res.getContext();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		synchronized (this) {
+			dataReady = true;
+		}
+	}
 }

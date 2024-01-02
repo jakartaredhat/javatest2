@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2020 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2024 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -20,731 +20,699 @@
 
 package com.sun.ts.tests.jaxws.wsa.j2w.document.literal.action;
 
-import com.sun.ts.lib.util.*;
-import com.sun.ts.lib.porting.*;
-import com.sun.ts.lib.harness.*;
+import java.io.IOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.net.URL;
 
-import java.net.*;
-
-import jakarta.xml.ws.*;
-import jakarta.xml.ws.soap.*;
-
-import java.util.Properties;
 import javax.xml.namespace.QName;
-import com.sun.javatest.Status;
-import com.sun.ts.tests.jaxws.common.*;
 
-public class Client extends ServiceEETest {
+import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-  // The webserver defaults (overidden by harness properties)
-  private static final String PROTOCOL = "http";
+import com.sun.ts.lib.util.TestUtil;
+import com.sun.ts.tests.jaxws.common.BaseClient;
+import com.sun.ts.tests.jaxws.common.JAXWS_Util;
 
-  private static final String HOSTNAME = "localhost";
+import jakarta.xml.ws.WebServiceFeature;
+import jakarta.xml.ws.soap.AddressingFeature;
+import jakarta.xml.ws.soap.SOAPFaultException;
 
-  private static final int PORTNUM = 8000;
+public class Client extends BaseClient {
 
-  // The webserver host and port property names (harness properties)
-  private static final String WEBSERVERHOSTPROP = "webServerHost";
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  private static final String WEBSERVERPORTPROP = "webServerPort";
+	private static final String PKG_NAME = "com.sun.ts.tests.jaxws.wsa.j2w.document.literal.action.";
 
-  private static final String MODEPROP = "platform.mode";
+	// URL properties used by the test
+	private static final String ENDPOINT_URL = "wsaj2wdlactiontest.endpoint.1";
 
-  String modeProperty = null; // platform.mode -> (standalone|jakartaEE)
+	private static final String WSDLLOC_URL = "wsaj2wdlactiontest.wsdlloc.1";
 
-  private static final String PKG_NAME = "com.sun.ts.tests.jaxws.wsa.j2w.document.literal.action.";
+	private String url = null;
 
-  private TSURL ctsurl = new TSURL();
+	private URL wsdlurl = null;
 
-  private String hostname = HOSTNAME;
+	// service and port information
+	private static final String NAMESPACEURI = "http://foobar.org/";
 
-  private int portnum = PORTNUM;
+	private static final String SERVICE_NAME = "AddNumbersService";
 
-  // URL properties used by the test
-  private static final String ENDPOINT_URL = "wsaj2wdlactiontest.endpoint.1";
+	private static final String PORT_NAME = "AddNumbersPort";
 
-  private static final String WSDLLOC_URL = "wsaj2wdlactiontest.wsdlloc.1";
+	private QName SERVICE_QNAME = new QName(NAMESPACEURI, SERVICE_NAME);
 
-  private String url = null;
+	private QName PORT_QNAME = new QName(NAMESPACEURI, PORT_NAME);
 
-  private URL wsdlurl = null;
+	private WebServiceFeature[] enabledRequiredwsf = { new AddressingFeature(true, true) };
 
-  // service and port information
-  private static final String NAMESPACEURI = "http://foobar.org/";
+	private WebServiceFeature[] disabledNotRequiredwsf = { new AddressingFeature(false, false) };
 
-  private static final String SERVICE_NAME = "AddNumbersService";
+	AddNumbers portEnabled = null;
 
-  private static final String PORT_NAME = "AddNumbersPort";
+	AddNumbers portDisabled = null;
 
-  private QName SERVICE_QNAME = new QName(NAMESPACEURI, SERVICE_NAME);
+	static AddNumbersService service = null;
 
-  private QName PORT_QNAME = new QName(NAMESPACEURI, PORT_NAME);
+	@Deployment(testable = false)
+	public static WebArchive createDeployment() throws IOException {
+		return createWebArchive(Client.class);
+	}
 
-  private WebServiceFeature[] enabledRequiredwsf = {
-      new AddressingFeature(true, true) };
+	protected void getTestURLs() throws Exception {
+		logger.log(Level.INFO, "Get URL's used by the test");
+		String file = JAXWS_Util.getURLFromProp(ENDPOINT_URL);
+		url = ctsurl.getURLString(PROTOCOL, hostname, portnum, file);
+		file = JAXWS_Util.getURLFromProp(WSDLLOC_URL);
+		wsdlurl = ctsurl.getURL(PROTOCOL, hostname, portnum, file);
+		logger.log(Level.INFO, "Service Endpoint URL: " + url);
+		logger.log(Level.INFO, "WSDL Location URL:    " + wsdlurl);
+	}
 
-  private WebServiceFeature[] disabledNotRequiredwsf = {
-      new AddressingFeature(false, false) };
+	protected void getPortStandalone() throws Exception {
+		logger.log(Level.INFO, "Obtain port");
+		portEnabled = (AddNumbers) JAXWS_Util.getPort(wsdlurl, SERVICE_QNAME, AddNumbersService.class, PORT_QNAME,
+				AddNumbers.class, enabledRequiredwsf);
+		portDisabled = (AddNumbers) JAXWS_Util.getPort(wsdlurl, SERVICE_QNAME, AddNumbersService.class, PORT_QNAME,
+				AddNumbers.class, disabledNotRequiredwsf);
+		JAXWS_Util.setTargetEndpointAddress(portEnabled, url);
+		JAXWS_Util.setTargetEndpointAddress(portDisabled, url);
+	}
 
-  AddNumbers portEnabled = null;
+	protected void getPortJavaEE() throws Exception {
+		logger.log(Level.INFO, "Obtain service via WebServiceRef annotation");
+		logger.log(Level.INFO, "service=" + service);
+		logger.log(Level.INFO, "Obtain port");
+		portEnabled = (AddNumbers) service.getPort(AddNumbers.class, enabledRequiredwsf);
+		portDisabled = (AddNumbers) service.getPort(AddNumbers.class, disabledNotRequiredwsf);
+		JAXWS_Util.dumpTargetEndpointAddress(portEnabled);
+		JAXWS_Util.dumpTargetEndpointAddress(portDisabled);
+	}
 
-  AddNumbers portDisabled = null;
+	protected void getService() {
+		service = (AddNumbersService) getSharedObject();
+	}
 
-  static AddNumbersService service = null;
+	/* Test setup */
 
-  private void getTestURLs() throws Exception {
-    TestUtil.logMsg("Get URL's used by the test");
-    String file = JAXWS_Util.getURLFromProp(ENDPOINT_URL);
-    url = ctsurl.getURLString(PROTOCOL, hostname, portnum, file);
-    file = JAXWS_Util.getURLFromProp(WSDLLOC_URL);
-    wsdlurl = ctsurl.getURL(PROTOCOL, hostname, portnum, file);
-    TestUtil.logMsg("Service Endpoint URL: " + url);
-    TestUtil.logMsg("WSDL Location URL:    " + wsdlurl);
-  }
+	/*
+	 * @class.testArgs: -ap jaxws-url-props.dat
+	 * 
+	 * @class.setup_props: webServerHost; webServerPort; platform.mode;
+	 */
+	@BeforeEach
+	public void setup() throws Exception {
+		super.setup();
+	}
 
-  private void getPortStandalone() throws Exception {
-    TestUtil.logMsg("Obtain port");
-    portEnabled = (AddNumbers) JAXWS_Util.getPort(wsdlurl, SERVICE_QNAME,
-        AddNumbersService.class, PORT_QNAME, AddNumbers.class,
-        enabledRequiredwsf);
-    portDisabled = (AddNumbers) JAXWS_Util.getPort(wsdlurl, SERVICE_QNAME,
-        AddNumbersService.class, PORT_QNAME, AddNumbers.class,
-        disabledNotRequiredwsf);
-    JAXWS_Util.setTargetEndpointAddress(portEnabled, url);
-    JAXWS_Util.setTargetEndpointAddress(portDisabled, url);
-  }
+	@AfterEach
+	public void cleanup() throws Exception {
+		logger.log(Level.INFO, "cleanup ok");
+	}
 
-  private void getPortJavaEE() throws Exception {
-    TestUtil.logMsg("Obtain service via WebServiceRef annotation");
-    TestUtil.logMsg("service=" + service);
-    TestUtil.logMsg("Obtain port");
-    portEnabled = (AddNumbers) service.getPort(AddNumbers.class,
-        enabledRequiredwsf);
-    portDisabled = (AddNumbers) service.getPort(AddNumbers.class,
-        disabledNotRequiredwsf);
-    JAXWS_Util.dumpTargetEndpointAddress(portEnabled);
-    JAXWS_Util.dumpTargetEndpointAddress(portDisabled);
-  }
+	/*
+	 * @testName: testNoActionOnInputOutput
+	 *
+	 * @assertion_ids: JAXWS:SPEC:7017; JAXWS:SPEC:7017.1; JAXWS:SPEC:7017.2;
+	 * JAXWS:SPEC:7017.3; JAXWS:SPEC:10025; JAXWS:SPEC:10026; WSAMD:SPEC:4004;
+	 * WSAMD:SPEC:4004.1; WSAMD:SPEC:4004.2; WSAMD:SPEC:4004.4; WSAMD:SPEC:4004.5;
+	 * JAXWS:SPEC:3055;
+	 *
+	 * @test_Strategy: Test no action for input/output elements.
+	 *
+	 */
+	@Test
+	public void testNoActionOnInputOutput() throws Exception {
+		logger.log(Level.INFO, "testNoActionOnInputOutput ");
+		boolean pass = true;
+		try {
+			int result = portEnabled.addNumbersNoAction(10, 10);
+			logger.log(Level.INFO, "WSA:Action headers are correct");
+			if (result != 20) {
+				TestUtil.logErr("Expected result=20, got result=" + result);
+				pass = false;
+			}
+		} catch (AddNumbersException ex) {
+			TestUtil.logErr("Caught unexpected AddNumbersException");
+			pass = false;
+		} catch (Exception ex) {
+			TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
+			throw new Exception("testNoActionOnInputOutput  failed", ex);
+		}
+		if (!pass)
+			throw new Exception("testNoActionOnInputOutput  failed");
+	}
 
-  public static void main(String[] args) {
-    Client theTests = new Client();
-    Status s = theTests.run(args, System.out, System.err);
-    s.exit();
-  }
+	/*
+	 * @testName: testEmptyActionOnInputOutput
+	 *
+	 * @assertion_ids: WSAMD:SPEC:4004; WSAMD:SPEC:4004.1; WSAMD:SPEC:4004.2;
+	 * WSAMD:SPEC:4004.4; WSAMD:SPEC:4004.5; JAXWS:SPEC:3055; JAXWS:SPEC:7017;
+	 * JAXWS:SPEC:7017.1; JAXWS:SPEC:7017.2; JAXWS:SPEC:7017.3; JAXWS:SPEC:10025;
+	 * JAXWS:SPEC:10026;
+	 *
+	 * @test_Strategy: Test default action for WSDL input/output elements and no
+	 * explicit message names
+	 *
+	 */
+	@Test
+	public void testEmptyActionOnInputOutput() throws Exception {
+		logger.log(Level.INFO, "testEmptyActionOnInputOutput");
+		boolean pass = true;
+		try {
+			int result = portEnabled.addNumbersEmptyAction(10, 10);
+			logger.log(Level.INFO, "WSA:Action headers are correct");
+			if (result != 20) {
+				TestUtil.logErr("Expected result=20, got result=" + result);
+				pass = false;
+			}
+		} catch (AddNumbersException ex) {
+			TestUtil.logErr("Caught unexpected AddNumbersException");
+			pass = false;
+		} catch (Exception ex) {
+			TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
+			throw new Exception("testEmptyActionOnInputOutput failed", ex);
+		}
+		if (!pass)
+			throw new Exception("testEmptyActionOnInputOutput failed");
+	}
 
-  /* Test setup */
+	/*
+	 * @testName: testExplicitInputOutputActions1
+	 *
+	 * @assertion_ids: JAXWS:SPEC:7017; JAXWS:SPEC:7017.1; JAXWS:SPEC:7017.2;
+	 * JAXWS:SPEC:7017.3; JAXWS:SPEC:10025; JAXWS:SPEC:10026; WSAMD:SPEC:4003;
+	 * WSAMD:SPEC:4003.1; WSAMD:SPEC:4003.2; JAXWS:SPEC:3055;
+	 *
+	 * @test_Strategy: Test explicit action for input/output elements
+	 *
+	 */
+	@Test
+	public void testExplicitInputOutputActions1() throws Exception {
+		logger.log(Level.INFO, "testExplicitInputOutputActions1");
+		boolean pass = true;
+		try {
+			int result = portEnabled.addNumbers(10, 10);
+			logger.log(Level.INFO, "WSA:Action headers are correct");
+			if (result != 20) {
+				TestUtil.logErr("Expected result=20, got result=" + result);
+				pass = false;
+			}
+		} catch (AddNumbersException ex) {
+			TestUtil.logErr("Caught unexpected AddNumbersException");
+			pass = false;
+		} catch (Exception ex) {
+			TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
+			throw new Exception("testExplicitInputOutputActions1 failed", ex);
+		}
+		if (!pass)
+			throw new Exception("testExplicitInputOutputActions1 failed");
+	}
 
-  /*
-   * @class.testArgs: -ap jaxws-url-props.dat
-   * 
-   * @class.setup_props: webServerHost; webServerPort; platform.mode;
-   */
-  public void setup(String[] args, Properties p) throws Fault {
-    boolean pass = true;
+	/*
+	 * @testName: testExplicitInputOutputActions2
+	 *
+	 * @assertion_ids: JAXWS:SPEC:7017; JAXWS:SPEC:7017.1; JAXWS:SPEC:7017.2;
+	 * JAXWS:SPEC:7017.3; JAXWS:SPEC:10025; JAXWS:SPEC:10026; WSAMD:SPEC:4003;
+	 * WSAMD:SPEC:4003.1; WSAMD:SPEC:4003.2; JAXWS:SPEC:3055;
+	 *
+	 * @test_Strategy: Test explicit action for input/output elements
+	 *
+	 */
+	@Test
+	public void testExplicitInputOutputActions2() throws Exception {
+		logger.log(Level.INFO, "testExplicitInputOutputActions2");
+		boolean pass = true;
+		try {
+			int result = portEnabled.addNumbers2(10, 10);
+			logger.log(Level.INFO, "WSA:Action headers are correct");
+			if (result != 20) {
+				TestUtil.logErr("Expected result=20, got result=" + result);
+				pass = false;
+			}
+		} catch (AddNumbersException ex) {
+			TestUtil.logErr("Caught unexpected AddNumbersException");
+			pass = false;
+		} catch (Exception ex) {
+			TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
+			throw new Exception("testExplicitInputOutputActions2 failed", ex);
+		}
+		if (!pass)
+			throw new Exception("testExplicitInputOutputActions2 failed");
+	}
 
-    try {
-      hostname = p.getProperty(WEBSERVERHOSTPROP);
+	/*
+	 * @testName: testDefaultOutputActionExplicitInputAction
+	 *
+	 * @assertion_ids: WSAMD:SPEC:4004; WSAMD:SPEC:4004.2; WSAMD:SPEC:4003;
+	 * WSAMD:SPEC:4003.1; WSAMD:SPEC:4004.5; JAXWS:SPEC:3055; JAXWS:SPEC:7017;
+	 * JAXWS:SPEC:7017.1; JAXWS:SPEC:7017.2; JAXWS:SPEC:7017.3; JAXWS:SPEC:10025;
+	 * JAXWS:SPEC:10026;
+	 *
+	 * @test_Strategy: Test default action for WSDL output element Test explicit
+	 * action for WSDL input element
+	 *
+	 */
+	@Test
+	public void testDefaultOutputActionExplicitInputAction() throws Exception {
+		logger.log(Level.INFO, "testDefaultOutputActionExplicitInputAction");
+		boolean pass = true;
+		try {
+			int result = portEnabled.addNumbers3(10, 10);
+			logger.log(Level.INFO, "WSA:Action headers are correct");
+			if (result != 20) {
+				TestUtil.logErr("Expected result=20, got result=" + result);
+				pass = false;
+			}
+		} catch (AddNumbersException ex) {
+			TestUtil.logErr("Caught unexpected AddNumbersException");
+			pass = false;
+		} catch (Exception ex) {
+			TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
+			throw new Exception("testDefaultOutputActionExplicitInputAction failed", ex);
+		}
+		if (!pass)
+			throw new Exception("testDefaultOutputActionExplicitInputAction failed");
+	}
 
-      if (hostname == null)
-        pass = false;
-      else if (hostname.equals(""))
-        pass = false;
-      try {
-        portnum = Integer.parseInt(p.getProperty(WEBSERVERPORTPROP));
-      } catch (Exception e) {
-        TestUtil.printStackTrace(e);
-        pass = false;
-      }
-      modeProperty = p.getProperty(MODEPROP);
-      if (modeProperty.equals("standalone")) {
-        getTestURLs();
-        getPortStandalone();
-      } else {
-        TestUtil.logMsg("WebServiceRef is not set in Client "
-            + "(get it from specific vehicle)");
-        service = (AddNumbersService) getSharedObject();
-        getTestURLs();
-        getPortJavaEE();
-      }
-    } catch (Exception e) {
-      TestUtil.printStackTrace(e);
-      throw new Fault("setup failed:", e);
-    }
+	/*
+	 * @testName: testSendingWrongSOAPActionHTTPHeaderValue
+	 *
+	 * @assertion_ids: JAXWS:SPEC:7017; JAXWS:SPEC:7017.1; JAXWS:SPEC:7017.2;
+	 * JAXWS:SPEC:7017.3; JAXWS:SPEC:10025; JAXWS:SPEC:10026; WSAMD:SPEC:4003;
+	 * WSAMD:SPEC:4003.1; WSAMD:SPEC:4003.2; JAXWS:SPEC:3055;
+	 *
+	 * @test_Strategy: Test sedning wrong SOAPAction HTTP Value for operation with
+	 * explicit input/output action elements
+	 * 
+	 */
+	@Test
+	public void testSendingWrongSOAPActionHTTPHeaderValue() throws Exception {
+		logger.log(Level.INFO, "testSendingWrongSOAPActionHTTPHeaderValue");
+		boolean pass = true;
+		try {
+			int result = portEnabled.addNumbers4(10, 10);
+			logger.log(Level.INFO, "WSA:Action headers are correct");
+			if (result != 20) {
+				TestUtil.logErr("Expected result=20, got result=" + result);
+				pass = false;
+			}
+		} catch (SOAPFaultException ex) {
+			logger.log(Level.INFO, "Caught expected SOAPFaultException");
+			String detailName = null;
+			try {
+				detailName = ex.getFault().getDetail().getFirstChild().getLocalName();
+			} catch (Exception e) {
+			}
+			if (detailName != null)
+				logger.log(Level.INFO, "DetailName = " + detailName);
+		} catch (Exception ex) {
+			TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
+			throw new Exception("testSendingWrongSOAPActionHTTPHeaderValue failed", ex);
+		}
+		if (!pass)
+			throw new Exception("testSendingWrongSOAPActionHTTPHeaderValue failed");
+	}
 
-    if (!pass) {
-      TestUtil.logErr(
-          "Please specify host & port of web server in " + "config properties: "
-              + WEBSERVERHOSTPROP + ", " + WEBSERVERPORTPROP);
-      throw new Fault("setup failed:");
-    }
-    TestUtil.logMsg("setup ok");
-  }
+	/*
+	 * @testName: testOneFaultExplicitAction
+	 *
+	 * @assertion_ids: JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2;
+	 * JAXWS:SPEC:10025; JAXWS:SPEC:10026; JAXWS:JAVADOC:131; JAXWS:JAVADOC:132;
+	 * JAXWS:JAVADOC:143; JAXWS:JAVADOC:144; WSAMD:SPEC:4003; WSAMD:SPEC:4003.3;
+	 * JAXWS:SPEC:3055;
+	 *
+	 * @test_Strategy: Test explicit action for Exception element
+	 *
+	 */
+	@Test
+	public void testOneFaultExplicitAction() throws Exception {
+		logger.log(Level.INFO, "testOneFaultExplicitAction");
+		boolean pass = true;
+		try {
+			portEnabled.addNumbersFault1(-10, 10);
+		} catch (AddNumbersException ex) {
+			logger.log(Level.INFO, "WSA:Action headers are correct");
+		} catch (Exception ex) {
+			TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
+			throw new Exception("testOneFaultExplicitAction failed", ex);
+		}
+		if (!pass)
+			throw new Exception("testOneFaultExplicitAction failed");
+	}
 
-  public void cleanup() throws Fault {
-    TestUtil.logMsg("cleanup ok");
-  }
+	/*
+	 * @testName: testTwoFaultsExplicitAction1
+	 *
+	 * @assertion_ids: JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2;
+	 * JAXWS:SPEC:10025; JAXWS:SPEC:10026; JAXWS:JAVADOC:131; JAXWS:JAVADOC:132;
+	 * JAXWS:JAVADOC:143; JAXWS:JAVADOC:144; WSAMD:SPEC:4003; WSAMD:SPEC:4003.3;
+	 * JAXWS:SPEC:3055;
+	 *
+	 * @test_Strategy: Test explicit action for Exception element
+	 *
+	 */
+	@Test
+	public void testTwoFaultsExplicitAction1() throws Exception {
+		logger.log(Level.INFO, "testTwoFaultsExplicitAction1");
+		boolean pass = true;
+		try {
+			portEnabled.addNumbersFault2(-10, 10);
+		} catch (AddNumbersException ex) {
+			logger.log(Level.INFO, "WSA:Action headers are correct");
+		} catch (TooBigNumbersException ex) {
+			TestUtil.logErr("Caught unexpected TooBigNumbersException");
+			pass = false;
+		} catch (Exception ex) {
+			TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
+			throw new Exception("testTwoFaultsExplicitAction1 failed", ex);
+		}
+		if (!pass)
+			throw new Exception("testTwoFaultsExplicitAction1 failed");
+	}
 
-  /*
-   * @testName: testNoActionOnInputOutput
-   *
-   * @assertion_ids: JAXWS:SPEC:7017; JAXWS:SPEC:7017.1; JAXWS:SPEC:7017.2;
-   * JAXWS:SPEC:7017.3; JAXWS:SPEC:10025; JAXWS:SPEC:10026; WSAMD:SPEC:4004;
-   * WSAMD:SPEC:4004.1; WSAMD:SPEC:4004.2; WSAMD:SPEC:4004.4; WSAMD:SPEC:4004.5;
-   * JAXWS:SPEC:3055;
-   *
-   * @test_Strategy: Test no action for input/output elements.
-   *
-   */
-  public void testNoActionOnInputOutput() throws Fault {
-    TestUtil.logMsg("testNoActionOnInputOutput ");
-    boolean pass = true;
-    try {
-      int result = portEnabled.addNumbersNoAction(10, 10);
-      TestUtil.logMsg("WSA:Action headers are correct");
-      if (result != 20) {
-        TestUtil.logErr("Expected result=20, got result=" + result);
-        pass = false;
-      }
-    } catch (AddNumbersException ex) {
-      TestUtil.logErr("Caught unexpected AddNumbersException");
-      pass = false;
-    } catch (Exception ex) {
-      TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
-      throw new Fault("testNoActionOnInputOutput  failed", ex);
-    }
-    if (!pass)
-      throw new Fault("testNoActionOnInputOutput  failed");
-  }
+	/*
+	 * @testName: testTwoFaultsExplicitAction2
+	 *
+	 * @assertion_ids: JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2;
+	 * JAXWS:SPEC:10025; JAXWS:SPEC:10026; JAXWS:JAVADOC:131; JAXWS:JAVADOC:132;
+	 * JAXWS:JAVADOC:143; JAXWS:JAVADOC:144; WSAMD:SPEC:4003; WSAMD:SPEC:4003.3;
+	 * JAXWS:SPEC:3055;
+	 *
+	 * @test_Strategy: Test explicit action for Exception element
+	 *
+	 */
+	@Test
+	public void testTwoFaultsExplicitAction2() throws Exception {
+		logger.log(Level.INFO, "testTwoFaultsExplicitAction2");
+		boolean pass = true;
+		try {
+			portEnabled.addNumbersFault2(20, 10);
+		} catch (TooBigNumbersException ex) {
+			logger.log(Level.INFO, "WSA:Action headers are correct");
+		} catch (AddNumbersException ex) {
+			TestUtil.logErr("Caught unexpected AddNumbersException");
+			pass = false;
+		} catch (Exception ex) {
+			TestUtil.logErr("WSA:Action headers are incorrect");
+			throw new Exception("testTwoFaultsExplicitAction2 failed", ex);
+		}
+		if (!pass)
+			throw new Exception("testTwoFaultsExplicitAction2 failed");
+	}
 
-  /*
-   * @testName: testEmptyActionOnInputOutput
-   *
-   * @assertion_ids: WSAMD:SPEC:4004; WSAMD:SPEC:4004.1; WSAMD:SPEC:4004.2;
-   * WSAMD:SPEC:4004.4; WSAMD:SPEC:4004.5; JAXWS:SPEC:3055; JAXWS:SPEC:7017;
-   * JAXWS:SPEC:7017.1; JAXWS:SPEC:7017.2; JAXWS:SPEC:7017.3; JAXWS:SPEC:10025;
-   * JAXWS:SPEC:10026;
-   *
-   * @test_Strategy: Test default action for WSDL input/output elements and no
-   * explicit message names
-   *
-   */
-  public void testEmptyActionOnInputOutput() throws Fault {
-    TestUtil.logMsg("testEmptyActionOnInputOutput");
-    boolean pass = true;
-    try {
-      int result = portEnabled.addNumbersEmptyAction(10, 10);
-      TestUtil.logMsg("WSA:Action headers are correct");
-      if (result != 20) {
-        TestUtil.logErr("Expected result=20, got result=" + result);
-        pass = false;
-      }
-    } catch (AddNumbersException ex) {
-      TestUtil.logErr("Caught unexpected AddNumbersException");
-      pass = false;
-    } catch (Exception ex) {
-      TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
-      throw new Fault("testEmptyActionOnInputOutput failed", ex);
-    }
-    if (!pass)
-      throw new Fault("testEmptyActionOnInputOutput failed");
-  }
+	/*
+	 * @testName: testTwoFaultsExplicitAddNumbersFault3
+	 *
+	 * @assertion_ids: JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2;
+	 * JAXWS:SPEC:10025; JAXWS:SPEC:10026; JAXWS:JAVADOC:131; JAXWS:JAVADOC:132;
+	 * JAXWS:JAVADOC:143; JAXWS:JAVADOC:144; WSAMD:SPEC:4003; WSAMD:SPEC:4003.3;
+	 * JAXWS:SPEC:3055;
+	 *
+	 * @test_Strategy: Test explicit action for Exception element
+	 *
+	 */
+	@Test
+	public void testTwoFaultsExplicitAddNumbersFault3() throws Exception {
+		logger.log(Level.INFO, "testTwoFaultsExplicitAddNumbersFault3");
+		boolean pass = true;
+		try {
+			portEnabled.addNumbersFault3(-10, 10);
+		} catch (AddNumbersException ex) {
+			logger.log(Level.INFO, "WSA:Action headers are correct");
+		} catch (TooBigNumbersException ex) {
+			TestUtil.logErr("Caught unexpected TooBigNumbersException");
+			pass = false;
+		} catch (Exception ex) {
+			TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
+			throw new Exception("testTwoFaultsExplicitAddNumbersFault3 failed", ex);
+		}
+		if (!pass)
+			throw new Exception("testTwoFaultsExplicitAddNumbersFault3 failed");
+	}
 
-  /*
-   * @testName: testExplicitInputOutputActions1
-   *
-   * @assertion_ids: JAXWS:SPEC:7017; JAXWS:SPEC:7017.1; JAXWS:SPEC:7017.2;
-   * JAXWS:SPEC:7017.3; JAXWS:SPEC:10025; JAXWS:SPEC:10026; WSAMD:SPEC:4003;
-   * WSAMD:SPEC:4003.1; WSAMD:SPEC:4003.2; JAXWS:SPEC:3055;
-   *
-   * @test_Strategy: Test explicit action for input/output elements
-   *
-   */
-  public void testExplicitInputOutputActions1() throws Fault {
-    TestUtil.logMsg("testExplicitInputOutputActions1");
-    boolean pass = true;
-    try {
-      int result = portEnabled.addNumbers(10, 10);
-      TestUtil.logMsg("WSA:Action headers are correct");
-      if (result != 20) {
-        TestUtil.logErr("Expected result=20, got result=" + result);
-        pass = false;
-      }
-    } catch (AddNumbersException ex) {
-      TestUtil.logErr("Caught unexpected AddNumbersException");
-      pass = false;
-    } catch (Exception ex) {
-      TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
-      throw new Fault("testExplicitInputOutputActions1 failed", ex);
-    }
-    if (!pass)
-      throw new Fault("testExplicitInputOutputActions1 failed");
-  }
+	/*
+	 * @testName: testTwoFaultsDefaultTooBigNumbersFault3
+	 *
+	 * @assertion_ids: JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2;
+	 * JAXWS:SPEC:10025; JAXWS:SPEC:10026; JAXWS:JAVADOC:131; JAXWS:JAVADOC:132;
+	 * JAXWS:JAVADOC:143; JAXWS:JAVADOC:144; WSAMD:SPEC:4003; WSAMD:SPEC:4003.3;
+	 * JAXWS:SPEC:3055;
+	 *
+	 * @test_Strategy: Test no action for Exception element
+	 *
+	 */
+	@Test
+	public void testTwoFaultsDefaultTooBigNumbersFault3() throws Exception {
+		logger.log(Level.INFO, "testTwoFaultsDefaultTooBigNumbersFault3");
+		boolean pass = true;
+		try {
+			portEnabled.addNumbersFault3(20, 10);
+		} catch (TooBigNumbersException ex) {
+			logger.log(Level.INFO, "WSA:Action headers are correct");
+		} catch (AddNumbersException ex) {
+			TestUtil.logErr("Caught unexpected AddNumbersException");
+			pass = false;
+		} catch (Exception ex) {
+			TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
+			throw new Exception("testTwoFaultsDefaultTooBigNumbersFault3 failed", ex);
+		}
+		if (!pass)
+			throw new Exception("testTwoFaultsDefaultTooBigNumbersFault3 failed");
+	}
 
-  /*
-   * @testName: testExplicitInputOutputActions2
-   *
-   * @assertion_ids: JAXWS:SPEC:7017; JAXWS:SPEC:7017.1; JAXWS:SPEC:7017.2;
-   * JAXWS:SPEC:7017.3; JAXWS:SPEC:10025; JAXWS:SPEC:10026; WSAMD:SPEC:4003;
-   * WSAMD:SPEC:4003.1; WSAMD:SPEC:4003.2; JAXWS:SPEC:3055;
-   *
-   * @test_Strategy: Test explicit action for input/output elements
-   *
-   */
-  public void testExplicitInputOutputActions2() throws Fault {
-    TestUtil.logMsg("testExplicitInputOutputActions2");
-    boolean pass = true;
-    try {
-      int result = portEnabled.addNumbers2(10, 10);
-      TestUtil.logMsg("WSA:Action headers are correct");
-      if (result != 20) {
-        TestUtil.logErr("Expected result=20, got result=" + result);
-        pass = false;
-      }
-    } catch (AddNumbersException ex) {
-      TestUtil.logErr("Caught unexpected AddNumbersException");
-      pass = false;
-    } catch (Exception ex) {
-      TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
-      throw new Fault("testExplicitInputOutputActions2 failed", ex);
-    }
-    if (!pass)
-      throw new Fault("testExplicitInputOutputActions2 failed");
-  }
+	/*
+	 * @testName: testTwoFaultsExplicitAddNumbersFault4
+	 *
+	 * @assertion_ids: WSAMD:SPEC:4004; WSAMD:SPEC:4004.3; JAXWS:SPEC:3055;
+	 * JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2; JAXWS:SPEC:10025;
+	 * JAXWS:SPEC:10026;
+	 *
+	 * @test_Strategy: Test explicit action for WSDL Exception element
+	 *
+	 */
+	@Test
+	public void testTwoFaultsExplicitAddNumbersFault4() throws Exception {
+		logger.log(Level.INFO, "testTwoFaultsExplicitAddNumbersFault4");
+		boolean pass = true;
+		try {
+			portEnabled.addNumbersFault4(-10, 10);
+		} catch (AddNumbersException ex) {
+			logger.log(Level.INFO, "WSA:Action headers are correct");
+		} catch (TooBigNumbersException ex) {
+			TestUtil.logErr("Caught unexpected TooBigNumbersException");
+			pass = false;
+		} catch (Exception ex) {
+			TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
+			throw new Exception("testTwoFaultsExplicitAddNumbersFault4 failed", ex);
+		}
+		if (!pass)
+			throw new Exception("testTwoFaultsExplicitAddNumbersFault4 failed");
+	}
 
-  /*
-   * @testName: testDefaultOutputActionExplicitInputAction
-   *
-   * @assertion_ids: WSAMD:SPEC:4004; WSAMD:SPEC:4004.2; WSAMD:SPEC:4003;
-   * WSAMD:SPEC:4003.1; WSAMD:SPEC:4004.5; JAXWS:SPEC:3055; JAXWS:SPEC:7017;
-   * JAXWS:SPEC:7017.1; JAXWS:SPEC:7017.2; JAXWS:SPEC:7017.3; JAXWS:SPEC:10025;
-   * JAXWS:SPEC:10026;
-   *
-   * @test_Strategy: Test default action for WSDL output element Test explicit
-   * action for WSDL input element
-   *
-   */
-  public void testDefaultOutputActionExplicitInputAction() throws Fault {
-    TestUtil.logMsg("testDefaultOutputActionExplicitInputAction");
-    boolean pass = true;
-    try {
-      int result = portEnabled.addNumbers3(10, 10);
-      TestUtil.logMsg("WSA:Action headers are correct");
-      if (result != 20) {
-        TestUtil.logErr("Expected result=20, got result=" + result);
-        pass = false;
-      }
-    } catch (AddNumbersException ex) {
-      TestUtil.logErr("Caught unexpected AddNumbersException");
-      pass = false;
-    } catch (Exception ex) {
-      TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
-      throw new Fault("testDefaultOutputActionExplicitInputAction failed", ex);
-    }
-    if (!pass)
-      throw new Fault("testDefaultOutputActionExplicitInputAction failed");
-  }
+	/*
+	 * @testName: testTwoFaultsDefaultTooBigNumbersFault4
+	 *
+	 * @assertion_ids: WSAMD:SPEC:4004; WSAMD:SPEC:4004.3; JAXWS:SPEC:3055;
+	 * JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2; JAXWS:SPEC:10025;
+	 * JAXWS:SPEC:10026;
+	 *
+	 * @test_Strategy: Test default action for WSDL Exception element
+	 *
+	 */
+	@Test
+	public void testTwoFaultsDefaultTooBigNumbersFault4() throws Exception {
+		logger.log(Level.INFO, "testTwoFaultsDefaultTooBigNumbersFault4");
+		boolean pass = true;
+		try {
+			portEnabled.addNumbersFault4(20, 10);
+		} catch (TooBigNumbersException ex) {
+			logger.log(Level.INFO, "WSA:Action headers are correct");
+		} catch (AddNumbersException ex) {
+			TestUtil.logErr("Caught unexpected AddNumbersException");
+			pass = false;
+		} catch (Exception ex) {
+			TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
+			throw new Exception("testTwoFaultsDefaultTooBigNumbersFault4 failed", ex);
+		}
+		if (!pass)
+			throw new Exception("testTwoFaultsDefaultTooBigNumbersFault4 failed");
+	}
 
-  /*
-   * @testName: testSendingWrongSOAPActionHTTPHeaderValue
-   *
-   * @assertion_ids: JAXWS:SPEC:7017; JAXWS:SPEC:7017.1; JAXWS:SPEC:7017.2;
-   * JAXWS:SPEC:7017.3; JAXWS:SPEC:10025; JAXWS:SPEC:10026; WSAMD:SPEC:4003;
-   * WSAMD:SPEC:4003.1; WSAMD:SPEC:4003.2; JAXWS:SPEC:3055;
-   *
-   * @test_Strategy: Test sedning wrong SOAPAction HTTP Value for operation with
-   * explicit input/output action elements
-   * 
-   */
-  public void testSendingWrongSOAPActionHTTPHeaderValue() throws Fault {
-    TestUtil.logMsg("testSendingWrongSOAPActionHTTPHeaderValue");
-    boolean pass = true;
-    try {
-      int result = portEnabled.addNumbers4(10, 10);
-      TestUtil.logMsg("WSA:Action headers are correct");
-      if (result != 20) {
-        TestUtil.logErr("Expected result=20, got result=" + result);
-        pass = false;
-      }
-    } catch (SOAPFaultException ex) {
-      TestUtil.logMsg("Caught expected SOAPFaultException");
-      String detailName = null;
-      try {
-        detailName = ex.getFault().getDetail().getFirstChild().getLocalName();
-      } catch (Exception e) {
-      }
-      if (detailName != null)
-        TestUtil.logMsg("DetailName = " + detailName);
-    } catch (Exception ex) {
-      TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
-      throw new Fault("testSendingWrongSOAPActionHTTPHeaderValue failed", ex);
-    }
-    if (!pass)
-      throw new Fault("testSendingWrongSOAPActionHTTPHeaderValue failed");
-  }
+	/*
+	 * @testName: testTwoFaultsDefaultAddNumbersFault5
+	 *
+	 * @assertion_ids: WSAMD:SPEC:4004; WSAMD:SPEC:4004.3; JAXWS:SPEC:3055;
+	 * JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2; JAXWS:SPEC:10025;
+	 * JAXWS:SPEC:10026;
+	 *
+	 * @test_Strategy: Test default action for WSDL Exception element
+	 *
+	 */
+	@Test
+	public void testTwoFaultsDefaultAddNumbersFault5() throws Exception {
+		logger.log(Level.INFO, "testTwoFaultsDefaultAddNumbersFault5");
+		boolean pass = true;
+		try {
+			portEnabled.addNumbersFault5(-10, 10);
+		} catch (AddNumbersException ex) {
+			logger.log(Level.INFO, "WSA:Action headers are correct");
+		} catch (TooBigNumbersException ex) {
+			TestUtil.logErr("Caught unexpected TooBigNumbersException");
+			pass = false;
+		} catch (Exception ex) {
+			TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
+			throw new Exception("testTwoFaultsDefaultAddNumbersFault5 failed", ex);
+		}
+		if (!pass)
+			throw new Exception("testTwoFaultsDefaultAddNumbersFault5 failed");
+	}
 
-  /*
-   * @testName: testOneFaultExplicitAction
-   *
-   * @assertion_ids: JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2;
-   * JAXWS:SPEC:10025; JAXWS:SPEC:10026; JAXWS:JAVADOC:131; JAXWS:JAVADOC:132;
-   * JAXWS:JAVADOC:143; JAXWS:JAVADOC:144; WSAMD:SPEC:4003; WSAMD:SPEC:4003.3;
-   * JAXWS:SPEC:3055;
-   *
-   * @test_Strategy: Test explicit action for fault element
-   *
-   */
-  public void testOneFaultExplicitAction() throws Fault {
-    TestUtil.logMsg("testOneFaultExplicitAction");
-    boolean pass = true;
-    try {
-      portEnabled.addNumbersFault1(-10, 10);
-    } catch (AddNumbersException ex) {
-      TestUtil.logMsg("WSA:Action headers are correct");
-    } catch (Exception ex) {
-      TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
-      throw new Fault("testOneFaultExplicitAction failed", ex);
-    }
-    if (!pass)
-      throw new Fault("testOneFaultExplicitAction failed");
-  }
+	/*
+	 * @testName: testTwoFaultsExplicitTooBigNumbersFault5
+	 *
+	 * @assertion_ids: WSAMD:SPEC:4003; WSAMD:SPEC:4003.3; JAXWS:JAVADOC:143;
+	 * JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2; JAXWS:SPEC:10025;
+	 * JAXWS:SPEC:10026; JAXWS:SPEC:3055;
+	 *
+	 * @test_Strategy: Test explicit action for WSDL Exception element
+	 *
+	 */
+	@Test
+	public void testTwoFaultsExplicitTooBigNumbersFault5() throws Exception {
+		logger.log(Level.INFO, "testTwoFaultsExplicitTooBigNumbersFault5");
+		boolean pass = true;
+		try {
+			portEnabled.addNumbersFault5(20, 10);
+		} catch (TooBigNumbersException ex) {
+			logger.log(Level.INFO, "WSA:Action headers are correct");
+		} catch (AddNumbersException ex) {
+			TestUtil.logErr("Caught unexpected AddNumbersException");
+			pass = false;
+		} catch (Exception ex) {
+			TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
+			throw new Exception("testTwoFaultsExplicitTooBigNumbersFault5 failed", ex);
+		}
+		if (!pass)
+			throw new Exception("testTwoFaultsExplicitTooBigNumbersFault5 failed");
+	}
 
-  /*
-   * @testName: testTwoFaultsExplicitAction1
-   *
-   * @assertion_ids: JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2;
-   * JAXWS:SPEC:10025; JAXWS:SPEC:10026; JAXWS:JAVADOC:131; JAXWS:JAVADOC:132;
-   * JAXWS:JAVADOC:143; JAXWS:JAVADOC:144; WSAMD:SPEC:4003; WSAMD:SPEC:4003.3;
-   * JAXWS:SPEC:3055;
-   *
-   * @test_Strategy: Test explicit action for fault element
-   *
-   */
-  public void testTwoFaultsExplicitAction1() throws Fault {
-    TestUtil.logMsg("testTwoFaultsExplicitAction1");
-    boolean pass = true;
-    try {
-      portEnabled.addNumbersFault2(-10, 10);
-    } catch (AddNumbersException ex) {
-      TestUtil.logMsg("WSA:Action headers are correct");
-    } catch (TooBigNumbersException ex) {
-      TestUtil.logErr("Caught unexpected TooBigNumbersException");
-      pass = false;
-    } catch (Exception ex) {
-      TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
-      throw new Fault("testTwoFaultsExplicitAction1 failed", ex);
-    }
-    if (!pass)
-      throw new Fault("testTwoFaultsExplicitAction1 failed");
-  }
+	/*
+	 * @testName: testOnlyFaultActionsBothExplicit1
+	 *
+	 * @assertion_ids: WSAMD:SPEC:4003; WSAMD:SPEC:4003.3; JAXWS:JAVADOC:143;
+	 * JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2; JAXWS:SPEC:10025;
+	 * JAXWS:SPEC:10026; JAXWS:SPEC:3055;
+	 *
+	 * @test_Strategy: Test explicit action for WSDL Exception element
+	 *
+	 */
+	@Test
+	public void testOnlyFaultActionsBothExplicit1() throws Exception {
+		logger.log(Level.INFO, "testOnlyFaultActionsBothExplicit1");
+		boolean pass = true;
+		try {
+			portEnabled.addNumbersFault6(-10, 10);
+		} catch (AddNumbersException ex) {
+			logger.log(Level.INFO, "WSA:Action headers are correct");
+		} catch (TooBigNumbersException ex) {
+			TestUtil.logErr("Caught unexpected TooBigNumbersException");
+			pass = false;
+		} catch (Exception ex) {
+			TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
+			throw new Exception("testOnlyFaultActionsBothExplicit1 failed", ex);
+		}
+		if (!pass)
+			throw new Exception("testOnlyFaultActionsBothExplicit1 failed");
+	}
 
-  /*
-   * @testName: testTwoFaultsExplicitAction2
-   *
-   * @assertion_ids: JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2;
-   * JAXWS:SPEC:10025; JAXWS:SPEC:10026; JAXWS:JAVADOC:131; JAXWS:JAVADOC:132;
-   * JAXWS:JAVADOC:143; JAXWS:JAVADOC:144; WSAMD:SPEC:4003; WSAMD:SPEC:4003.3;
-   * JAXWS:SPEC:3055;
-   *
-   * @test_Strategy: Test explicit action for fault element
-   *
-   */
-  public void testTwoFaultsExplicitAction2() throws Fault {
-    TestUtil.logMsg("testTwoFaultsExplicitAction2");
-    boolean pass = true;
-    try {
-      portEnabled.addNumbersFault2(20, 10);
-    } catch (TooBigNumbersException ex) {
-      TestUtil.logMsg("WSA:Action headers are correct");
-    } catch (AddNumbersException ex) {
-      TestUtil.logErr("Caught unexpected AddNumbersException");
-      pass = false;
-    } catch (Exception ex) {
-      TestUtil.logErr("WSA:Action headers are incorrect");
-      throw new Fault("testTwoFaultsExplicitAction2 failed", ex);
-    }
-    if (!pass)
-      throw new Fault("testTwoFaultsExplicitAction2 failed");
-  }
+	/*
+	 * @testName: testOnlyFaultActionsBothExplicit2
+	 *
+	 * @assertion_ids: WSAMD:SPEC:4003; WSAMD:SPEC:4003.3; JAXWS:JAVADOC:143;
+	 * JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2; JAXWS:SPEC:10025;
+	 * JAXWS:SPEC:10026; JAXWS:SPEC:3055;
+	 *
+	 * @test_Strategy: Test explicit action for WSDL Exception element
+	 *
+	 */
+	@Test
+	public void testOnlyFaultActionsBothExplicit2() throws Exception {
+		logger.log(Level.INFO, "testOnlyFaultActionsBothExplicit2");
+		boolean pass = true;
+		try {
+			portEnabled.addNumbersFault6(20, 10);
+		} catch (TooBigNumbersException ex) {
+			logger.log(Level.INFO, "WSA:Action headers are correct");
+		} catch (AddNumbersException ex) {
+			TestUtil.logErr("Caught unexpected AddNumbersException");
+			pass = false;
+		} catch (Exception ex) {
+			TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
+			throw new Exception("testOnlyFaultActionsBothExplicit2 failed", ex);
+		}
+		if (!pass)
+			throw new Exception("testOnlyFaultActionsBothExplicit2 failed");
+	}
 
-  /*
-   * @testName: testTwoFaultsExplicitAddNumbersFault3
-   *
-   * @assertion_ids: JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2;
-   * JAXWS:SPEC:10025; JAXWS:SPEC:10026; JAXWS:JAVADOC:131; JAXWS:JAVADOC:132;
-   * JAXWS:JAVADOC:143; JAXWS:JAVADOC:144; WSAMD:SPEC:4003; WSAMD:SPEC:4003.3;
-   * JAXWS:SPEC:3055;
-   *
-   * @test_Strategy: Test explicit action for fault element
-   *
-   */
-  public void testTwoFaultsExplicitAddNumbersFault3() throws Fault {
-    TestUtil.logMsg("testTwoFaultsExplicitAddNumbersFault3");
-    boolean pass = true;
-    try {
-      portEnabled.addNumbersFault3(-10, 10);
-    } catch (AddNumbersException ex) {
-      TestUtil.logMsg("WSA:Action headers are correct");
-    } catch (TooBigNumbersException ex) {
-      TestUtil.logErr("Caught unexpected TooBigNumbersException");
-      pass = false;
-    } catch (Exception ex) {
-      TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
-      throw new Fault("testTwoFaultsExplicitAddNumbersFault3 failed", ex);
-    }
-    if (!pass)
-      throw new Fault("testTwoFaultsExplicitAddNumbersFault3 failed");
-  }
+	/*
+	 * @testName: testOnlyFaultActionsFault7BothEmpty1
+	 *
+	 * @assertion_ids: WSAMD:SPEC:4004; WSAMD:SPEC:4004.3; JAXWS:SPEC:3055;
+	 * JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2; JAXWS:SPEC:10025;
+	 * JAXWS:SPEC:10026;
+	 *
+	 * @test_Strategy: Test default action for WSDL Exception element
+	 *
+	 */
+	@Test
+	public void testOnlyFaultActionsFault7BothEmpty1() throws Exception {
+		logger.log(Level.INFO, "testOnlyFaultActionsFault7BothEmpty1");
+		boolean pass = true;
+		try {
+			portEnabled.addNumbersFault7(-10, 10);
+		} catch (AddNumbersException ex) {
+			logger.log(Level.INFO, "WSA:Action headers are correct");
+		} catch (TooBigNumbersException ex) {
+			TestUtil.logErr("Caught unexpected TooBigNumbersException");
+			pass = false;
+		} catch (Exception ex) {
+			TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
+			throw new Exception("testOnlyFaultActionsFault7BothEmpty1 failed", ex);
+		}
+		if (!pass)
+			throw new Exception("testOnlyFaultActionsFault7BothEmpty1 failed");
+	}
 
-  /*
-   * @testName: testTwoFaultsDefaultTooBigNumbersFault3
-   *
-   * @assertion_ids: JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2;
-   * JAXWS:SPEC:10025; JAXWS:SPEC:10026; JAXWS:JAVADOC:131; JAXWS:JAVADOC:132;
-   * JAXWS:JAVADOC:143; JAXWS:JAVADOC:144; WSAMD:SPEC:4003; WSAMD:SPEC:4003.3;
-   * JAXWS:SPEC:3055;
-   *
-   * @test_Strategy: Test no action for fault element
-   *
-   */
-  public void testTwoFaultsDefaultTooBigNumbersFault3() throws Fault {
-    TestUtil.logMsg("testTwoFaultsDefaultTooBigNumbersFault3");
-    boolean pass = true;
-    try {
-      portEnabled.addNumbersFault3(20, 10);
-    } catch (TooBigNumbersException ex) {
-      TestUtil.logMsg("WSA:Action headers are correct");
-    } catch (AddNumbersException ex) {
-      TestUtil.logErr("Caught unexpected AddNumbersException");
-      pass = false;
-    } catch (Exception ex) {
-      TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
-      throw new Fault("testTwoFaultsDefaultTooBigNumbersFault3 failed", ex);
-    }
-    if (!pass)
-      throw new Fault("testTwoFaultsDefaultTooBigNumbersFault3 failed");
-  }
-
-  /*
-   * @testName: testTwoFaultsExplicitAddNumbersFault4
-   *
-   * @assertion_ids: WSAMD:SPEC:4004; WSAMD:SPEC:4004.3; JAXWS:SPEC:3055;
-   * JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2; JAXWS:SPEC:10025;
-   * JAXWS:SPEC:10026;
-   *
-   * @test_Strategy: Test explicit action for WSDL fault element
-   *
-   */
-  public void testTwoFaultsExplicitAddNumbersFault4() throws Fault {
-    TestUtil.logMsg("testTwoFaultsExplicitAddNumbersFault4");
-    boolean pass = true;
-    try {
-      portEnabled.addNumbersFault4(-10, 10);
-    } catch (AddNumbersException ex) {
-      TestUtil.logMsg("WSA:Action headers are correct");
-    } catch (TooBigNumbersException ex) {
-      TestUtil.logErr("Caught unexpected TooBigNumbersException");
-      pass = false;
-    } catch (Exception ex) {
-      TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
-      throw new Fault("testTwoFaultsExplicitAddNumbersFault4 failed", ex);
-    }
-    if (!pass)
-      throw new Fault("testTwoFaultsExplicitAddNumbersFault4 failed");
-  }
-
-  /*
-   * @testName: testTwoFaultsDefaultTooBigNumbersFault4
-   *
-   * @assertion_ids: WSAMD:SPEC:4004; WSAMD:SPEC:4004.3; JAXWS:SPEC:3055;
-   * JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2; JAXWS:SPEC:10025;
-   * JAXWS:SPEC:10026;
-   *
-   * @test_Strategy: Test default action for WSDL fault element
-   *
-   */
-  public void testTwoFaultsDefaultTooBigNumbersFault4() throws Fault {
-    TestUtil.logMsg("testTwoFaultsDefaultTooBigNumbersFault4");
-    boolean pass = true;
-    try {
-      portEnabled.addNumbersFault4(20, 10);
-    } catch (TooBigNumbersException ex) {
-      TestUtil.logMsg("WSA:Action headers are correct");
-    } catch (AddNumbersException ex) {
-      TestUtil.logErr("Caught unexpected AddNumbersException");
-      pass = false;
-    } catch (Exception ex) {
-      TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
-      throw new Fault("testTwoFaultsDefaultTooBigNumbersFault4 failed", ex);
-    }
-    if (!pass)
-      throw new Fault("testTwoFaultsDefaultTooBigNumbersFault4 failed");
-  }
-
-  /*
-   * @testName: testTwoFaultsDefaultAddNumbersFault5
-   *
-   * @assertion_ids: WSAMD:SPEC:4004; WSAMD:SPEC:4004.3; JAXWS:SPEC:3055;
-   * JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2; JAXWS:SPEC:10025;
-   * JAXWS:SPEC:10026;
-   *
-   * @test_Strategy: Test default action for WSDL fault element
-   *
-   */
-  public void testTwoFaultsDefaultAddNumbersFault5() throws Fault {
-    TestUtil.logMsg("testTwoFaultsDefaultAddNumbersFault5");
-    boolean pass = true;
-    try {
-      portEnabled.addNumbersFault5(-10, 10);
-    } catch (AddNumbersException ex) {
-      TestUtil.logMsg("WSA:Action headers are correct");
-    } catch (TooBigNumbersException ex) {
-      TestUtil.logErr("Caught unexpected TooBigNumbersException");
-      pass = false;
-    } catch (Exception ex) {
-      TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
-      throw new Fault("testTwoFaultsDefaultAddNumbersFault5 failed", ex);
-    }
-    if (!pass)
-      throw new Fault("testTwoFaultsDefaultAddNumbersFault5 failed");
-  }
-
-  /*
-   * @testName: testTwoFaultsExplicitTooBigNumbersFault5
-   *
-   * @assertion_ids: WSAMD:SPEC:4003; WSAMD:SPEC:4003.3; JAXWS:JAVADOC:143;
-   * JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2; JAXWS:SPEC:10025;
-   * JAXWS:SPEC:10026; JAXWS:SPEC:3055;
-   *
-   * @test_Strategy: Test explicit action for WSDL fault element
-   *
-   */
-  public void testTwoFaultsExplicitTooBigNumbersFault5() throws Fault {
-    TestUtil.logMsg("testTwoFaultsExplicitTooBigNumbersFault5");
-    boolean pass = true;
-    try {
-      portEnabled.addNumbersFault5(20, 10);
-    } catch (TooBigNumbersException ex) {
-      TestUtil.logMsg("WSA:Action headers are correct");
-    } catch (AddNumbersException ex) {
-      TestUtil.logErr("Caught unexpected AddNumbersException");
-      pass = false;
-    } catch (Exception ex) {
-      TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
-      throw new Fault("testTwoFaultsExplicitTooBigNumbersFault5 failed", ex);
-    }
-    if (!pass)
-      throw new Fault("testTwoFaultsExplicitTooBigNumbersFault5 failed");
-  }
-
-  /*
-   * @testName: testOnlyFaultActionsBothExplicit1
-   *
-   * @assertion_ids: WSAMD:SPEC:4003; WSAMD:SPEC:4003.3; JAXWS:JAVADOC:143;
-   * JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2; JAXWS:SPEC:10025;
-   * JAXWS:SPEC:10026; JAXWS:SPEC:3055;
-   *
-   * @test_Strategy: Test explicit action for WSDL fault element
-   *
-   */
-  public void testOnlyFaultActionsBothExplicit1() throws Fault {
-    TestUtil.logMsg("testOnlyFaultActionsBothExplicit1");
-    boolean pass = true;
-    try {
-      portEnabled.addNumbersFault6(-10, 10);
-    } catch (AddNumbersException ex) {
-      TestUtil.logMsg("WSA:Action headers are correct");
-    } catch (TooBigNumbersException ex) {
-      TestUtil.logErr("Caught unexpected TooBigNumbersException");
-      pass = false;
-    } catch (Exception ex) {
-      TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
-      throw new Fault("testOnlyFaultActionsBothExplicit1 failed", ex);
-    }
-    if (!pass)
-      throw new Fault("testOnlyFaultActionsBothExplicit1 failed");
-  }
-
-  /*
-   * @testName: testOnlyFaultActionsBothExplicit2
-   *
-   * @assertion_ids: WSAMD:SPEC:4003; WSAMD:SPEC:4003.3; JAXWS:JAVADOC:143;
-   * JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2; JAXWS:SPEC:10025;
-   * JAXWS:SPEC:10026; JAXWS:SPEC:3055;
-   *
-   * @test_Strategy: Test explicit action for WSDL fault element
-   *
-   */
-  public void testOnlyFaultActionsBothExplicit2() throws Fault {
-    TestUtil.logMsg("testOnlyFaultActionsBothExplicit2");
-    boolean pass = true;
-    try {
-      portEnabled.addNumbersFault6(20, 10);
-    } catch (TooBigNumbersException ex) {
-      TestUtil.logMsg("WSA:Action headers are correct");
-    } catch (AddNumbersException ex) {
-      TestUtil.logErr("Caught unexpected AddNumbersException");
-      pass = false;
-    } catch (Exception ex) {
-      TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
-      throw new Fault("testOnlyFaultActionsBothExplicit2 failed", ex);
-    }
-    if (!pass)
-      throw new Fault("testOnlyFaultActionsBothExplicit2 failed");
-  }
-
-  /*
-   * @testName: testOnlyFaultActionsFault7BothEmpty1
-   *
-   * @assertion_ids: WSAMD:SPEC:4004; WSAMD:SPEC:4004.3; JAXWS:SPEC:3055;
-   * JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2; JAXWS:SPEC:10025;
-   * JAXWS:SPEC:10026;
-   *
-   * @test_Strategy: Test default action for WSDL fault element
-   *
-   */
-  public void testOnlyFaultActionsFault7BothEmpty1() throws Fault {
-    TestUtil.logMsg("testOnlyFaultActionsFault7BothEmpty1");
-    boolean pass = true;
-    try {
-      portEnabled.addNumbersFault7(-10, 10);
-    } catch (AddNumbersException ex) {
-      TestUtil.logMsg("WSA:Action headers are correct");
-    } catch (TooBigNumbersException ex) {
-      TestUtil.logErr("Caught unexpected TooBigNumbersException");
-      pass = false;
-    } catch (Exception ex) {
-      TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
-      throw new Fault("testOnlyFaultActionsFault7BothEmpty1 failed", ex);
-    }
-    if (!pass)
-      throw new Fault("testOnlyFaultActionsFault7BothEmpty1 failed");
-  }
-
-  /*
-   * @testName: testOnlyFaultActionsFault7BothEmpty2
-   *
-   * @assertion_ids: WSAMD:SPEC:4004; WSAMD:SPEC:4004.3; JAXWS:SPEC:3055;
-   * JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2; JAXWS:SPEC:10025;
-   * JAXWS:SPEC:10026;
-   *
-   * @test_Strategy: Test default action for WSDL fault element
-   *
-   */
-  public void testOnlyFaultActionsFault7BothEmpty2() throws Fault {
-    TestUtil.logMsg("testOnlyFaultActionsFault7BothEmpty2");
-    boolean pass = true;
-    try {
-      portEnabled.addNumbersFault7(20, 10);
-    } catch (TooBigNumbersException ex) {
-      TestUtil.logMsg("WSA:Action headers are correct");
-    } catch (AddNumbersException ex) {
-      TestUtil.logErr("Caught unexpected AddNumbersException");
-      pass = false;
-    } catch (Exception ex) {
-      TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
-      throw new Fault("testOnlyFaultActionsFault7BothEmpty2 failed", ex);
-    }
-    if (!pass)
-      throw new Fault("testOnlyFaultActionsFault7BothEmpty2 failed");
-  }
+	/*
+	 * @testName: testOnlyFaultActionsFault7BothEmpty2
+	 *
+	 * @assertion_ids: WSAMD:SPEC:4004; WSAMD:SPEC:4004.3; JAXWS:SPEC:3055;
+	 * JAXWS:SPEC:7018; JAXWS:SPEC:7018.1; JAXWS:SPEC:7018.2; JAXWS:SPEC:10025;
+	 * JAXWS:SPEC:10026;
+	 *
+	 * @test_Strategy: Test default action for WSDL Exception element
+	 *
+	 */
+	@Test
+	public void testOnlyFaultActionsFault7BothEmpty2() throws Exception {
+		logger.log(Level.INFO, "testOnlyFaultActionsFault7BothEmpty2");
+		boolean pass = true;
+		try {
+			portEnabled.addNumbersFault7(20, 10);
+		} catch (TooBigNumbersException ex) {
+			logger.log(Level.INFO, "WSA:Action headers are correct");
+		} catch (AddNumbersException ex) {
+			TestUtil.logErr("Caught unexpected AddNumbersException");
+			pass = false;
+		} catch (Exception ex) {
+			TestUtil.logErr("Caught unexpected Exception " + ex.getMessage());
+			throw new Exception("testOnlyFaultActionsFault7BothEmpty2 failed", ex);
+		}
+		if (!pass)
+			throw new Exception("testOnlyFaultActionsFault7BothEmpty2 failed");
+	}
 }

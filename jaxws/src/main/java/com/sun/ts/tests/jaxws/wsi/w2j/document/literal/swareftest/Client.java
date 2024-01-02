@@ -20,391 +20,320 @@
 
 package com.sun.ts.tests.jaxws.wsi.w2j.document.literal.swareftest;
 
-import com.sun.ts.lib.util.*;
-import com.sun.ts.lib.porting.*;
-import com.sun.ts.lib.harness.*;
-
-import java.io.*;
-import java.net.*;
-import java.awt.*;
-
-import jakarta.activation.*;
-import javax.xml.transform.stream.*;
-
-import java.util.Properties;
+import java.awt.Image;
+import java.awt.Rectangle;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.net.URL;
 
 import javax.xml.namespace.QName;
+import javax.xml.transform.stream.StreamSource;
 
-import com.sun.javatest.Status;
+import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import com.sun.ts.tests.jaxws.common.*;
+import com.sun.ts.lib.util.TestUtil;
+import com.sun.ts.tests.jaxws.common.AttachmentHelper;
+import com.sun.ts.tests.jaxws.common.BaseClient;
+import com.sun.ts.tests.jaxws.common.JAXWS_Util;
 
-public class Client extends ServiceEETest {
-  // The webserver defaults (overidden by harness properties)
-  private static final String PROTOCOL = "http";
+import jakarta.activation.DataHandler;
 
-  private static final String HOSTNAME = "localhost";
+public class Client extends BaseClient {
 
-  private static final int PORTNUM = 8000;
+	// URL properties used by the test
+	private static final String ENDPOINT_URL = "wsidlswareftest.endpoint.1";
 
-  // The webserver host and port property names (harness properties)
-  private static final String WEBSERVERHOSTPROP = "webServerHost";
+	private static final String WSDLLOC_URL = "wsidlswareftest.wsdlloc.1";
 
-  private static final String WEBSERVERPORTPROP = "webServerPort";
+	private static final String CTXROOT = "wsidlswareftest.ctxroot.1";
 
-  private static final String MODEPROP = "platform.mode";
+	private String surl = null;
 
-  String modeProperty = null; // platform.mode -> (standalone|jakartaEE)
+	private String file = null;
 
-  private TSURL ctsurl = new TSURL();
+	private String ctxroot = null;
 
-  private Properties props = null;
+	private URL wsdlurl = null;
 
-  private String hostname = HOSTNAME;
+	private static final String NAMESPACEURI = "http://SwaRefTestService.org/wsdl";
 
-  private int portnum = PORTNUM;
+	private static final String SERVICE_NAME = "WSIDLSwaRefTestService";
 
-  // URL properties used by the test
-  private static final String ENDPOINT_URL = "wsidlswareftest.endpoint.1";
+	private static final String PORT_NAME = "SwaRefTestPort";
 
-  private static final String WSDLLOC_URL = "wsidlswareftest.wsdlloc.1";
+	private QName SERVICE_QNAME = new QName(NAMESPACEURI, SERVICE_NAME);
 
-  private static final String CTXROOT = "wsidlswareftest.ctxroot.1";
+	private QName PORT_QNAME = new QName(NAMESPACEURI, PORT_NAME);
 
-  private String surl = null;
+	private DataHandler dh1 = null;
 
-  private String file = null;
+	private DataHandler dh2 = null;
 
-  private String ctxroot = null;
+	private DataHandler dh3 = null;
 
-  private URL wsdlurl = null;
+	private DataHandler dh4 = null;
 
-  private static final String NAMESPACEURI = "http://SwaRefTestService.org/wsdl";
+	private URL url1 = null;
 
-  private static final String SERVICE_NAME = "WSIDLSwaRefTestService";
+	private URL url2 = null;
 
-  private static final String PORT_NAME = "SwaRefTestPort";
+	private URL url3 = null;
 
-  private QName SERVICE_QNAME = new QName(NAMESPACEURI, SERVICE_NAME);
+	private URL url4 = null;
 
-  private QName PORT_QNAME = new QName(NAMESPACEURI, PORT_NAME);
+	static WSIDLSwaRefTestService service = null;
 
-  private DataHandler dh1 = null;
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  private DataHandler dh2 = null;
+	@Deployment(testable = false)
+	public static WebArchive createDeployment() throws IOException {
+		return createWebArchive(Client.class);
+	}
 
-  private DataHandler dh3 = null;
+	/***********************************************************************
+	 * All the test cases in this file test all of the assertions specified in the
+	 * WSI Attachment Profile 1.0 specification.
+	 **********************************************************************/
+	protected void getTestURLs() throws Exception {
+		logger.log(Level.INFO, "Get URL's used by the test");
+		file = JAXWS_Util.getURLFromProp(ENDPOINT_URL);
+		surl = ctsurl.getURLString(PROTOCOL, hostname, portnum, file);
+		file = JAXWS_Util.getURLFromProp(WSDLLOC_URL);
+		wsdlurl = ctsurl.getURL(PROTOCOL, hostname, portnum, file);
+		ctxroot = JAXWS_Util.getURLFromProp(CTXROOT);
+		logger.log(Level.INFO, "Service Endpoint URL: " + surl);
+		logger.log(Level.INFO, "WSDL Location URL:    " + wsdlurl);
+		logger.log(Level.INFO, "Context Root:         " + ctxroot);
+	}
 
-  private DataHandler dh4 = null;
+	SwaRefTest port = null;
 
-  private URL url1 = null;
+	protected void getPortStandalone() throws Exception {
+		port = (SwaRefTest) JAXWS_Util.getPort(wsdlurl, SERVICE_QNAME, WSIDLSwaRefTestService.class, PORT_QNAME,
+				SwaRefTest.class);
+		JAXWS_Util.setTargetEndpointAddress(port, surl);
+	}
 
-  private URL url2 = null;
+	private void getTargetEndpointAddress(Object port) throws Exception {
+		logger.log(Level.INFO, "Get Target Endpoint Address for port=" + port);
+		String url = JAXWS_Util.getTargetEndpointAddress(port);
+		logger.log(Level.INFO, "Target Endpoint Address=" + url);
+	}
 
-  private URL url3 = null;
+	protected void getPortJavaEE() throws Exception {
+		logger.log(Level.INFO, "Obtain service via WebServiceRef annotation");
+		logger.log(Level.INFO, "service=" + service);
+		port = (SwaRefTest) service.getPort(SwaRefTest.class);
+		logger.log(Level.INFO, "port=" + port);
+		logger.log(Level.INFO, "Obtained port");
+		getTargetEndpointAddress(port);
+	}
 
-  private URL url4 = null;
+	protected void getService() {
+		service = (WSIDLSwaRefTestService) getSharedObject();
+	}
 
-  static WSIDLSwaRefTestService service = null;
+	/* Test setup */
 
-  /***********************************************************************
-   * All the test cases in this file test all of the assertions specified in the
-   * WSI Attachment Profile 1.0 specification.
-   **********************************************************************/
-  private void getTestURLs() throws Exception {
-    TestUtil.logMsg("Get URL's used by the test");
-    file = JAXWS_Util.getURLFromProp(ENDPOINT_URL);
-    surl = ctsurl.getURLString(PROTOCOL, hostname, portnum, file);
-    file = JAXWS_Util.getURLFromProp(WSDLLOC_URL);
-    wsdlurl = ctsurl.getURL(PROTOCOL, hostname, portnum, file);
-    ctxroot = JAXWS_Util.getURLFromProp(CTXROOT);
-    TestUtil.logMsg("Service Endpoint URL: " + surl);
-    TestUtil.logMsg("WSDL Location URL:    " + wsdlurl);
-    TestUtil.logMsg("Context Root:         " + ctxroot);
-  }
+	/*
+	 * @class.testArgs: -ap jaxws-url-props.dat
+	 * 
+	 * @class.setup_props: webServerHost; webServerPort; platform.mode;
+	 */
+	@BeforeEach
+	public void setup() throws Exception {
+		super.setup();
+		logger.log(Level.INFO, "Create URL's to attachments");
+		url1 = ctsurl.getURL("http", hostname, portnum, ctxroot + "/attach.txt");
+		url2 = ctsurl.getURL("http", hostname, portnum, ctxroot + "/attach.html");
+		url3 = ctsurl.getURL("http", hostname, portnum, ctxroot + "/attach.xml");
+		url4 = ctsurl.getURL("http", hostname, portnum, ctxroot + "/attach.jpeg");
+		logger.log(Level.INFO, "url1=" + url1);
+		logger.log(Level.INFO, "url2=" + url2);
+		logger.log(Level.INFO, "url3=" + url3);
+		logger.log(Level.INFO, "url4=" + url4);
+		logger.log(Level.INFO, "Create DataHandler's to attachments");
+		dh1 = new DataHandler(url1);
+		dh2 = new DataHandler(url2);
+		dh3 = new DataHandler(url3);
+		dh4 = new DataHandler(javax.imageio.ImageIO.read(url4), "image/jpeg");
+		logger.log(Level.INFO, "dh1.getContentType()=" + dh1.getContentType());
+		logger.log(Level.INFO, "dh2.getContentType()=" + dh2.getContentType());
+		logger.log(Level.INFO, "dh3.getContentType()=" + dh3.getContentType());
+		logger.log(Level.INFO, "dh4.getContentType()=" + dh4.getContentType());
+	}
 
-  SwaRefTest port = null;
+	@AfterEach
+	public void cleanup() throws Exception {
+		logger.log(Level.INFO, "cleanup ok");
+	}
 
-  private void getPortStandalone() throws Exception {
-    port = (SwaRefTest) JAXWS_Util.getPort(wsdlurl, SERVICE_QNAME,
-        WSIDLSwaRefTestService.class, PORT_QNAME, SwaRefTest.class);
-    JAXWS_Util.setTargetEndpointAddress(port, surl);
-  }
+	/*
+	 * @testName: EchoSingleSwaRefAttachmentTest
+	 *
+	 * @assertion_ids: WSI:SPEC:R2901; WSI:SPEC:R2907; WSI:SPEC:R2909;
+	 * WSI:SPEC:R2910; WSI:SPEC:R2911; WSI:SPEC:R2931; WSI:SPEC:R2921;
+	 * WSI:SPEC:R2926; WSI:SPEC:R2929; WSI:SPEC:R2946; JAXWS:SPEC:10011;
+	 * WSI:SPEC:R2927; JAXWS:SPEC:2051; JAXWS:SPEC:2052; JAXWS:SPEC:2053;
+	 * WSI:SPEC:R2940; WSI:SPEC:R2928;
+	 *
+	 * @test_Strategy: Send and Receive a single attachment via swaRef type.
+	 *
+	 */
+	@Test
+	public void EchoSingleSwaRefAttachmentTest() throws Exception {
+		logger.log(Level.INFO, "EchoSingleSwaRefAttachmentTest");
+		boolean pass = true;
 
-  private void getTargetEndpointAddress(Object port) throws Exception {
-    TestUtil.logMsg("Get Target Endpoint Address for port=" + port);
-    String url = JAXWS_Util.getTargetEndpointAddress(port);
-    TestUtil.logMsg("Target Endpoint Address=" + url);
-  }
+		try {
+			TestUtil.logMsg("Send and receive (text/xml) attachment via the swaRef type");
+			SwaRefTypeRequest request = new SwaRefTypeRequest();
+			DataHandler swaRefInput = dh3;
+			request.setAttachment(swaRefInput);
+			SwaRefTypeResponse response = port.echoSingleSwaRefAttachment(request);
+			if (!ValidateSingleSwaRefAttachmentTestCase(request, response, "text/xml"))
+				pass = false;
+			logger.log(Level.INFO, "Send and receive (text/plain) attachment via the swaRef type");
+			swaRefInput = dh1;
+			request.setAttachment(swaRefInput);
+			response = port.echoSingleSwaRefAttachment(request);
+			if (!ValidateSingleSwaRefAttachmentTestCase(request, response, "text/plain"))
+				pass = false;
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("EchoSingleSwaRefAttachmentTest failed", e);
+		}
+		if (!pass)
+			throw new Exception("EchoSingleSwaRefAttachmentTest failed");
+	}
 
-  private void getPortJavaEE() throws Exception {
-    TestUtil.logMsg("Obtain service via WebServiceRef annotation");
-    TestUtil.logMsg("service=" + service);
-    port = (SwaRefTest) service.getPort(SwaRefTest.class);
-    TestUtil.logMsg("port=" + port);
-    TestUtil.logMsg("Obtained port");
-    getTargetEndpointAddress(port);
-  }
+	/*
+	 * @testName: EchoMultipleSwaRefAttachmentsTest
+	 *
+	 * @assertion_ids: WSI:SPEC:R2901; WSI:SPEC:R2907; WSI:SPEC:R2909;
+	 * WSI:SPEC:R2910; WSI:SPEC:R2911; WSI:SPEC:R2931; WSI:SPEC:R2921;
+	 * WSI:SPEC:R2926; WSI:SPEC:R2929; WSI:SPEC:R2946; JAXWS:SPEC:10011;
+	 * WSI:SPEC:R2927; JAXWS:SPEC:2051; JAXWS:SPEC:2052; JAXWS:SPEC:2053;
+	 * WSI:SPEC:R2940; WSI:SPEC:R2928;
+	 *
+	 * @test_Strategy: Send and Receive multiple attachments via swaRef type.
+	 *
+	 */
+	@Test
+	public void EchoMultipleSwaRefAttachmentsTest() throws Exception {
+		logger.log(Level.INFO, "SwaRefAttachmentsTest2");
+		boolean pass = true;
 
-  public static void main(String[] args) {
-    Client theTests = new Client();
-    Status s = theTests.run(args, System.out, System.err);
-    s.exit();
-  }
+		try {
+			logger.log(Level.INFO,
+					"Send and receive (text/xml, text/plain, text/html) attachments via the swaRef type");
+			SwaRefTypeRequest2 request = new SwaRefTypeRequest2();
+			request.setAttachment1(dh3);
+			request.setAttachment2(dh1);
+			request.setAttachment3(dh4);
+			SwaRefTypeResponse2 response = port.echoMultipleSwaRefAttachments(request);
+			if (!ValidateMultipleSwaRefAttachmentsTestCase(request, response))
+				pass = false;
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("EchoMultipleSwaRefAttachmentsTest failed", e);
+		}
+		if (!pass)
+			throw new Exception("EchoMultipleSwaRefAttachmentsTest failed");
+	}
 
-  /* Test setup */
+	/*******************************************************************************
+	 * Validate request, response and attachments (swaRefAttachments)
+	 ******************************************************************************/
+	private boolean ValidateSingleSwaRefAttachmentTestCase(SwaRefTypeRequest request, SwaRefTypeResponse response,
+			String type) {
+		boolean result = true;
+		logger.log(Level.INFO, "--------------------------------------------------------");
+		logger.log(Level.INFO, "Validating the request, the response, and the attachment");
+		logger.log(Level.INFO, "--------------------------------------------------------");
+		if (type.equals("text/xml")) {
+			try {
+				StreamSource sr1 = new StreamSource(request.getAttachment().getInputStream());
+				StreamSource sr2 = new StreamSource(response.getAttachment().getInputStream());
+				String tmpStr = AttachmentHelper.validateAttachmentData(sr1, sr2, "XmlAttachment");
+				if (tmpStr != null) {
+					TestUtil.logErr(tmpStr);
+					result = false;
+				}
+			} catch (Exception e) {
+				result = false;
+				TestUtil.logErr("Caught unexpected exception: " + e.getMessage());
+				TestUtil.printStackTrace(e);
+			}
+		} else if (type.equals("image/jpeg")) {
+			try {
+				Image image1 = javax.imageio.ImageIO.read(request.getAttachment().getInputStream());
+				Image image2 = javax.imageio.ImageIO.read(response.getAttachment().getInputStream());
+				if (!AttachmentHelper.compareImages(image1, image2, new Rectangle(0, 0, 100, 120), "JpegAttachment"))
+					result = false;
+			} catch (Exception e) {
+				result = false;
+				TestUtil.logErr("Caught unexpected exception: " + e.getMessage());
+				TestUtil.printStackTrace(e);
+			}
+		} else if (type.equals("text/plain")) {
+			try {
+				byte data1[] = new byte[4096];
+				byte data2[] = new byte[4096];
+				InputStream is = request.getAttachment().getInputStream();
+				int count1 = AttachmentHelper.readTheData(is, data1, 4096);
+				is = response.getAttachment().getInputStream();
+				int count2 = AttachmentHelper.readTheData(is, data2, 4096);
+				if (!AttachmentHelper.validateAttachmentData(count1, data1, count2, data2, "PlainTextAttachment"))
+					result = false;
+			} catch (Exception e) {
+				result = false;
+				TestUtil.logErr("Caught unexpected exception: " + e.getMessage());
+				TestUtil.printStackTrace(e);
+			}
+		}
+		return result;
+	}
 
-  /*
-   * @class.testArgs: -ap jaxws-url-props.dat
-   * 
-   * @class.setup_props: webServerHost; webServerPort; platform.mode;
-   */
-
-  public void setup(String[] args, Properties p) throws Fault {
-    props = p;
-    boolean pass = true;
-
-    try {
-      hostname = p.getProperty(WEBSERVERHOSTPROP);
-
-      if (hostname == null)
-        pass = false;
-      else if (hostname.equals(""))
-        pass = false;
-
-      try {
-        portnum = Integer.parseInt(p.getProperty(WEBSERVERPORTPROP));
-      } catch (Exception e) {
-        TestUtil.printStackTrace(e);
-        pass = false;
-      }
-      modeProperty = p.getProperty(MODEPROP);
-      if (modeProperty.equals("standalone")) {
-        getTestURLs();
-        getPortStandalone();
-      } else {
-        TestUtil.logMsg(
-            "WebServiceRef is not set in Client (get it from specific vehicle)");
-        service = (WSIDLSwaRefTestService) getSharedObject();
-        getTestURLs();
-        getPortJavaEE();
-      }
-      TestUtil.logMsg("Create URL's to attachments");
-      url1 = ctsurl.getURL("http", hostname, portnum, ctxroot + "/attach.txt");
-      url2 = ctsurl.getURL("http", hostname, portnum, ctxroot + "/attach.html");
-      url3 = ctsurl.getURL("http", hostname, portnum, ctxroot + "/attach.xml");
-      url4 = ctsurl.getURL("http", hostname, portnum, ctxroot + "/attach.jpeg");
-      TestUtil.logMsg("url1=" + url1);
-      TestUtil.logMsg("url2=" + url2);
-      TestUtil.logMsg("url3=" + url3);
-      TestUtil.logMsg("url4=" + url4);
-      TestUtil.logMsg("Create DataHandler's to attachments");
-      dh1 = new DataHandler(url1);
-      dh2 = new DataHandler(url2);
-      dh3 = new DataHandler(url3);
-      dh4 = new DataHandler(javax.imageio.ImageIO.read(url4), "image/jpeg");
-      TestUtil.logMsg("dh1.getContentType()=" + dh1.getContentType());
-      TestUtil.logMsg("dh2.getContentType()=" + dh2.getContentType());
-      TestUtil.logMsg("dh3.getContentType()=" + dh3.getContentType());
-      TestUtil.logMsg("dh4.getContentType()=" + dh4.getContentType());
-    } catch (Exception e) {
-      TestUtil.printStackTrace(e);
-      throw new Fault("setup failed:", e);
-    }
-
-    if (!pass) {
-      TestUtil.logErr(
-          "Please specify host & port of web server " + "in config properties: "
-              + WEBSERVERHOSTPROP + ", " + WEBSERVERPORTPROP);
-      throw new Fault("setup failed:");
-    }
-    TestUtil.logMsg("setup ok");
-  }
-
-  public void cleanup() throws Fault {
-    TestUtil.logMsg("cleanup ok");
-  }
-
-  /*
-   * @testName: EchoSingleSwaRefAttachmentTest
-   *
-   * @assertion_ids: WSI:SPEC:R2901; WSI:SPEC:R2907; WSI:SPEC:R2909;
-   * WSI:SPEC:R2910; WSI:SPEC:R2911; WSI:SPEC:R2931; WSI:SPEC:R2921;
-   * WSI:SPEC:R2926; WSI:SPEC:R2929; WSI:SPEC:R2946; JAXWS:SPEC:10011;
-   * WSI:SPEC:R2927; JAXWS:SPEC:2051; JAXWS:SPEC:2052; JAXWS:SPEC:2053;
-   * WSI:SPEC:R2940; WSI:SPEC:R2928;
-   *
-   * @test_Strategy: Send and Receive a single attachment via swaRef type.
-   *
-   */
-  public void EchoSingleSwaRefAttachmentTest() throws Fault {
-    TestUtil.logMsg("EchoSingleSwaRefAttachmentTest");
-    boolean pass = true;
-
-    try {
-      TestUtil
-          .logMsg("Send and receive (text/xml) attachment via the swaRef type");
-      SwaRefTypeRequest request = new SwaRefTypeRequest();
-      DataHandler swaRefInput = dh3;
-      request.setAttachment(swaRefInput);
-      SwaRefTypeResponse response = port.echoSingleSwaRefAttachment(request);
-      if (!ValidateSingleSwaRefAttachmentTestCase(request, response,
-          "text/xml"))
-        pass = false;
-      TestUtil.logMsg(
-          "Send and receive (text/plain) attachment via the swaRef type");
-      swaRefInput = dh1;
-      request.setAttachment(swaRefInput);
-      response = port.echoSingleSwaRefAttachment(request);
-      if (!ValidateSingleSwaRefAttachmentTestCase(request, response,
-          "text/plain"))
-        pass = false;
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("EchoSingleSwaRefAttachmentTest failed", e);
-    }
-    if (!pass)
-      throw new Fault("EchoSingleSwaRefAttachmentTest failed");
-  }
-
-  /*
-   * @testName: EchoMultipleSwaRefAttachmentsTest
-   *
-   * @assertion_ids: WSI:SPEC:R2901; WSI:SPEC:R2907; WSI:SPEC:R2909;
-   * WSI:SPEC:R2910; WSI:SPEC:R2911; WSI:SPEC:R2931; WSI:SPEC:R2921;
-   * WSI:SPEC:R2926; WSI:SPEC:R2929; WSI:SPEC:R2946; JAXWS:SPEC:10011;
-   * WSI:SPEC:R2927; JAXWS:SPEC:2051; JAXWS:SPEC:2052; JAXWS:SPEC:2053;
-   * WSI:SPEC:R2940; WSI:SPEC:R2928;
-   *
-   * @test_Strategy: Send and Receive multiple attachments via swaRef type.
-   *
-   */
-  public void EchoMultipleSwaRefAttachmentsTest() throws Fault {
-    TestUtil.logMsg("SwaRefAttachmentsTest2");
-    boolean pass = true;
-
-    try {
-      TestUtil.logMsg(
-          "Send and receive (text/xml, text/plain, text/html) attachments via the swaRef type");
-      SwaRefTypeRequest2 request = new SwaRefTypeRequest2();
-      request.setAttachment1(dh3);
-      request.setAttachment2(dh1);
-      request.setAttachment3(dh4);
-      SwaRefTypeResponse2 response = port
-          .echoMultipleSwaRefAttachments(request);
-      if (!ValidateMultipleSwaRefAttachmentsTestCase(request, response))
-        pass = false;
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("EchoMultipleSwaRefAttachmentsTest failed", e);
-    }
-    if (!pass)
-      throw new Fault("EchoMultipleSwaRefAttachmentsTest failed");
-  }
-
-  /*******************************************************************************
-   * Validate request, response and attachments (swaRefAttachments)
-   ******************************************************************************/
-  private boolean ValidateSingleSwaRefAttachmentTestCase(
-      SwaRefTypeRequest request, SwaRefTypeResponse response, String type) {
-    boolean result = true;
-    TestUtil.logMsg("--------------------------------------------------------");
-    TestUtil.logMsg("Validating the request, the response, and the attachment");
-    TestUtil.logMsg("--------------------------------------------------------");
-    if (type.equals("text/xml")) {
-      try {
-        StreamSource sr1 = new StreamSource(
-            request.getAttachment().getInputStream());
-        StreamSource sr2 = new StreamSource(
-            response.getAttachment().getInputStream());
-        String tmpStr = AttachmentHelper.validateAttachmentData(sr1, sr2,
-            "XmlAttachment");
-        if (tmpStr != null) {
-          TestUtil.logErr(tmpStr);
-          result = false;
-        }
-      } catch (Exception e) {
-        result = false;
-        TestUtil.logErr("Caught unexpected exception: " + e.getMessage());
-        TestUtil.printStackTrace(e);
-      }
-    } else if (type.equals("image/jpeg")) {
-      try {
-        Image image1 = javax.imageio.ImageIO
-            .read(request.getAttachment().getInputStream());
-        Image image2 = javax.imageio.ImageIO
-            .read(response.getAttachment().getInputStream());
-        if (!AttachmentHelper.compareImages(image1, image2,
-            new Rectangle(0, 0, 100, 120), "JpegAttachment"))
-          result = false;
-      } catch (Exception e) {
-        result = false;
-        TestUtil.logErr("Caught unexpected exception: " + e.getMessage());
-        TestUtil.printStackTrace(e);
-      }
-    } else if (type.equals("text/plain")) {
-      try {
-        byte data1[] = new byte[4096];
-        byte data2[] = new byte[4096];
-        InputStream is = request.getAttachment().getInputStream();
-        int count1 = AttachmentHelper.readTheData(is, data1, 4096);
-        is = response.getAttachment().getInputStream();
-        int count2 = AttachmentHelper.readTheData(is, data2, 4096);
-        if (!AttachmentHelper.validateAttachmentData(count1, data1, count2,
-            data2, "PlainTextAttachment"))
-          result = false;
-      } catch (Exception e) {
-        result = false;
-        TestUtil.logErr("Caught unexpected exception: " + e.getMessage());
-        TestUtil.printStackTrace(e);
-      }
-    }
-    return result;
-  }
-
-  private boolean ValidateMultipleSwaRefAttachmentsTestCase(
-      SwaRefTypeRequest2 request, SwaRefTypeResponse2 response) {
-    boolean result = true;
-    TestUtil
-        .logMsg("---------------------------------------------------------");
-    TestUtil
-        .logMsg("Validating the request, the response, and the attachments");
-    TestUtil
-        .logMsg("---------------------------------------------------------");
-    try {
-      StreamSource sr1 = new StreamSource(
-          request.getAttachment1().getInputStream());
-      StreamSource sr2 = new StreamSource(
-          response.getAttachment1().getInputStream());
-      String tmpStr = AttachmentHelper.validateAttachmentData(sr1, sr2,
-          "XmlAttachment");
-      if (tmpStr != null) {
-        TestUtil.logErr(tmpStr);
-        result = false;
-      }
-      byte data1[] = new byte[4096];
-      byte data2[] = new byte[4096];
-      InputStream is = request.getAttachment2().getInputStream();
-      int count1 = AttachmentHelper.readTheData(is, data1, 4096);
-      is = response.getAttachment2().getInputStream();
-      int count2 = AttachmentHelper.readTheData(is, data2, 4096);
-      if (!AttachmentHelper.validateAttachmentData(count1, data1, count2, data2,
-          "PlainTextAttachment"))
-        result = false;
-      Image image1 = javax.imageio.ImageIO
-          .read(request.getAttachment3().getInputStream());
-      Image image2 = javax.imageio.ImageIO
-          .read(response.getAttachment3().getInputStream());
-      if (!AttachmentHelper.compareImages(image1, image2,
-          new Rectangle(0, 0, 100, 120), "JpegAttachment"))
-        result = false;
-    } catch (Exception e) {
-      result = false;
-      TestUtil.logErr("Caught unexpected exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-    }
-    return result;
-  }
+	private boolean ValidateMultipleSwaRefAttachmentsTestCase(SwaRefTypeRequest2 request,
+			SwaRefTypeResponse2 response) {
+		boolean result = true;
+		TestUtil.logMsg("---------------------------------------------------------");
+		TestUtil.logMsg("Validating the request, the response, and the attachments");
+		TestUtil.logMsg("---------------------------------------------------------");
+		try {
+			StreamSource sr1 = new StreamSource(request.getAttachment1().getInputStream());
+			StreamSource sr2 = new StreamSource(response.getAttachment1().getInputStream());
+			String tmpStr = AttachmentHelper.validateAttachmentData(sr1, sr2, "XmlAttachment");
+			if (tmpStr != null) {
+				TestUtil.logErr(tmpStr);
+				result = false;
+			}
+			byte data1[] = new byte[4096];
+			byte data2[] = new byte[4096];
+			InputStream is = request.getAttachment2().getInputStream();
+			int count1 = AttachmentHelper.readTheData(is, data1, 4096);
+			is = response.getAttachment2().getInputStream();
+			int count2 = AttachmentHelper.readTheData(is, data2, 4096);
+			if (!AttachmentHelper.validateAttachmentData(count1, data1, count2, data2, "PlainTextAttachment"))
+				result = false;
+			Image image1 = javax.imageio.ImageIO.read(request.getAttachment3().getInputStream());
+			Image image2 = javax.imageio.ImageIO.read(response.getAttachment3().getInputStream());
+			if (!AttachmentHelper.compareImages(image1, image2, new Rectangle(0, 0, 100, 120), "JpegAttachment"))
+				result = false;
+		} catch (Exception e) {
+			result = false;
+			TestUtil.logErr("Caught unexpected exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+		}
+		return result;
+	}
 }

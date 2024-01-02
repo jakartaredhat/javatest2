@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2020 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2024 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -20,131 +20,128 @@
 
 package com.sun.ts.tests.jaxws.api.jakarta_xml_ws.WebServicePermission;
 
-import com.sun.ts.lib.util.*;
-import com.sun.ts.lib.porting.*;
-import com.sun.ts.lib.harness.*;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
-import java.rmi.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import jakarta.xml.ws.*;
+import com.sun.ts.lib.util.TestUtil;
 
-import com.sun.javatest.Status;
+import jakarta.xml.ws.WebServicePermission;
+import com.sun.ts.tests.jaxws.common.BaseClient;
 
-public class Client extends ServiceEETest {
-  public static void main(String[] args) {
-    Client theTests = new Client();
-    Status s = theTests.run(args, System.out, System.err);
-    s.exit();
-  }
+public class Client extends BaseClient {
 
-  /* Test setup */
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  /*
-   * @class.setup_props:
-   */
+	/* Test setup */
 
-  public void setup(String[] args, Properties p) throws Fault {
-    logMsg("setup ok");
-  }
+	/*
+	 * @class.setup_props:
+	 */
+	@BeforeEach
+	public void setup() throws Exception {
+		logger.log(Level.INFO, "setup ok");
+	}
 
-  public void cleanup() throws Fault {
-    logMsg("cleanup ok");
-  }
+	@AfterEach
+	public void cleanup() throws Exception {
+		logger.log(Level.INFO, "cleanup ok");
+	}
 
-  /*
-   * @testName: WebServicePermissionConstructorTest1
-   *
-   * @assertion_ids: JAXWS:JAVADOC:76;
-   *
-   * @test_Strategy: Create instance via WebServicePermission(String)
-   * constructor. Verify WebServicePermission object created successfully.
-   */
-  public void WebServicePermissionConstructorTest1() throws Fault {
-    TestUtil.logTrace("WebServicePermissionConstructorTest1");
-    boolean pass = true;
-    try {
-      TestUtil.logMsg("Create instance via WebServicePermission(String) ...");
-      WebServicePermission e = new WebServicePermission("thename");
-      if (e != null) {
-        TestUtil.logMsg("WebServicePermission object created successfully");
-      } else {
-        TestUtil.logErr("WebServicePermission object not created");
-        pass = false;
-      }
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("WebServicePermissionConstructorTest1 failed", e);
-    }
+	/*
+	 * @testName: WebServicePermissionConstructorTest1
+	 *
+	 * @assertion_ids: JAXWS:JAVADOC:76;
+	 *
+	 * @test_Strategy: Create instance via WebServicePermission(String) constructor.
+	 * Verify WebServicePermission object created successfully.
+	 */
+	@Test
+	public void WebServicePermissionConstructorTest1() throws Exception {
+		TestUtil.logTrace("WebServicePermissionConstructorTest1");
+		boolean pass = true;
+		try {
+			logger.log(Level.INFO, "Create instance via WebServicePermission(String) ...");
+			WebServicePermission e = new WebServicePermission("thename");
+			if (e != null) {
+				logger.log(Level.INFO, "WebServicePermission object created successfully");
+			} else {
+				TestUtil.logErr("WebServicePermission object not created");
+				pass = false;
+			}
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("WebServicePermissionConstructorTest1 failed", e);
+		}
 
-    if (!pass)
-      throw new Fault("WebServicePermissionConstructorTest1 failed");
-  }
+		if (!pass)
+			throw new Exception("WebServicePermissionConstructorTest1 failed");
+	}
 
-  /*
-   * @testName: WebServicePermissionConstructorTest2
-   *
-   * @assertion_ids: JAXWS:JAVADOC:77;
-   *
-   * @test_Strategy: Create instance via WebServicePermission(String, String)
-   * constructor. Verify WebServicePermission object created successfully.
-   */
-  public void WebServicePermissionConstructorTest2() throws Fault {
-    TestUtil.logTrace("WebServicePermissionConstructorTest2");
-    boolean pass = true;
-    try {
-      TestUtil.logMsg(
-          "Create instance via WebServicePermission(String, String) ...");
-      WebServicePermission e = new WebServicePermission("thename", null);
-      if (e != null) {
-        TestUtil.logMsg("WebServicePermission object created successfully");
-      } else {
-        TestUtil.logErr("WebServicePermission object not created");
-        pass = false;
-      }
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("WebServicePermissionConstructorTest2 failed", e);
-    }
+	/*
+	 * @testName: WebServicePermissionConstructorTest2
+	 *
+	 * @assertion_ids: JAXWS:JAVADOC:77;
+	 *
+	 * @test_Strategy: Create instance via WebServicePermission(String, String)
+	 * constructor. Verify WebServicePermission object created successfully.
+	 */
+	@Test
+	public void WebServicePermissionConstructorTest2() throws Exception {
+		TestUtil.logTrace("WebServicePermissionConstructorTest2");
+		boolean pass = true;
+		try {
+			logger.log(Level.INFO, "Create instance via WebServicePermission(String, String) ...");
+			WebServicePermission e = new WebServicePermission("thename", null);
+			if (e != null) {
+				logger.log(Level.INFO, "WebServicePermission object created successfully");
+			} else {
+				TestUtil.logErr("WebServicePermission object not created");
+				pass = false;
+			}
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("WebServicePermissionConstructorTest2 failed", e);
+		}
 
-    if (!pass)
-      throw new Fault("WebServicePermissionConstructorTest2 failed");
-  }
+		if (!pass)
+			throw new Exception("WebServicePermissionConstructorTest2 failed");
+	}
 
-  /*
-   * @testName: WebServicePermissionConstructorTest2a
-   *
-   * @assertion_ids: JAXWS:JAVADOC:77;
-   *
-   * @test_Strategy: Create instance via WebServicePermission(String, String)
-   * constructor. Verify WebServicePermission object created successfully.
-   */
-  public void WebServicePermissionConstructorTest2a() throws Fault {
-    TestUtil.logTrace("WebServicePermissionConstructorTest2a");
-    boolean pass = true;
-    try {
-      TestUtil.logMsg(
-          "Create instance via WebServicePermission(String, String) ...");
-      WebServicePermission e = new WebServicePermission("thename",
-          "someaction");
-      if (e != null) {
-        TestUtil.logMsg("WebServicePermission object created successfully");
-      } else {
-        TestUtil.logErr("WebServicePermission object not created");
-        pass = false;
-      }
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("WebServicePermissionConstructorTest2a failed", e);
-    }
+	/*
+	 * @testName: WebServicePermissionConstructorTest2a
+	 *
+	 * @assertion_ids: JAXWS:JAVADOC:77;
+	 *
+	 * @test_Strategy: Create instance via WebServicePermission(String, String)
+	 * constructor. Verify WebServicePermission object created successfully.
+	 */
+	@Test
+	public void WebServicePermissionConstructorTest2a() throws Exception {
+		TestUtil.logTrace("WebServicePermissionConstructorTest2a");
+		boolean pass = true;
+		try {
+			logger.log(Level.INFO, "Create instance via WebServicePermission(String, String) ...");
+			WebServicePermission e = new WebServicePermission("thename", "someaction");
+			if (e != null) {
+				logger.log(Level.INFO, "WebServicePermission object created successfully");
+			} else {
+				TestUtil.logErr("WebServicePermission object not created");
+				pass = false;
+			}
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("WebServicePermissionConstructorTest2a failed", e);
+		}
 
-    if (!pass)
-      throw new Fault("WebServicePermissionConstructorTest2a failed");
-  }
+		if (!pass)
+			throw new Exception("WebServicePermissionConstructorTest2a failed");
+	}
 
 }

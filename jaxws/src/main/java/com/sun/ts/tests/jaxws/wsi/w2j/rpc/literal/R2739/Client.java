@@ -20,72 +20,76 @@
 
 package com.sun.ts.tests.jaxws.wsi.w2j.rpc.literal.R2739;
 
-import com.sun.ts.lib.harness.*;
+import java.io.IOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+
+import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.sun.ts.lib.util.TestUtil;
+import com.sun.ts.tests.jaxws.common.BaseClient;
 import com.sun.ts.tests.jaxws.sharedclients.ClientFactory;
 import com.sun.ts.tests.jaxws.wsi.constants.WSIConstants;
-import com.sun.javatest.Status;
 
-import java.util.Properties;
+public class Client extends BaseClient implements WSIConstants {
 
-public class Client extends ServiceEETest implements WSIConstants {
+	private W2JRLR2739Client client;
 
-  private W2JRLR2739Client client;
+	static SimpleTest service = null;
 
-  static SimpleTest service = null;
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  /**
-   * Test entry point.
-   *
-   * @param args
-   *          the command-line arguments.
-   */
-  public static void main(String[] args) {
-    Client tests = new Client();
-    Status status = tests.run(args, System.out, System.err);
-    status.exit();
-  }
+	@Deployment(testable = false)
+	public static WebArchive createDeployment() throws IOException {
+		return createWebArchive(Client.class);
+	}
 
-  /**
-   * @class.testArgs: -ap jaxws-url-props.dat
-   * @class.setup_props: webServerHost; webServerPort; platform.mode;
-   *
-   * @param args
-   * @param properties
-   *
-   * @throws com.sun.ts.lib.harness.EETest.Fault
-   */
-  public void setup(String[] args, Properties properties) throws EETest.Fault {
-    client = (W2JRLR2739Client) ClientFactory.getClient(W2JRLR2739Client.class,
-        properties, this, service);
-    logMsg("setup ok");
-  }
+	/**
+	 * @class.testArgs: -ap jaxws-url-props.dat
+	 * @class.setup_props: webServerHost; webServerPort; platform.mode;
+	 *
+	 * @param args
+	 * @param properties
+	 *
+	 * @throws Exception
+	 */
+	@BeforeEach
+	public void setup() throws Exception {
+		super.setup();
+		client = (W2JRLR2739Client) ClientFactory.getClient(W2JRLR2739Client.class, service);
+		logger.log(Level.INFO, "setup ok");
+	}
 
-  public void cleanup() {
-    logMsg("cleanup");
-  }
+	@AfterEach
+	public void cleanup() {
+		logger.log(Level.INFO, "cleanup");
+	}
 
-  /**
-   * @testName: testExtraHeader
-   *
-   * @assertion_ids: WSI:SPEC:R2739
-   *
-   * @test_Strategy: Make a request and add a header not contained in the wsdl.
-   *                 Ensure the request and response are normal.
-   *
-   * @throws com.sun.ts.lib.harness.EETest.Fault
-   */
-  public void testExtraHeader() throws EETest.Fault {
-    String response = "";
-    try {
-      response = client.helloWorld();
-    } catch (Exception e) {
-      TestUtil.printStackTrace(e);
-      throw new EETest.Fault("Test didn't complete properly: ", e);
-    }
-    if (!response.equals("hello world")) {
-      throw new EETest.Fault("Error creating response object:" + response);
-    }
-  }
+	/**
+	 * @testName: testExtraHeader
+	 *
+	 * @assertion_ids: WSI:SPEC:R2739
+	 *
+	 * @test_Strategy: Make a request and add a header not contained in the wsdl.
+	 *                 Ensure the request and response are normal.
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void testExtraHeader() throws Exception {
+		String response = "";
+		try {
+			response = client.helloWorld();
+		} catch (Exception e) {
+			TestUtil.printStackTrace(e);
+			throw new Exception("Test didn't complete properly: ", e);
+		}
+		if (!response.equals("hello world")) {
+			throw new Exception("Error creating response object:" + response);
+		}
+	}
 }

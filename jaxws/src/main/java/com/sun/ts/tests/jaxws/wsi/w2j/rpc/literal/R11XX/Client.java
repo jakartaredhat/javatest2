@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2018 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2024 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -20,72 +20,75 @@
 
 package com.sun.ts.tests.jaxws.wsi.w2j.rpc.literal.R11XX;
 
-import com.sun.ts.lib.harness.*;
+import java.io.IOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 
+import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.sun.ts.tests.jaxws.common.BaseClient;
 import com.sun.ts.tests.jaxws.sharedclients.ClientFactory;
 import com.sun.ts.tests.jaxws.wsi.requests.SOAPRequests;
-import com.sun.javatest.Status;
 
-import java.util.Properties;
+public class Client extends BaseClient implements SOAPRequests {
 
-public class Client extends ServiceEETest implements SOAPRequests {
+	private W2JRLR11XXClientOne client1;
 
-  private W2JRLR11XXClientOne client1;
+	private W2JRLR11XXClientTwo client2;
 
-  private W2JRLR11XXClientTwo client2;
+	static W2JRLR11XXTestService service = null;
 
-  static W2JRLR11XXTestService service = null;
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  /**
-   * Test entry point.
-   *
-   * @param args
-   *          the command-line arguments.
-   */
-  public static void main(String[] args) {
-    Client tests = new Client();
-    Status status = tests.run(args, System.out, System.err);
-    status.exit();
-  }
+	@Deployment(testable = false)
+	public static WebArchive createDeployment() throws IOException {
+		return createWebArchive(Client.class);
+	}
 
-  /**
-   * @class.testArgs: -ap jaxws-url-props.dat
-   * @class.setup_props: webServerHost; webServerPort; platform.mode;
-   *
-   * @param args
-   * @param properties
-   *
-   * @throws com.sun.ts.lib.harness.EETest.Fault
-   */
-  public void setup(String[] args, Properties properties) throws EETest.Fault {
-    client1 = (W2JRLR11XXClientOne) ClientFactory
-        .getClient(W2JRLR11XXClientOne.class, properties, this, service);
-    client2 = (W2JRLR11XXClientTwo) ClientFactory
-        .getClient(W2JRLR11XXClientTwo.class, properties, this, service);
-    logMsg("setup ok");
-  }
+	/**
+	 * @class.testArgs: -ap jaxws-url-props.dat
+	 * @class.setup_props: webServerHost; webServerPort; platform.mode;
+	 *
+	 * @param args
+	 * @param properties
+	 *
+	 * @throws Exception
+	 */
+	@BeforeEach
+	public void setup() throws Exception {
+		super.setup();
+		client1 = (W2JRLR11XXClientOne) ClientFactory.getClient(W2JRLR11XXClientOne.class, service);
+		client2 = (W2JRLR11XXClientTwo) ClientFactory.getClient(W2JRLR11XXClientTwo.class, service);
+		logger.log(Level.INFO, "setup ok");
+	}
 
-  public void cleanup() {
-    logMsg("cleanup");
-  }
+	@AfterEach
+	public void cleanup() {
+		logger.log(Level.INFO, "cleanup");
+	}
 
-  /**
-   * @testName: testSoapActionHeaderIsQuotedInRequest
-   *
-   * @assertion_ids: WSI:SPEC:R1109; WSI:SPEC:R1127
-   *
-   * @test_Strategy: Make a request and inspect request soapAction HTTP header
-   *                 to ensure value is quoted
-   *
-   * @throws com.sun.ts.lib.harness.EETest.Fault
-   */
-  public void testSoapActionHeaderIsQuotedInRequest() throws EETest.Fault {
-    String response = "";
-    try {
-      response = client2.echoString("hello string");
-    } catch (Exception e) {
-      throw new EETest.Fault("Test didn't complete properly: ", e);
-    }
-  }
+	/**
+	 * @testName: testSoapActionHeaderIsQuotedInRequest
+	 *
+	 * @assertion_ids: WSI:SPEC:R1109; WSI:SPEC:R1127
+	 *
+	 * @test_Strategy: Make a request and inspect request soapAction HTTP header to
+	 *                 ensure value is quoted
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void testSoapActionHeaderIsQuotedInRequest() throws Exception {
+		String response = "";
+		try {
+			response = client2.echoString("hello string");
+		} catch (Exception e) {
+			throw new Exception("Test didn't complete properly: ", e);
+		}
+	}
 
 }

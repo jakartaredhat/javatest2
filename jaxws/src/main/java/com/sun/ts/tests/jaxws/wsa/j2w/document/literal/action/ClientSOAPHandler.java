@@ -20,165 +20,129 @@
 
 package com.sun.ts.tests.jaxws.wsa.j2w.document.literal.action;
 
-import com.sun.ts.lib.util.*;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 
-import com.sun.ts.tests.jaxws.wsa.common.WsaBaseSOAPHandler;
 import com.sun.ts.tests.jaxws.wsa.common.ActionNotSupportedException;
+import com.sun.ts.tests.jaxws.wsa.common.WsaBaseSOAPHandler;
+
+import jakarta.xml.soap.SOAPBody;
+import jakarta.xml.soap.SOAPException;
 import jakarta.xml.ws.handler.soap.SOAPMessageContext;
-import jakarta.xml.soap.*;
 
 public class ClientSOAPHandler extends WsaBaseSOAPHandler {
-  protected void checkInboundAction(SOAPMessageContext context, String oper,
-      String action) {
-    TestUtil.logMsg("ClientSOAPHandler.checkInboundAction: [operation=" + oper
-        + ", action=" + action + "]");
-    TestUtil.logMsg("Verify output action: [" + action + "]");
-    if (oper.equals("addNumbersNoActionResponse")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS_OUT_NOACTION)) {
-        ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS_OUT_NOACTION,
-            action);
-      }
-    } else if (oper.equals("addNumbersEmptyActionResponse")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS_OUT_EMPTYACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS_OUT_EMPTYACTION, action);
-      }
-    } else if (oper.equals("addNumbersResponse")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS_OUT_ACTION)) {
-        ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS_OUT_ACTION,
-            action);
-      }
-    } else if (oper.equals("addNumbers2Response")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS2_OUT_ACTION)) {
-        ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS2_OUT_ACTION,
-            action);
-      }
-    } else if (oper.equals("addNumbers3Response")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS3_OUT_ACTION)) {
-        ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS3_OUT_ACTION,
-            action);
-      }
-    }
-  }
 
-  @Override
-  protected void checkFaultActions(String requestName, String detailName,
-      String action) {
-    TestUtil.logMsg("ClientSOAPHandler.checkFaultActions: [input=" + requestName
-        + ", detailName=" + detailName + ", action=" + action + "]");
-    TestUtil.logMsg("Verify fault action: [" + action + "]");
-    if (requestName.equals("addNumbers4"))
-      return;
-    if (requestName.equals("addNumbersFault1")
-        && detailName.equals("AddNumbersException")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS_FAULT1_ADDNUMBERS_ACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS_FAULT1_ADDNUMBERS_ACTION, action);
-      }
-    } else if (requestName.equals("addNumbersFault2")
-        && detailName.equals("AddNumbersException")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS_FAULT2_ADDNUMBERS_ACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS_FAULT2_ADDNUMBERS_ACTION, action);
-      }
-    } else if (requestName.equals("addNumbersFault2")
-        && detailName.equals("TooBigNumbersException")) {
-      if (!action
-          .equals(TestConstants.ADD_NUMBERS_FAULT2_TOOBIGNUMBERS_ACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS_FAULT2_TOOBIGNUMBERS_ACTION, action);
-      }
-    } else if (requestName.equals("addNumbersFault3")
-        && detailName.equals("AddNumbersException")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS_FAULT3_ADDNUMBERS_ACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS_FAULT3_ADDNUMBERS_ACTION, action);
-      }
-    } else if (requestName.equals("addNumbersFault3")
-        && detailName.equals("TooBigNumbersException")) {
-      if (!action
-          .equals(TestConstants.ADD_NUMBERS_FAULT3_TOOBIGNUMBERS_ACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS_FAULT3_TOOBIGNUMBERS_ACTION, action);
-      }
-    } else if (requestName.equals("addNumbersFault4")
-        && detailName.equals("AddNumbersException")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS_FAULT4_ADDNUMBERS_ACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS_FAULT4_ADDNUMBERS_ACTION, action);
-      }
-    } else if (requestName.equals("addNumbersFault4")
-        && detailName.equals("TooBigNumbersException")) {
-      if (!action
-          .equals(TestConstants.ADD_NUMBERS_FAULT4_TOOBIGNUMBERS_ACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS_FAULT4_TOOBIGNUMBERS_ACTION, action);
-      }
-    } else if (requestName.equals("addNumbersFault5")
-        && detailName.equals("AddNumbersException")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS_FAULT5_ADDNUMBERS_ACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS_FAULT5_ADDNUMBERS_ACTION, action);
-      }
-    } else if (requestName.equals("addNumbersFault5")
-        && detailName.equals("TooBigNumbersException")) {
-      if (!action
-          .equals(TestConstants.ADD_NUMBERS_FAULT5_TOOBIGNUMBERS_ACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS_FAULT5_TOOBIGNUMBERS_ACTION, action);
-      }
-    } else if (requestName.equals("addNumbersFault6")
-        && detailName.equals("AddNumbersException")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS_FAULT6_ADDNUMBERS_ACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS_FAULT6_ADDNUMBERS_ACTION, action);
-      }
-    } else if (requestName.equals("addNumbersFault6")
-        && detailName.equals("TooBigNumbersException")) {
-      if (!action
-          .equals(TestConstants.ADD_NUMBERS_FAULT6_TOOBIGNUMBERS_ACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS_FAULT6_TOOBIGNUMBERS_ACTION, action);
-      }
-    } else if (requestName.equals("addNumbersFault7")
-        && detailName.equals("AddNumbersException")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS_FAULT7_ADDNUMBERS_ACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS_FAULT7_ADDNUMBERS_ACTION, action);
-      }
-    } else if (requestName.equals("addNumbersFault7")
-        && detailName.equals("TooBigNumbersException")) {
-      if (!action
-          .equals(TestConstants.ADD_NUMBERS_FAULT7_TOOBIGNUMBERS_ACTION)) {
-        ThrowActionNotSupportedException(
-            TestConstants.ADD_NUMBERS_FAULT7_TOOBIGNUMBERS_ACTION, action);
-      }
-    }
-    super.checkFaultActions(requestName, detailName, action);
-  }
+	private static final Logger logger = (Logger) System.getLogger(ClientSOAPHandler.class.getName());
 
-  @Override
-  protected String getOperationName(SOAPBody soapBody) throws SOAPException {
-    String opName = super.getOperationName(soapBody);
-    if (!opName.startsWith("addNumbersFault"))
-      return opName;
+	protected void checkInboundAction(SOAPMessageContext context, String oper, String action) {
+		logger.log(Level.INFO, "ClientSOAPHandler.checkInboundAction: [operation=" + oper + ", action=" + action + "]");
+		logger.log(Level.INFO, "Verify output action: [" + action + "]");
+		if (oper.equals("addNumbersNoActionResponse")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS_OUT_NOACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS_OUT_NOACTION, action);
+			}
+		} else if (oper.equals("addNumbersEmptyActionResponse")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS_OUT_EMPTYACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS_OUT_EMPTYACTION, action);
+			}
+		} else if (oper.equals("addNumbersResponse")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS_OUT_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS_OUT_ACTION, action);
+			}
+		} else if (oper.equals("addNumbers2Response")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS2_OUT_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS2_OUT_ACTION, action);
+			}
+		} else if (oper.equals("addNumbers3Response")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS3_OUT_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS3_OUT_ACTION, action);
+			}
+		}
+	}
 
-    if (opName.equals("addNumbersFault1"))
-      return opName;
+	@Override
+	protected void checkFaultActions(String requestName, String detailName, String action) {
+		logger.log(Level.INFO, "ClientSOAPHandler.checkFaultActions: [input=" + requestName + ", detailName="
+				+ detailName + ", action=" + action + "]");
+		logger.log(Level.INFO, "Verify Exception action: [" + action + "]");
+		if (requestName.equals("addNumbers4"))
+			return;
+		if (requestName.equals("addNumbersFault1") && detailName.equals("AddNumbersException")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS_FAULT1_ADDNUMBERS_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS_FAULT1_ADDNUMBERS_ACTION, action);
+			}
+		} else if (requestName.equals("addNumbersFault2") && detailName.equals("AddNumbersException")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS_FAULT2_ADDNUMBERS_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS_FAULT2_ADDNUMBERS_ACTION, action);
+			}
+		} else if (requestName.equals("addNumbersFault2") && detailName.equals("TooBigNumbersException")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS_FAULT2_TOOBIGNUMBERS_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS_FAULT2_TOOBIGNUMBERS_ACTION, action);
+			}
+		} else if (requestName.equals("addNumbersFault3") && detailName.equals("AddNumbersException")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS_FAULT3_ADDNUMBERS_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS_FAULT3_ADDNUMBERS_ACTION, action);
+			}
+		} else if (requestName.equals("addNumbersFault3") && detailName.equals("TooBigNumbersException")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS_FAULT3_TOOBIGNUMBERS_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS_FAULT3_TOOBIGNUMBERS_ACTION, action);
+			}
+		} else if (requestName.equals("addNumbersFault4") && detailName.equals("AddNumbersException")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS_FAULT4_ADDNUMBERS_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS_FAULT4_ADDNUMBERS_ACTION, action);
+			}
+		} else if (requestName.equals("addNumbersFault4") && detailName.equals("TooBigNumbersException")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS_FAULT4_TOOBIGNUMBERS_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS_FAULT4_TOOBIGNUMBERS_ACTION, action);
+			}
+		} else if (requestName.equals("addNumbersFault5") && detailName.equals("AddNumbersException")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS_FAULT5_ADDNUMBERS_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS_FAULT5_ADDNUMBERS_ACTION, action);
+			}
+		} else if (requestName.equals("addNumbersFault5") && detailName.equals("TooBigNumbersException")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS_FAULT5_TOOBIGNUMBERS_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS_FAULT5_TOOBIGNUMBERS_ACTION, action);
+			}
+		} else if (requestName.equals("addNumbersFault6") && detailName.equals("AddNumbersException")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS_FAULT6_ADDNUMBERS_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS_FAULT6_ADDNUMBERS_ACTION, action);
+			}
+		} else if (requestName.equals("addNumbersFault6") && detailName.equals("TooBigNumbersException")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS_FAULT6_TOOBIGNUMBERS_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS_FAULT6_TOOBIGNUMBERS_ACTION, action);
+			}
+		} else if (requestName.equals("addNumbersFault7") && detailName.equals("AddNumbersException")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS_FAULT7_ADDNUMBERS_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS_FAULT7_ADDNUMBERS_ACTION, action);
+			}
+		} else if (requestName.equals("addNumbersFault7") && detailName.equals("TooBigNumbersException")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS_FAULT7_TOOBIGNUMBERS_ACTION)) {
+				ThrowActionNotSupportedException(TestConstants.ADD_NUMBERS_FAULT7_TOOBIGNUMBERS_ACTION, action);
+			}
+		}
+		super.checkFaultActions(requestName, detailName, action);
+	}
 
-    if (opName.equals("addNumbersFault2")) {
-      soapBody.getFirstChild().getFirstChild().getNodeValue();
-    }
-    return opName;
-  }
+	@Override
+	protected String getOperationName(SOAPBody soapBody) throws SOAPException {
+		String opName = super.getOperationName(soapBody);
+		if (!opName.startsWith("addNumbersFault"))
+			return opName;
 
-  private void ThrowActionNotSupportedException(String expected,
-      String actual) {
-    throw new ActionNotSupportedException(
-        "Expected:" + expected + ", Actual:" + actual);
-  }
+		if (opName.equals("addNumbersFault1"))
+			return opName;
 
-  protected String whichHandler() {
-    return "ClientSOAPHandler";
-  }
+		if (opName.equals("addNumbersFault2")) {
+			soapBody.getFirstChild().getFirstChild().getNodeValue();
+		}
+		return opName;
+	}
+
+	private void ThrowActionNotSupportedException(String expected, String actual) {
+		throw new ActionNotSupportedException("Expected:" + expected + ", Actual:" + actual);
+	}
+
+	protected String whichHandler() {
+		return "ClientSOAPHandler";
+	}
 }

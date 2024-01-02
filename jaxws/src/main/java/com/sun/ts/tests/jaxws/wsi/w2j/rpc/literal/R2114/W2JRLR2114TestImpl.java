@@ -19,19 +19,26 @@
  */
 package com.sun.ts.tests.jaxws.wsi.w2j.rpc.literal.R2114;
 
-import com.sun.ts.lib.util.*;
+import com.sun.ts.lib.util.TestUtil;
+
 import jakarta.jws.WebService;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+
 
 @WebService(portName = "W2JRLR2114TestPort", serviceName = "W2JRLR2114TestService", targetNamespace = "http://w2jrlr2114testservice.org/W2JRLR2114TestService.wsdl", wsdlLocation = "WEB-INF/wsdl/W2JRLR2114TestService.wsdl", endpointInterface = "com.sun.ts.tests.jaxws.wsi.w2j.rpc.literal.R2114.W2JRLR2114Test")
 
 public class W2JRLR2114TestImpl implements W2JRLR2114Test {
-  public com.sun.ts.tests.jaxws.wsi.w2j.rpc.literal.R2114.IncludedStringResponse echoIncludedStringTest(
-      com.sun.ts.tests.jaxws.wsi.w2j.rpc.literal.R2114.IncludedStringRequest params) {
-    TestUtil.logTrace("SameTargetNamespace test");
-    TestUtil.logMsg("value=" + params.getStringValue());
-    IncludedStringResponse r = new IncludedStringResponse();
-    r.setStringValue(params.getStringValue());
-    return r;
-  }
+
+			private static final Logger logger = (Logger) System.getLogger(W2JRLR2114TestImpl.class.getName());
+
+	public com.sun.ts.tests.jaxws.wsi.w2j.rpc.literal.R2114.IncludedStringResponse echoIncludedStringTest(
+			com.sun.ts.tests.jaxws.wsi.w2j.rpc.literal.R2114.IncludedStringRequest params) {
+		TestUtil.logTrace("SameTargetNamespace test");
+		logger.log(Level.INFO, "value=" + params.getStringValue());
+		IncludedStringResponse r = new IncludedStringResponse();
+		r.setStringValue(params.getStringValue());
+		return r;
+	}
 
 }

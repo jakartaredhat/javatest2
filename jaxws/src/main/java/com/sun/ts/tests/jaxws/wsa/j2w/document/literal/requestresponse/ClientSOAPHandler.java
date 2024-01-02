@@ -20,84 +20,90 @@
 
 package com.sun.ts.tests.jaxws.wsa.j2w.document.literal.requestresponse;
 
-import com.sun.ts.lib.util.*;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+import java.util.Vector;
 
-import com.sun.ts.tests.jaxws.wsa.common.WsaBaseSOAPHandler;
-import com.sun.ts.tests.jaxws.wsa.common.ActionNotSupportedException;
 import com.sun.ts.tests.jaxws.common.Handler_Util;
-import jakarta.xml.ws.handler.soap.SOAPMessageContext;
+import com.sun.ts.tests.jaxws.wsa.common.ActionNotSupportedException;
+import com.sun.ts.tests.jaxws.wsa.common.WsaBaseSOAPHandler;
+
+import jakarta.xml.soap.SOAPException;
 import jakarta.xml.ws.handler.MessageContext;
 import jakarta.xml.ws.handler.MessageContext.Scope;
-import jakarta.xml.soap.*;
-import java.util.*;
+import jakarta.xml.ws.handler.soap.SOAPMessageContext;
+
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+
 
 public class ClientSOAPHandler extends WsaBaseSOAPHandler {
-  String testName = null;
 
-  protected void checkInboundAction(SOAPMessageContext context, String oper,
-      String action) {
-    TestUtil.logMsg("ClientSOAPHandler.checkInboundAction: [operation=" + oper
-        + ", input action=" + action + "]");
-    if (Handler_Util.checkForMsg(context, "testDefaultRequestResponseAction")) {
-      checkAddressingHeadersExist(context, action);
-    } else if (Handler_Util.checkForMsg(context,
-        "testExplicitRequestResponseAction")) {
-      checkAddressingHeadersExist(context, action);
-    }
-  }
+						private static final Logger logger = (Logger) System.getLogger(ClientSOAPHandler.class.getName());
 
-  private void verifyAction(String action) {
-    TestUtil.logMsg("ClientSOAPHandler.verifyAction: [action=" + action + "]");
-    if (testName.equals("testDefaultRequestResponseAction")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS_OUT_ACTION)) {
-        throw new ActionNotSupportedException("Expected:"
-            + TestConstants.ADD_NUMBERS_OUT_ACTION + ", Actual:" + action);
-      }
-    } else if (testName.equals("testExplicitRequestResponseAction")) {
-      if (!action.equals(TestConstants.ADD_NUMBERS2_OUT_ACTION)) {
-        throw new ActionNotSupportedException("Expected:"
-            + TestConstants.ADD_NUMBERS2_OUT_ACTION + ", Actual:" + action);
-      }
-    }
-  }
+	String testName = null;
 
-  private void checkAddressingHeadersExist(SOAPMessageContext context,
-      String action) {
-    TestUtil.logMsg("ClientSOAPHandler.checkAddressingHeadersExist");
-    verifyAction(action);
-    checkInboundToExist(context);
-    checkInboundRelatesToExist(context);
-  }
+	protected void checkInboundAction(SOAPMessageContext context, String oper, String action) {
+		logger.log(Level.INFO,
+				"ClientSOAPHandler.checkInboundAction: [operation=" + oper + ", input action=" + action + "]");
+		if (Handler_Util.checkForMsg(context, "testDefaultRequestResponseAction")) {
+			checkAddressingHeadersExist(context, action);
+		} else if (Handler_Util.checkForMsg(context, "testExplicitRequestResponseAction")) {
+			checkAddressingHeadersExist(context, action);
+		}
+	}
 
-  protected void processOutboundMessage(SOAPMessageContext context, String oper,
-      String testName) {
-    if (testName != null && testName.equals("actionMismatch")) {
-      TestUtil.logMsg("ClientSOAPHandler.processOutboundMessage: operation="
-          + oper + ", testName=" + testName);
-      Map<String, List<String>> headers = (Map<String, List<String>>) context
-          .get(MessageContext.HTTP_REQUEST_HEADERS);
-      if (headers == null)
-        headers = new Hashtable<String, List<String>>();
-      List<String> values = new Vector<String>();
-      values.add("ActionNotSupported");
-      headers.put("Soapaction", values);
-      context.put(MessageContext.HTTP_REQUEST_HEADERS, headers);
-      context.setScope(MessageContext.HTTP_REQUEST_HEADERS, Scope.APPLICATION);
-    }
-  }
+	private void verifyAction(String action) {
+		logger.log(Level.INFO, "ClientSOAPHandler.verifyAction: [action=" + action + "]");
+		if (testName.equals("testDefaultRequestResponseAction")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS_OUT_ACTION)) {
+				throw new ActionNotSupportedException(
+						"Expected:" + TestConstants.ADD_NUMBERS_OUT_ACTION + ", Actual:" + action);
+			}
+		} else if (testName.equals("testExplicitRequestResponseAction")) {
+			if (!action.equals(TestConstants.ADD_NUMBERS2_OUT_ACTION)) {
+				throw new ActionNotSupportedException(
+						"Expected:" + TestConstants.ADD_NUMBERS2_OUT_ACTION + ", Actual:" + action);
+			}
+		}
+	}
 
-  protected String getAction(SOAPMessageContext context) throws SOAPException {
-    testName = (String) context.get("test.name");
-    TestUtil.logMsg("ClientSOAPHandler.getAction(): testName=" + testName);
-    if (testName == null)
-      return super.getAction(context);
-    else if (!testName.equals("missingActionHeader"))
-      return super.getAction(context);
-    else
-      return null;
-  }
+	private void checkAddressingHeadersExist(SOAPMessageContext context, String action) {
+		logger.log(Level.INFO, "ClientSOAPHandler.checkAddressingHeadersExist");
+		verifyAction(action);
+		checkInboundToExist(context);
+		checkInboundRelatesToExist(context);
+	}
 
-  protected String whichHandler() {
-    return "ClientSOAPHandler";
-  }
+	protected void processOutboundMessage(SOAPMessageContext context, String oper, String testName) {
+		if (testName != null && testName.equals("actionMismatch")) {
+			logger.log(Level.INFO,
+					"ClientSOAPHandler.processOutboundMessage: operation=" + oper + ", testName=" + testName);
+			Map<String, List<String>> headers = (Map<String, List<String>>) context
+					.get(MessageContext.HTTP_REQUEST_HEADERS);
+			if (headers == null)
+				headers = new Hashtable<String, List<String>>();
+			List<String> values = new Vector<String>();
+			values.add("ActionNotSupported");
+			headers.put("Soapaction", values);
+			context.put(MessageContext.HTTP_REQUEST_HEADERS, headers);
+			context.setScope(MessageContext.HTTP_REQUEST_HEADERS, Scope.APPLICATION);
+		}
+	}
+
+	protected String getAction(SOAPMessageContext context) throws SOAPException {
+		testName = (String) context.get("test.name");
+		logger.log(Level.INFO, "ClientSOAPHandler.getAction(): testName=" + testName);
+		if (testName == null)
+			return super.getAction(context);
+		else if (!testName.equals("missingActionHeader"))
+			return super.getAction(context);
+		else
+			return null;
+	}
+
+	protected String whichHandler() {
+		return "ClientSOAPHandler";
+	}
 }

@@ -20,68 +20,66 @@
 
 package com.sun.ts.tests.jaxws.wsi.w2j.document.literal.R2712;
 
-import com.sun.ts.tests.jaxws.common.HTTPSOAPHandler;
-import jakarta.xml.ws.handler.soap.SOAPMessageContext;
-import jakarta.xml.soap.SOAPMessage;
-import jakarta.xml.soap.SOAPElement;
-
 import java.util.Iterator;
+
+import com.sun.ts.tests.jaxws.common.HTTPSOAPHandler;
+
+import jakarta.xml.soap.SOAPElement;
+import jakarta.xml.soap.SOAPMessage;
+import jakarta.xml.ws.handler.soap.SOAPMessageContext;
 
 public class ServerSOAPHandler extends HTTPSOAPHandler {
 
-  private String PASSED = "PASSED";
+	private String PASSED = "PASSED";
 
-  private String FAILED = "FAILED";
+	private String FAILED = "FAILED";
 
-  private String GLOBAL_ELEMENT = "HelloRequestElement";
+	private String GLOBAL_ELEMENT = "HelloRequestElement";
 
-  protected void processInboundMessage(SOAPMessageContext context) {
-    System.out.println("in ServerSOAPHandler:processInboundMessage");
-    String result = null;
-    try {
-      result = verifyChildElement(context);
-    } catch (Exception e) {
-      throw new RuntimeException(
-          "Exception occurred in ServerSOAPHandler:verifyChildElement: " + e);
-    }
-    if (!result.equals(PASSED)) {
-      throw new RuntimeException(
-          "In ServerSOAPHandler:processInboundMessage: " + result);
-    }
-  }
+	protected void processInboundMessage(SOAPMessageContext context) {
+		System.out.println("in ServerSOAPHandler:processInboundMessage");
+		String result = null;
+		try {
+			result = verifyChildElement(context);
+		} catch (Exception e) {
+			throw new RuntimeException("Exception occurred in ServerSOAPHandler:verifyChildElement: " + e);
+		}
+		if (!result.equals(PASSED)) {
+			throw new RuntimeException("In ServerSOAPHandler:processInboundMessage: " + result);
+		}
+	}
 
-  protected String verifyChildElement(SOAPMessageContext context)
-      throws Exception {
-    System.out.println("in ServerSOAPHandler:verifyChildElement");
-    String result = FAILED;
-    SOAPMessage sm = context.getMessage();
-    System.out.println("Getting children of body element ...");
-    Iterator children = sm.getSOAPBody().getChildElements();
-    SOAPElement child;
-    String localName;
-    int count = 0;
-    while (children.hasNext()) {
-      count++;
-      System.out.println("Getting operation name ...");
-      child = (SOAPElement) children.next();
-      localName = child.getElementName().getLocalName();
-      System.out.println("child localname: " + localName);
-      if (localName.equals(GLOBAL_ELEMENT)) {
-        if (count == 1) {
-          result = PASSED;
-        } else {
-          result = FAILED + ": The element '" + GLOBAL_ELEMENT + "' was found "
-              + count + " time(s) in the soap:body";
-        }
-      } else {
-        result = FAILED + ": Expected element '" + GLOBAL_ELEMENT
-            + "' in soap:body, instead got '" + localName + "'";
-      }
-    }
-    if (count == 0) {
-      result = "Error: no child elements were found in soap:body";
-    }
-    System.out.println("result=" + result);
-    return result;
-  }
+	protected String verifyChildElement(SOAPMessageContext context) throws Exception {
+		System.out.println("in ServerSOAPHandler:verifyChildElement");
+		String result = FAILED;
+		SOAPMessage sm = context.getMessage();
+		System.out.println("Getting children of body element ...");
+		Iterator children = sm.getSOAPBody().getChildElements();
+		SOAPElement child;
+		String localName;
+		int count = 0;
+		while (children.hasNext()) {
+			count++;
+			System.out.println("Getting operation name ...");
+			child = (SOAPElement) children.next();
+			localName = child.getElementName().getLocalName();
+			System.out.println("child localname: " + localName);
+			if (localName.equals(GLOBAL_ELEMENT)) {
+				if (count == 1) {
+					result = PASSED;
+				} else {
+					result = FAILED + ": The element '" + GLOBAL_ELEMENT + "' was found " + count
+							+ " time(s) in the soap:body";
+				}
+			} else {
+				result = FAILED + ": Expected element '" + GLOBAL_ELEMENT + "' in soap:body, instead got '" + localName
+						+ "'";
+			}
+		}
+		if (count == 0) {
+			result = "Error: no child elements were found in soap:body";
+		}
+		System.out.println("result=" + result);
+		return result;
+	}
 }

@@ -20,277 +20,215 @@
 
 package com.sun.ts.tests.jaxws.wsa.w2j.document.literal.oneway;
 
-import com.sun.ts.lib.util.*;
-import com.sun.ts.lib.porting.*;
-import com.sun.ts.lib.harness.*;
-
-import java.text.MessageFormat;
-
-import com.sun.ts.tests.jaxws.common.*;
-import com.sun.ts.tests.jaxws.sharedclients.*;
-
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.net.URL;
-
-import jakarta.xml.ws.soap.*;
-import jakarta.xml.soap.*;
-
-import java.util.Properties;
+import java.text.MessageFormat;
 
 import javax.xml.namespace.QName;
 
-import com.sun.javatest.Status;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class Client extends ServiceEETest {
+import com.sun.ts.lib.util.TestUtil;
+import com.sun.ts.tests.jaxws.common.BaseClient;
+import com.sun.ts.tests.jaxws.common.JAXWS_Util;
 
-  // The webserver defaults (overidden by harness properties)
-  private static final String PROTOCOL = "http";
+import jakarta.xml.soap.SOAPMessage;
+import jakarta.xml.ws.soap.SOAPFaultException;
 
-  private static final String HOSTNAME = "localhost";
+public class Client extends BaseClient {
 
-  private static final int PORTNUM = 8000;
+	private static final String PKG_NAME = "com.sun.ts.tests.jaxws.wsa.w2j.document.literal.oneway.";
 
-  // The webserver host and port property names (harness properties)
-  private static final String WEBSERVERHOSTPROP = "webServerHost";
+	// URL properties used by the test
+	private static final String ENDPOINT_URL = "wsaw2jdlonewaytest.endpoint.1";
 
-  private static final String WEBSERVERPORTPROP = "webServerPort";
+	private static final String WSDLLOC_URL = "wsaw2jdlonewaytest.wsdlloc.1";
 
-  private static final String MODEPROP = "platform.mode";
+	private String url = null;
 
-  String modeProperty = null; // platform.mode -> (standalone|jakartaEE)
+	// service and port information
+	private static final String NAMESPACEURI = "http://example.com";
 
-  private static final String PKG_NAME = "com.sun.ts.tests.jaxws.wsa.w2j.document.literal.oneway.";
+	private static final String SERVICE_NAME = "AddNumbersService";
 
-  private TSURL ctsurl = new TSURL();
+	private static final String PORT_NAME = "AddNumbersPort";
 
-  private Properties props = null;
+	private QName SERVICE_QNAME = new QName(NAMESPACEURI, SERVICE_NAME);
 
-  private String hostname = HOSTNAME;
+	private QName PORT_QNAME = new QName(NAMESPACEURI, PORT_NAME);
 
-  private int portnum = PORTNUM;
+	private URL wsdlurl = null;
 
-  // URL properties used by the test
-  private static final String ENDPOINT_URL = "wsaw2jdlonewaytest.endpoint.1";
+	private AddNumbersClient1 client1;
 
-  private static final String WSDLLOC_URL = "wsaw2jdlonewaytest.wsdlloc.1";
+	AddNumbersPortType port = null;
 
-  private String url = null;
+	String noToHeaderSoapmsg = "<?xml version=\"1.0\" ?><S:Envelope xmlns:S=\"http://schemas.xmlsoap.org/soap/envelope/\"><S:Header><Action xmlns=\"http://www.w3.org/2005/08/addressing\">http://example.com/AddNumbersPortType/add</Action></S:Header><S:Body><addNumbers xmlns=\"http://example.com\"><number1>10</number1><number2>10</number2></addNumbers></S:Body></S:Envelope>";
 
-  // service and port information
-  private static final String NAMESPACEURI = "http://example.com";
+	String noActionHeaderSoapmsg = "<?xml version=\"1.0\" ?><S:Envelope xmlns:S=\"http://schemas.xmlsoap.org/soap/envelope/\"><S:Header><To xmlns=\"http://www.w3.org/2005/08/addressing\">{0}</To></S:Header><S:Body><addNumbers xmlns=\"http://example.com\"><number1>10</number1><number2>10</number2></addNumbers></S:Body></S:Envelope>";
 
-  private static final String SERVICE_NAME = "AddNumbersService";
+	static AddNumbersService service = null;
 
-  private static final String PORT_NAME = "AddNumbersPort";
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  private QName SERVICE_QNAME = new QName(NAMESPACEURI, SERVICE_NAME);
+	protected void getTestURLs() throws Exception {
+		logger.log(Level.INFO, "Get URL's used by the test");
+		String file = JAXWS_Util.getURLFromProp(ENDPOINT_URL);
+		url = ctsurl.getURLString(PROTOCOL, hostname, portnum, file);
+		file = JAXWS_Util.getURLFromProp(WSDLLOC_URL);
+		wsdlurl = ctsurl.getURL(PROTOCOL, hostname, portnum, file);
+		logger.log(Level.INFO, "Service Endpoint URL: " + url);
+		logger.log(Level.INFO, "WSDL Location URL:    " + wsdlurl);
+	}
 
-  private QName PORT_QNAME = new QName(NAMESPACEURI, PORT_NAME);
+	protected void getPortStandalone() throws Exception {
+		port = (AddNumbersPortType) JAXWS_Util.getPort(wsdlurl, SERVICE_QNAME, AddNumbersService.class, PORT_QNAME,
+				AddNumbersPortType.class);
+		logger.log(Level.INFO, "port=" + port);
+		JAXWS_Util.setTargetEndpointAddress(port, url);
+	}
 
-  private URL wsdlurl = null;
+	protected void getPortJavaEE() throws Exception {
+		logger.log(Level.INFO, "Obtain service via WebServiceRef annotation");
+		logger.log(Level.INFO, "service=" + service);
+		port = (AddNumbersPortType) service.getAddNumbersPort();
+		logger.log(Level.INFO, "port=" + port);
+		logger.log(Level.INFO, "Obtained port");
+		JAXWS_Util.dumpTargetEndpointAddress(port);
+	}
 
-  private AddNumbersClient1 client1;
+	protected void getService() {
+		service = (AddNumbersService) getSharedObject();
+	}
 
-  AddNumbersPortType port = null;
+	/* Test setup */
 
-  String noToHeaderSoapmsg = "<?xml version=\"1.0\" ?><S:Envelope xmlns:S=\"http://schemas.xmlsoap.org/soap/envelope/\"><S:Header><Action xmlns=\"http://www.w3.org/2005/08/addressing\">http://example.com/AddNumbersPortType/add</Action></S:Header><S:Body><addNumbers xmlns=\"http://example.com\"><number1>10</number1><number2>10</number2></addNumbers></S:Body></S:Envelope>";
+	/*
+	 * @class.testArgs: -ap jaxws-url-props.dat
+	 * 
+	 * @class.setup_props: webServerHost; webServerPort; platform.mode;
+	 */
+	@BeforeEach
+	public void setup() throws Exception {
+		super.setup();
+	}
 
-  String noActionHeaderSoapmsg = "<?xml version=\"1.0\" ?><S:Envelope xmlns:S=\"http://schemas.xmlsoap.org/soap/envelope/\"><S:Header><To xmlns=\"http://www.w3.org/2005/08/addressing\">{0}</To></S:Header><S:Body><addNumbers xmlns=\"http://example.com\"><number1>10</number1><number2>10</number2></addNumbers></S:Body></S:Envelope>";
+	@AfterEach
+	public void cleanup() throws Exception {
+		logger.log(Level.INFO, "cleanup ok");
+	}
 
-  static AddNumbersService service = null;
+	/*
+	 * @testName: testDefaultOneWayAction
+	 *
+	 * @assertion_ids: WSACORE:SPEC:3001; WSACORE:SPEC:3005; WSACORE:SPEC:3017;
+	 * WSACORE:SPEC:3022.2; WSACORE:SPEC:3022.2.1; WSACORE:SPEC:3022.2.2;
+	 * WSAMD:SPEC:5000
+	 *
+	 * @test_Strategy: Test default action pattern for WSDL input
+	 *
+	 */
+	@Test
+	public void testDefaultOneWayAction() throws Exception {
+		logger.log(Level.INFO, "testDefaultOneWayAction");
+		boolean pass = true;
 
-  private void getTestURLs() throws Exception {
-    TestUtil.logMsg("Get URL's used by the test");
-    String file = JAXWS_Util.getURLFromProp(ENDPOINT_URL);
-    url = ctsurl.getURLString(PROTOCOL, hostname, portnum, file);
-    file = JAXWS_Util.getURLFromProp(WSDLLOC_URL);
-    wsdlurl = ctsurl.getURL(PROTOCOL, hostname, portnum, file);
-    TestUtil.logMsg("Service Endpoint URL: " + url);
-    TestUtil.logMsg("WSDL Location URL:    " + wsdlurl);
-  }
+		try {
+			port.addNumbers(10, 10);
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("testDefaultOneWayAction failed", e);
+		}
 
-  private void getPortStandalone() throws Exception {
-    port = (AddNumbersPortType) JAXWS_Util.getPort(wsdlurl, SERVICE_QNAME,
-        AddNumbersService.class, PORT_QNAME, AddNumbersPortType.class);
-    TestUtil.logMsg("port=" + port);
-    JAXWS_Util.setTargetEndpointAddress(port, url);
-  }
+		if (!pass)
+			throw new Exception("testDefaultOneWayAction failed");
+	}
 
-  private void getPortJavaEE() throws Exception {
-    TestUtil.logMsg("Obtain service via WebServiceRef annotation");
-    TestUtil.logMsg("service=" + service);
-    port = (AddNumbersPortType) service.getAddNumbersPort();
-    TestUtil.logMsg("port=" + port);
-    TestUtil.logMsg("Obtained port");
-    JAXWS_Util.dumpTargetEndpointAddress(port);
-  }
+	/*
+	 * @testName: testExplicitOneWayAction
+	 *
+	 * @assertion_ids: WSACORE:SPEC:3001; WSACORE:SPEC:3005; WSACORE:SPEC:3009;
+	 * WSACORE:SPEC:3017; WSACORE:SPEC:3022.2; WSACORE:SPEC:3022.2.1;
+	 * WSACORE:SPEC:3022.2.2; WSAMD:SPEC:5000
+	 *
+	 * @test_Strategy: Test default action pattern for WSDL input
+	 *
+	 */
+	@Test
+	public void testExplicitOneWayAction() throws Exception {
+		logger.log(Level.INFO, "testExplicitOneWayAction");
+		boolean pass = true;
 
-  public static void main(String[] args) {
-    Client theTests = new Client();
-    Status s = theTests.run(args, System.out, System.err);
-    s.exit();
-  }
+		try {
+			port.addNumbers2(10, 10);
+		} catch (Exception e) {
+			TestUtil.logErr("Caught Exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("testExplicitOneWayAction failed", e);
+		}
 
-  /* Test setup */
+		if (!pass)
+			throw new Exception("testExplicitOneWayAction failed");
+	}
 
-  /*
-   * @class.testArgs: -ap jaxws-url-props.dat
-   * 
-   * @class.setup_props: webServerHost; webServerPort; platform.mode;
-   */
+	/*
+	 * @testName: noToHeaderOneWayTest
+	 *
+	 * @assertion_ids: WSASB:SPEC:6005; WSASB:SPEC:6006; WSASB:SPEC:6013;
+	 *
+	 * @test_Strategy: Send a message that doesn't contain wsa:To
+	 *
+	 */
+	@Test
+	public void noToHeaderOneWayTest() throws Exception {
+		logger.log(Level.INFO, "noToHeaderOneWayTest");
+		boolean pass = true;
 
-  public void setup(String[] args, Properties p) throws Fault {
-    props = p;
-    boolean pass = true;
+		SOAPMessage response = null;
+		try {
+			String soapmsg = noToHeaderSoapmsg;
+			response = client1.makeSaajRequest(soapmsg);
+			JAXWS_Util.dumpSOAPMessage(response, false);
+		} catch (Exception e) {
+			TestUtil.logErr("Caught unexpected exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("noToHeaderOneWayTest failed", e);
+		}
+		if (!pass)
+			throw new Exception("noToHeaderOneWayTest failed");
+	}
 
-    try {
-      hostname = p.getProperty(WEBSERVERHOSTPROP);
+	/*
+	 * @testName: noActionHeaderOneWayTest
+	 *
+	 * @assertion_ids: WSASB:SPEC:6005; WSASB:SPEC:6006; WSASB:SPEC:6013;
+	 *
+	 * @test_Strategy: Send a message that doesn't contain wsa:Action
+	 *
+	 */
+	@Test
+	public void noActionHeaderOneWayTest() throws Exception {
+		logger.log(Level.INFO, "noActionHeaderOneWayTest");
+		boolean pass = true;
 
-      if (hostname == null)
-        pass = false;
-      else if (hostname.equals(""))
-        pass = false;
-
-      try {
-        portnum = Integer.parseInt(p.getProperty(WEBSERVERPORTPROP));
-      } catch (Exception e) {
-        TestUtil.printStackTrace(e);
-        pass = false;
-      }
-      client1 = (AddNumbersClient1) ClientFactory
-          .getClient(AddNumbersClient1.class, p, this, service);
-      modeProperty = p.getProperty(MODEPROP);
-      if (modeProperty.equals("standalone")) {
-        getTestURLs();
-        getPortStandalone();
-      } else {
-        TestUtil.logMsg(
-            "WebServiceRef is not set in Client (get it from specific vehicle)");
-        service = (AddNumbersService) getSharedObject();
-        getTestURLs();
-        getPortJavaEE();
-      }
-    } catch (Exception e) {
-      TestUtil.printStackTrace(e);
-      throw new Fault("setup failed:", e);
-    }
-
-    if (!pass) {
-      TestUtil.logErr(
-          "Please specify host & port of web server " + "in config properties: "
-              + WEBSERVERHOSTPROP + ", " + WEBSERVERPORTPROP);
-      throw new Fault("setup failed:");
-    }
-    logMsg("setup ok");
-  }
-
-  public void cleanup() throws Fault {
-    logMsg("cleanup ok");
-  }
-
-  /*
-   * @testName: testDefaultOneWayAction
-   *
-   * @assertion_ids: WSACORE:SPEC:3001; WSACORE:SPEC:3005; WSACORE:SPEC:3017;
-   * WSACORE:SPEC:3022.2; WSACORE:SPEC:3022.2.1; WSACORE:SPEC:3022.2.2;
-   * WSAMD:SPEC:5000
-   *
-   * @test_Strategy: Test default action pattern for WSDL input
-   *
-   */
-  public void testDefaultOneWayAction() throws Fault {
-    TestUtil.logMsg("testDefaultOneWayAction");
-    boolean pass = true;
-
-    try {
-      port.addNumbers(10, 10);
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("testDefaultOneWayAction failed", e);
-    }
-
-    if (!pass)
-      throw new Fault("testDefaultOneWayAction failed");
-  }
-
-  /*
-   * @testName: testExplicitOneWayAction
-   *
-   * @assertion_ids: WSACORE:SPEC:3001; WSACORE:SPEC:3005; WSACORE:SPEC:3009;
-   * WSACORE:SPEC:3017; WSACORE:SPEC:3022.2; WSACORE:SPEC:3022.2.1;
-   * WSACORE:SPEC:3022.2.2; WSAMD:SPEC:5000
-   *
-   * @test_Strategy: Test default action pattern for WSDL input
-   *
-   */
-  public void testExplicitOneWayAction() throws Fault {
-    TestUtil.logMsg("testExplicitOneWayAction");
-    boolean pass = true;
-
-    try {
-      port.addNumbers2(10, 10);
-    } catch (Exception e) {
-      TestUtil.logErr("Caught Exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("testExplicitOneWayAction failed", e);
-    }
-
-    if (!pass)
-      throw new Fault("testExplicitOneWayAction failed");
-  }
-
-  /*
-   * @testName: noToHeaderOneWayTest
-   *
-   * @assertion_ids: WSASB:SPEC:6005; WSASB:SPEC:6006; WSASB:SPEC:6013;
-   *
-   * @test_Strategy: Send a message that doesn't contain wsa:To
-   *
-   */
-  public void noToHeaderOneWayTest() throws Fault {
-    TestUtil.logMsg("noToHeaderOneWayTest");
-    boolean pass = true;
-
-    SOAPMessage response = null;
-    try {
-      String soapmsg = noToHeaderSoapmsg;
-      response = client1.makeSaajRequest(soapmsg);
-      JAXWS_Util.dumpSOAPMessage(response, false);
-    } catch (Exception e) {
-      TestUtil.logErr("Caught unexpected exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("noToHeaderOneWayTest failed", e);
-    }
-    if (!pass)
-      throw new Fault("noToHeaderOneWayTest failed");
-  }
-
-  /*
-   * @testName: noActionHeaderOneWayTest
-   *
-   * @assertion_ids: WSASB:SPEC:6005; WSASB:SPEC:6006; WSASB:SPEC:6013;
-   *
-   * @test_Strategy: Send a message that doesn't contain wsa:Action
-   *
-   */
-  public void noActionHeaderOneWayTest() throws Fault {
-    TestUtil.logMsg("noActionHeaderOneWayTest");
-    boolean pass = true;
-
-    String soapmsg = MessageFormat.format(noActionHeaderSoapmsg, url);
-    SOAPMessage response = null;
-    try {
-      response = client1.makeSaajRequest(soapmsg);
-      JAXWS_Util.dumpSOAPMessage(response, false);
-    } catch (SOAPFaultException e) {
-      TestUtil.logMsg("Caught expected SOAPFaultException: " + e.getMessage());
-    } catch (Exception e) {
-      TestUtil.logErr("Caught unexpected exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("noActionHeaderOneWayTest failed", e);
-    }
-    if (!pass)
-      throw new Fault("noActionHeaderOneWayTest failed");
-  }
+		String soapmsg = MessageFormat.format(noActionHeaderSoapmsg, url);
+		SOAPMessage response = null;
+		try {
+			response = client1.makeSaajRequest(soapmsg);
+			JAXWS_Util.dumpSOAPMessage(response, false);
+		} catch (SOAPFaultException e) {
+			logger.log(Level.INFO, "Caught expected SOAPFaultException: " + e.getMessage());
+		} catch (Exception e) {
+			TestUtil.logErr("Caught unexpected exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("noActionHeaderOneWayTest failed", e);
+		}
+		if (!pass)
+			throw new Exception("noActionHeaderOneWayTest failed");
+	}
 
 }

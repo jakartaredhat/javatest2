@@ -20,26 +20,25 @@
 
 package com.sun.ts.tests.jaxws.sharedwebservices.rlhandlerservice;
 
-import com.sun.ts.tests.jaxws.common.LogicalHandlerBase2;
-
 import javax.xml.namespace.QName;
 
+import com.sun.ts.tests.jaxws.common.LogicalHandlerBase2;
+
 public class ServerLogicalHandler5 extends LogicalHandlerBase2 {
-  private static final String WHICHHANDLERTYPE = "Server";
+	private static final String WHICHHANDLERTYPE = "Server";
 
-  private static final String HANDLERNAME = "ServerLogicalHandler5";
+	private static final String HANDLERNAME = "ServerLogicalHandler5";
 
-  private static final String NAMESPACEURI = "http://rlhandlerservice.org/wsdl";
+	private static final String NAMESPACEURI = "http://rlhandlerservice.org/wsdl";
 
-  private final QName FAULTCODE = new QName(NAMESPACEURI, "ItsASoapFault",
-      "tns");
+	private final QName ExceptionCODE = new QName(NAMESPACEURI, "ItsASoapFault", "tns");
 
-  private static final String FAULTACTOR = "faultActor";
+	private static final String ExceptionACTOR = "faultActor";
 
-  public ServerLogicalHandler5() {
-    super();
-    super.setWhichHandlerType(WHICHHANDLERTYPE);
-    super.setHandlerName(HANDLERNAME);
-  }
+	public ServerLogicalHandler5() {
+		super();
+		super.setWhichHandlerType(WHICHHANDLERTYPE);
+		super.setHandlerName(HANDLERNAME);
+	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2020 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2024 Oracle and/or its affiliates. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -14,407 +14,348 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  */
 
-/*
- * $Id: Client.java 52501 2007-01-24 02:29:49Z lschwenk $
- */
-
 package com.sun.ts.tests.jaxws.wsa.w2j.document.literal.requiredfalse;
 
-import com.sun.ts.lib.util.*;
-import com.sun.ts.lib.porting.*;
-import com.sun.ts.lib.harness.*;
-
-import com.sun.ts.tests.jaxws.common.*;
-
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.net.URL;
-
-import java.util.Properties;
 
 import javax.xml.namespace.QName;
 
-import com.sun.javatest.Status;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class Client extends ServiceEETest {
+import com.sun.ts.lib.util.TestUtil;
+import com.sun.ts.tests.jaxws.common.BaseClient;
+import com.sun.ts.tests.jaxws.common.JAXWS_Util;
+import com.sun.ts.tests.jaxws.wsa.w2j.document.literal.refps.AddNumbersService;
 
-  // The webserver defaults (overidden by harness properties)
-  private static final String PROTOCOL = "http";
+public class Client extends BaseClient {
 
-  private static final String HOSTNAME = "localhost";
+	// URL properties used by the test
+	private static final String ENDPOINT_URL = "wsaw2jdlrequiredfalsetest.endpoint.1";
 
-  private static final int PORTNUM = 8000;
+	private static final String WSDLLOC_URL = "wsaw2jdlrequiredfalsetest.wsdlloc.1";
 
-  // The webserver host and port property names (harness properties)
-  private static final String WEBSERVERHOSTPROP = "webServerHost";
+	private String url = null;
 
-  private static final String WEBSERVERPORTPROP = "webServerPort";
+	// service and port information
+	private static final String NAMESPACEURI = "http://example.com/";
 
-  private static final String MODEPROP = "platform.mode";
+	private static final String SERVICE_NAME = "AddNumbersService";
 
-  String modeProperty = null; // platform.mode -> (standalone|jakartaEE)
+	private static final String PORT_NAME = "AddNumbersPort";
 
-  private static final String PKG_NAME = "com.sun.ts.tests.jaxws.wsa.w2j.document.literal.requiredfalse.";
+	private QName SERVICE_QNAME = new QName(NAMESPACEURI, SERVICE_NAME);
 
-  private TSURL ctsurl = new TSURL();
+	private QName PORT_QNAME = new QName(NAMESPACEURI, PORT_NAME);
 
-  private Properties props = null;
+	private URL wsdlurl = null;
 
-  private String hostname = HOSTNAME;
+	AddNumbersPortType port = null;
 
-  private int portnum = PORTNUM;
+	static AddNumbersService service = null;
 
-  // URL properties used by the test
-  private static final String ENDPOINT_URL = "wsaw2jdlrequiredfalsetest.endpoint.1";
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  private static final String WSDLLOC_URL = "wsaw2jdlrequiredfalsetest.wsdlloc.1";
+	protected void getTestURLs() throws Exception {
+		logger.log(Level.INFO, "Get URL's used by the test");
+		String file = JAXWS_Util.getURLFromProp(ENDPOINT_URL);
+		url = ctsurl.getURLString(PROTOCOL, hostname, portnum, file);
+		file = JAXWS_Util.getURLFromProp(WSDLLOC_URL);
+		wsdlurl = ctsurl.getURL(PROTOCOL, hostname, portnum, file);
+		logger.log(Level.INFO, "Service Endpoint URL: " + url);
+		logger.log(Level.INFO, "WSDL Location URL:    " + wsdlurl);
+	}
 
-  private String url = null;
+	protected void getPortStandalone() throws Exception {
+		port = (AddNumbersPortType) JAXWS_Util.getPort(wsdlurl, SERVICE_QNAME, AddNumbersService.class, PORT_QNAME,
+				AddNumbersPortType.class);
+		logger.log(Level.INFO, "port=" + port);
+		JAXWS_Util.setTargetEndpointAddress(port, url);
+	}
 
-  // service and port information
-  private static final String NAMESPACEURI = "http://example.com/";
+	protected void getPortJavaEE() throws Exception {
+		logger.log(Level.INFO, "Obtain service via WebServiceRef annotation");
+		logger.log(Level.INFO, "service=" + service);
+		port = (AddNumbersPortType) service.getAddNumbersPort();
+		logger.log(Level.INFO, "port=" + port);
+		logger.log(Level.INFO, "Obtained port");
+		JAXWS_Util.dumpTargetEndpointAddress(port);
+	}
 
-  private static final String SERVICE_NAME = "AddNumbersService";
+	protected void getService() {
+		service = (AddNumbersService) getSharedObject();
+	}
 
-  private static final String PORT_NAME = "AddNumbersPort";
+	/* Test setup */
 
-  private QName SERVICE_QNAME = new QName(NAMESPACEURI, SERVICE_NAME);
+	/*
+	 * @class.testArgs: -ap jaxws-url-props.dat
+	 * 
+	 * @class.setup_props: webServerHost; webServerPort; platform.mode;
+	 */
+	@BeforeEach
+	public void setup() throws Exception {
+		super.setup();
+	}
 
-  private QName PORT_QNAME = new QName(NAMESPACEURI, PORT_NAME);
+	@AfterEach
+	public void cleanup() throws Exception {
+		logger.log(Level.INFO, "cleanup ok");
+	}
 
-  private URL wsdlurl = null;
+	/*
+	 * @testName: testDefaultActions
+	 *
+	 * @assertion_ids: WSAMD:SPEC:3000; WSAMD:SPEC:3000.1; WSAMD:SPEC:3000.2;
+	 * WSAMD:SPEC:3000.3; WSAMD:SPEC:3000.4; WSAMD:SPEC:4004; WSAMD:SPEC:4004.1;
+	 * WSAMD:SPEC:4004.2;
+	 *
+	 * @test_Strategy:
+	 *
+	 */
+	@Test
+	public void testDefaultActions() throws Exception {
+		logger.log(Level.INFO, "testDefaultActions");
+		boolean pass = true;
 
-  AddNumbersPortType port = null;
+		try {
+			int result = port.addNumbers(10, 10);
+			if (result != 20) {
+				TestUtil.logErr("result mismatch, expected 20, received " + result);
+				pass = false;
+			} else
+				logger.log(Level.INFO, "result match");
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("testDefaultActions failed", e);
+		}
 
-  static AddNumbersService service = null;
+		if (!pass)
+			throw new Exception("testDefaultActions failed");
+	}
 
-  private void getTestURLs() throws Exception {
-    TestUtil.logMsg("Get URL's used by the test");
-    String file = JAXWS_Util.getURLFromProp(ENDPOINT_URL);
-    url = ctsurl.getURLString(PROTOCOL, hostname, portnum, file);
-    file = JAXWS_Util.getURLFromProp(WSDLLOC_URL);
-    wsdlurl = ctsurl.getURL(PROTOCOL, hostname, portnum, file);
-    TestUtil.logMsg("Service Endpoint URL: " + url);
-    TestUtil.logMsg("WSDL Location URL:    " + wsdlurl);
-  }
+	/*
+	 * @testName: testActionWithExplicitNames
+	 *
+	 * @assertion_ids: WSAMD:SPEC:3000; WSAMD:SPEC:3000.1; WSAMD:SPEC:3000.2;
+	 * WSAMD:SPEC:3000.3; WSAMD:SPEC:3000.4; WSAMD:SPEC:4004;
+	 *
+	 * @test_Strategy:
+	 *
+	 */
+	@Test
+	public void testActionWithExplicitNames() throws Exception {
+		logger.log(Level.INFO, "testActionWithExplicitNames");
+		boolean pass = true;
 
-  private void getPortStandalone() throws Exception {
-    port = (AddNumbersPortType) JAXWS_Util.getPort(wsdlurl, SERVICE_QNAME,
-        AddNumbersService.class, PORT_QNAME, AddNumbersPortType.class);
-    TestUtil.logMsg("port=" + port);
-    JAXWS_Util.setTargetEndpointAddress(port, url);
-  }
+		try {
+			int result = port.addNumbers2(10, 10);
+			if (result != 20) {
+				TestUtil.logErr("result mismatch, expected 20, received " + result);
+				pass = false;
+			} else
+				logger.log(Level.INFO, "result match");
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("testActionWithExplicitNames failed", e);
+		}
 
-  private void getPortJavaEE() throws Exception {
-    TestUtil.logMsg("Obtain service via WebServiceRef annotation");
-    TestUtil.logMsg("service=" + service);
-    port = (AddNumbersPortType) service.getAddNumbersPort();
-    TestUtil.logMsg("port=" + port);
-    TestUtil.logMsg("Obtained port");
-    JAXWS_Util.dumpTargetEndpointAddress(port);
-  }
+		if (!pass)
+			throw new Exception("testActionWithExplicitNames failed");
+	}
 
-  public static void main(String[] args) {
-    Client theTests = new Client();
-    Status s = theTests.run(args, System.out, System.err);
-    s.exit();
-  }
+	/*
+	 * @testName: testActionWithInputNameOnly
+	 *
+	 * @assertion_ids: WSAMD:SPEC:3000; WSAMD:SPEC:3000.1; WSAMD:SPEC:3000.2;
+	 * WSAMD:SPEC:3000.3; WSAMD:SPEC:3000.4; WSAMD:SPEC:4004; WSAMD:SPEC:4004.2;
+	 *
+	 * @test_Strategy:
+	 *
+	 */
+	@Test
+	public void testActionWithInputNameOnly() throws Exception {
+		logger.log(Level.INFO, "testActionWithInputNameOnly");
+		boolean pass = true;
 
-  /* Test setup */
+		try {
+			int result = port.addNumbers3(10, 10);
+			if (result != 20) {
+				TestUtil.logErr("result mismatch, expected 20, received " + result);
+				pass = false;
+			} else
+				logger.log(Level.INFO, "result match");
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("testActionWithInputNameOnly failed", e);
+		}
 
-  /*
-   * @class.testArgs: -ap jaxws-url-props.dat
-   * 
-   * @class.setup_props: webServerHost; webServerPort; platform.mode;
-   */
+		if (!pass)
+			throw new Exception("testActionWithInputNameOnly failed");
+	}
 
-  public void setup(String[] args, Properties p) throws Fault {
-    props = p;
-    boolean pass = true;
+	/*
+	 * @testName: testActionWithOutputNameOnly
+	 *
+	 * @assertion_ids: WSAMD:SPEC:3000; WSAMD:SPEC:3000.1; WSAMD:SPEC:3000.2;
+	 * WSAMD:SPEC:3000.3; WSAMD:SPEC:3000.4; WSAMD:SPEC:4004; WSAMD:SPEC:4004.1;
+	 *
+	 * @test_Strategy:
+	 *
+	 */
+	@Test
+	public void testActionWithOutputNameOnly() throws Exception {
+		logger.log(Level.INFO, "testActionWithOutputNameOnly");
+		boolean pass = true;
 
-    try {
-      hostname = p.getProperty(WEBSERVERHOSTPROP);
+		try {
+			int result = port.addNumbers4(10, 10);
+			if (result != 20) {
+				TestUtil.logErr("result mismatch, expected 20, received " + result);
+				pass = false;
+			} else
+				logger.log(Level.INFO, "result match");
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("testActionWithOutputNameOnly failed", e);
+		}
 
-      if (hostname == null)
-        pass = false;
-      else if (hostname.equals(""))
-        pass = false;
+		if (!pass)
+			throw new Exception("testActionWithOutputNameOnly failed");
+	}
 
-      try {
-        portnum = Integer.parseInt(p.getProperty(WEBSERVERPORTPROP));
-      } catch (Exception e) {
-        TestUtil.printStackTrace(e);
-        pass = false;
-      }
-      modeProperty = p.getProperty(MODEPROP);
-      if (modeProperty.equals("standalone")) {
-        getTestURLs();
-        getPortStandalone();
-      } else {
-        TestUtil.logMsg(
-            "WebServiceRef is not set in Client (get it from specific vehicle)");
-        service = (AddNumbersService) getSharedObject();
-        getTestURLs();
-        getPortJavaEE();
-      }
-    } catch (Exception e) {
-      TestUtil.printStackTrace(e);
-      throw new Fault("setup failed:", e);
-    }
+	/*
+	 * @testName: testExplicitActionsBoth
+	 *
+	 * @assertion_ids: WSAMD:SPEC:3000; WSAMD:SPEC:3000.1; WSAMD:SPEC:3000.2;
+	 * WSAMD:SPEC:3000.3; WSAMD:SPEC:3000.4; WSAMD:SPEC:4003; WSAMD:SPEC:4003.1;
+	 * WSAMD:SPEC:4003.2;
+	 *
+	 * @test_Strategy:
+	 *
+	 */
+	@Test
+	public void testExplicitActionsBoth() throws Exception {
+		logger.log(Level.INFO, "testExplicitActionsBoth");
+		boolean pass = true;
 
-    if (!pass) {
-      TestUtil.logErr(
-          "Please specify host & port of web server " + "in config properties: "
-              + WEBSERVERHOSTPROP + ", " + WEBSERVERPORTPROP);
-      throw new Fault("setup failed:");
-    }
-    logMsg("setup ok");
-  }
+		try {
+			int result = port.addNumbers5(10, 10);
+			if (result != 20) {
+				TestUtil.logErr("result mismatch, expected 20, received " + result);
+				pass = false;
+			} else
+				logger.log(Level.INFO, "result match");
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("testExplicitActionsBoth failed", e);
+		}
 
-  public void cleanup() throws Fault {
-    logMsg("cleanup ok");
-  }
+		if (!pass)
+			throw new Exception("testExplicitActionsBoth failed");
+	}
 
-  /*
-   * @testName: testDefaultActions
-   *
-   * @assertion_ids: WSAMD:SPEC:3000; WSAMD:SPEC:3000.1; WSAMD:SPEC:3000.2;
-   * WSAMD:SPEC:3000.3; WSAMD:SPEC:3000.4; WSAMD:SPEC:4004; WSAMD:SPEC:4004.1;
-   * WSAMD:SPEC:4004.2;
-   *
-   * @test_Strategy:
-   *
-   */
-  public void testDefaultActions() throws Fault {
-    TestUtil.logMsg("testDefaultActions");
-    boolean pass = true;
+	/*
+	 * @testName: testExplicitActionsInputOnly
+	 *
+	 * @assertion_ids: WSAMD:SPEC:3000; WSAMD:SPEC:3000.1; WSAMD:SPEC:3000.2;
+	 * WSAMD:SPEC:3000.3; WSAMD:SPEC:3000.4; WSAMD:SPEC:4000; WSAMD:SPEC:4003;
+	 * WSAMD:SPEC:4003.1;
+	 *
+	 * @test_Strategy:
+	 *
+	 */
+	@Test
+	public void testExplicitActionsInputOnly() throws Exception {
+		logger.log(Level.INFO, "testExplicitActionsInputOnly");
+		boolean pass = true;
 
-    try {
-      int result = port.addNumbers(10, 10);
-      if (result != 20) {
-        TestUtil.logErr("result mismatch, expected 20, received " + result);
-        pass = false;
-      } else
-        TestUtil.logMsg("result match");
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("testDefaultActions failed", e);
-    }
+		try {
+			int result = port.addNumbers6(10, 10);
+			if (result != 20) {
+				TestUtil.logErr("result mismatch, expected 20, received " + result);
+				pass = false;
+			} else
+				logger.log(Level.INFO, "result match");
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("testExplicitActionsInputOnly failed", e);
+		}
 
-    if (!pass)
-      throw new Fault("testDefaultActions failed");
-  }
+		if (!pass)
+			throw new Exception("testExplicitActionsInputOnly failed");
+	}
 
-  /*
-   * @testName: testActionWithExplicitNames
-   *
-   * @assertion_ids: WSAMD:SPEC:3000; WSAMD:SPEC:3000.1; WSAMD:SPEC:3000.2;
-   * WSAMD:SPEC:3000.3; WSAMD:SPEC:3000.4; WSAMD:SPEC:4004;
-   *
-   * @test_Strategy:
-   *
-   */
-  public void testActionWithExplicitNames() throws Fault {
-    TestUtil.logMsg("testActionWithExplicitNames");
-    boolean pass = true;
+	/*
+	 * @testName: testExplicitActionsOutputOnly
+	 *
+	 * @assertion_ids: WSAMD:SPEC:3000; WSAMD:SPEC:3000.1; WSAMD:SPEC:3000.2;
+	 * WSAMD:SPEC:3000.3; WSAMD:SPEC:3000.4; WSAMD:SPEC:4000; WSAMD:SPEC:4003;
+	 * WSAMD:SPEC:4003.2;
+	 *
+	 * @test_Strategy:
+	 *
+	 */
+	@Test
+	public void testExplicitActionsOutputOnly() throws Exception {
+		logger.log(Level.INFO, "testExplicitActionsOutputOnly");
+		boolean pass = true;
 
-    try {
-      int result = port.addNumbers2(10, 10);
-      if (result != 20) {
-        TestUtil.logErr("result mismatch, expected 20, received " + result);
-        pass = false;
-      } else
-        TestUtil.logMsg("result match");
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("testActionWithExplicitNames failed", e);
-    }
+		try {
+			int result = port.addNumbers7(10, 10);
+			if (result != 20) {
+				TestUtil.logErr("result mismatch, expected 20, received " + result);
+				pass = false;
+			} else
+				logger.log(Level.INFO, "result match");
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("testExplicitActionsOutputOnly failed", e);
+		}
 
-    if (!pass)
-      throw new Fault("testActionWithExplicitNames failed");
-  }
+		if (!pass)
+			throw new Exception("testExplicitActionsOutputOnly failed");
+	}
 
-  /*
-   * @testName: testActionWithInputNameOnly
-   *
-   * @assertion_ids: WSAMD:SPEC:3000; WSAMD:SPEC:3000.1; WSAMD:SPEC:3000.2;
-   * WSAMD:SPEC:3000.3; WSAMD:SPEC:3000.4; WSAMD:SPEC:4004; WSAMD:SPEC:4004.2;
-   *
-   * @test_Strategy:
-   *
-   */
-  public void testActionWithInputNameOnly() throws Fault {
-    TestUtil.logMsg("testActionWithInputNameOnly");
-    boolean pass = true;
+	/*
+	 * @testName: TestEmptyActions
+	 *
+	 * @assertion_ids: WSAMD:SPEC:3000; WSAMD:SPEC:3000.1; WSAMD:SPEC:3000.2;
+	 * WSAMD:SPEC:3000.3; WSAMD:SPEC:3000.4; WSAMD:SPEC:4004; WSAMD:SPEC:4003;
+	 * WSAMD:SPEC:4003.1; WSAMD:SPEC:4003.2;
+	 *
+	 * @test_Strategy:
+	 *
+	 */
+	@Test
+	public void TestEmptyActions() throws Exception {
+		logger.log(Level.INFO, "TestEmptyActions");
+		boolean pass = true;
 
-    try {
-      int result = port.addNumbers3(10, 10);
-      if (result != 20) {
-        TestUtil.logErr("result mismatch, expected 20, received " + result);
-        pass = false;
-      } else
-        TestUtil.logMsg("result match");
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("testActionWithInputNameOnly failed", e);
-    }
+		try {
+			int result = port.addNumbers8(10, 10);
+			if (result != 20) {
+				TestUtil.logErr("result mismatch, expected 20, received " + result);
+				pass = false;
+			} else
+				logger.log(Level.INFO, "result match");
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("TestEmptyActions failed", e);
+		}
 
-    if (!pass)
-      throw new Fault("testActionWithInputNameOnly failed");
-  }
-
-  /*
-   * @testName: testActionWithOutputNameOnly
-   *
-   * @assertion_ids: WSAMD:SPEC:3000; WSAMD:SPEC:3000.1; WSAMD:SPEC:3000.2;
-   * WSAMD:SPEC:3000.3; WSAMD:SPEC:3000.4; WSAMD:SPEC:4004; WSAMD:SPEC:4004.1;
-   *
-   * @test_Strategy:
-   *
-   */
-  public void testActionWithOutputNameOnly() throws Fault {
-    TestUtil.logMsg("testActionWithOutputNameOnly");
-    boolean pass = true;
-
-    try {
-      int result = port.addNumbers4(10, 10);
-      if (result != 20) {
-        TestUtil.logErr("result mismatch, expected 20, received " + result);
-        pass = false;
-      } else
-        TestUtil.logMsg("result match");
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("testActionWithOutputNameOnly failed", e);
-    }
-
-    if (!pass)
-      throw new Fault("testActionWithOutputNameOnly failed");
-  }
-
-  /*
-   * @testName: testExplicitActionsBoth
-   *
-   * @assertion_ids: WSAMD:SPEC:3000; WSAMD:SPEC:3000.1; WSAMD:SPEC:3000.2;
-   * WSAMD:SPEC:3000.3; WSAMD:SPEC:3000.4; WSAMD:SPEC:4003; WSAMD:SPEC:4003.1;
-   * WSAMD:SPEC:4003.2;
-   *
-   * @test_Strategy:
-   *
-   */
-  public void testExplicitActionsBoth() throws Fault {
-    TestUtil.logMsg("testExplicitActionsBoth");
-    boolean pass = true;
-
-    try {
-      int result = port.addNumbers5(10, 10);
-      if (result != 20) {
-        TestUtil.logErr("result mismatch, expected 20, received " + result);
-        pass = false;
-      } else
-        TestUtil.logMsg("result match");
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("testExplicitActionsBoth failed", e);
-    }
-
-    if (!pass)
-      throw new Fault("testExplicitActionsBoth failed");
-  }
-
-  /*
-   * @testName: testExplicitActionsInputOnly
-   *
-   * @assertion_ids: WSAMD:SPEC:3000; WSAMD:SPEC:3000.1; WSAMD:SPEC:3000.2;
-   * WSAMD:SPEC:3000.3; WSAMD:SPEC:3000.4; WSAMD:SPEC:4000; WSAMD:SPEC:4003;
-   * WSAMD:SPEC:4003.1;
-   *
-   * @test_Strategy:
-   *
-   */
-  public void testExplicitActionsInputOnly() throws Fault {
-    TestUtil.logMsg("testExplicitActionsInputOnly");
-    boolean pass = true;
-
-    try {
-      int result = port.addNumbers6(10, 10);
-      if (result != 20) {
-        TestUtil.logErr("result mismatch, expected 20, received " + result);
-        pass = false;
-      } else
-        TestUtil.logMsg("result match");
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("testExplicitActionsInputOnly failed", e);
-    }
-
-    if (!pass)
-      throw new Fault("testExplicitActionsInputOnly failed");
-  }
-
-  /*
-   * @testName: testExplicitActionsOutputOnly
-   *
-   * @assertion_ids: WSAMD:SPEC:3000; WSAMD:SPEC:3000.1; WSAMD:SPEC:3000.2;
-   * WSAMD:SPEC:3000.3; WSAMD:SPEC:3000.4; WSAMD:SPEC:4000; WSAMD:SPEC:4003;
-   * WSAMD:SPEC:4003.2;
-   *
-   * @test_Strategy:
-   *
-   */
-  public void testExplicitActionsOutputOnly() throws Fault {
-    TestUtil.logMsg("testExplicitActionsOutputOnly");
-    boolean pass = true;
-
-    try {
-      int result = port.addNumbers7(10, 10);
-      if (result != 20) {
-        TestUtil.logErr("result mismatch, expected 20, received " + result);
-        pass = false;
-      } else
-        TestUtil.logMsg("result match");
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("testExplicitActionsOutputOnly failed", e);
-    }
-
-    if (!pass)
-      throw new Fault("testExplicitActionsOutputOnly failed");
-  }
-
-  /*
-   * @testName: TestEmptyActions
-   *
-   * @assertion_ids: WSAMD:SPEC:3000; WSAMD:SPEC:3000.1; WSAMD:SPEC:3000.2;
-   * WSAMD:SPEC:3000.3; WSAMD:SPEC:3000.4; WSAMD:SPEC:4004; WSAMD:SPEC:4003;
-   * WSAMD:SPEC:4003.1; WSAMD:SPEC:4003.2;
-   *
-   * @test_Strategy:
-   *
-   */
-  public void TestEmptyActions() throws Fault {
-    TestUtil.logMsg("TestEmptyActions");
-    boolean pass = true;
-
-    try {
-      int result = port.addNumbers8(10, 10);
-      if (result != 20) {
-        TestUtil.logErr("result mismatch, expected 20, received " + result);
-        pass = false;
-      } else
-        TestUtil.logMsg("result match");
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("TestEmptyActions failed", e);
-    }
-
-    if (!pass)
-      throw new Fault("TestEmptyActions failed");
-  }
+		if (!pass)
+			throw new Exception("TestEmptyActions failed");
+	}
 }

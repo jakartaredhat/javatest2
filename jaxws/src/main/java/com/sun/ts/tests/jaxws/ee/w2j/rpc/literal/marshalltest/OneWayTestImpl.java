@@ -20,17 +20,9 @@
 
 package com.sun.ts.tests.jaxws.ee.w2j.rpc.literal.marshalltest;
 
-import com.sun.ts.lib.util.*;
-import com.sun.ts.lib.porting.*;
-import com.sun.ts.tests.jaxws.common.*;
-
-import com.sun.ts.tests.jaxws.ee.w2j.rpc.literal.marshalltest.*;
-
-import jakarta.xml.ws.WebServiceException;
-
-import jakarta.xml.soap.*;
-
-import java.util.*;
+import com.sun.ts.lib.util.TestUtil;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 
 // Service Implementation Class - as outlined in JAX-WS Specification
 
@@ -39,8 +31,11 @@ import jakarta.jws.WebService;
 @WebService(targetNamespace = "http://marshalltestservice.org/MarshallTestService.wsdl", portName = "MarshallTestPort4", serviceName = "MarshallTestService", wsdlLocation = "WEB-INF/wsdl/WSW2JRLMarshallTestService.wsdl", endpointInterface = "com.sun.ts.tests.jaxws.ee.w2j.rpc.literal.marshalltest.OneWayTest")
 public class OneWayTestImpl implements OneWayTest {
 
-  public void oneWayMethod(OneWayMessage v) {
-    TestUtil.logTrace("oneWayMethod");
-    TestUtil.logMsg("OneWayMessage: " + v.getStringValue());
-  }
+		private static final Logger logger = (Logger) System.getLogger(OneWayTestImpl.class.getName());
+
+
+	public void oneWayMethod(OneWayMessage v) {
+		TestUtil.logTrace("oneWayMethod");
+		logger.log(Level.INFO, "OneWayMessage: " + v.getStringValue());
+	}
 }

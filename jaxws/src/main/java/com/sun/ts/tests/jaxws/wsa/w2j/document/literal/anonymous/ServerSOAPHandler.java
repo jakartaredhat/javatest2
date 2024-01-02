@@ -20,119 +20,107 @@
 
 package com.sun.ts.tests.jaxws.wsa.w2j.document.literal.anonymous;
 
-import com.sun.ts.lib.util.*;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 
 import com.sun.ts.tests.jaxws.common.Handler_Util;
-import com.sun.ts.tests.jaxws.wsa.common.WsaBaseSOAPHandler;
-import com.sun.ts.tests.jaxws.wsa.common.W3CAddressingConstants;
 import com.sun.ts.tests.jaxws.wsa.common.ActionNotSupportedException;
 import com.sun.ts.tests.jaxws.wsa.common.AddressingPropertyException;
+import com.sun.ts.tests.jaxws.wsa.common.W3CAddressingConstants;
+import com.sun.ts.tests.jaxws.wsa.common.WsaBaseSOAPHandler;
+
 import jakarta.xml.ws.handler.soap.SOAPMessageContext;
 
 public class ServerSOAPHandler extends WsaBaseSOAPHandler {
-  protected void checkInboundAction(SOAPMessageContext context, String oper,
-      String action) {
-    TestUtil.logMsg("ServerSOAPHandler.checkInboundAction: [operation=" + oper
-        + ", input action=" + action + "]");
-    System.out.println("ServerSOAPHandler.checkInboundAction: [operation="
-        + oper + ", input action=" + action + "]");
-    if (Handler_Util.checkForMsg(context, "testAnonymousResponsesAssertion")) {
-      VerifyAddressingHeadersForAnonymousResponsesAssertion(context, action);
-    } else if (Handler_Util.checkForMsg(context,
-        "testNonAnonymousResponsesAssertion")) {
-      VerifyAddressingHeadersForNonAnonymousResponsesAssertion(context, action);
-    }
-  }
 
-  private void VerifyAddressingHeadersForAnonymousResponsesAssertion(
-      SOAPMessageContext context, String action) {
-    TestUtil.logMsg(
-        "ServerSOAPHandler.VerifyAddressingHeadersForAnonymousResponsesAssertion");
-    System.out.println(
-        "ServerSOAPHandler.VerifyAddressingHeadersForAnonymousResponsesAssertion");
-    if (!TestConstants.TEST_ANONYMOUS_RESPONSES_ASSERTION_IN_ACTION
-        .equals(action)) {
-      throw new ActionNotSupportedException("Expected:"
-          + TestConstants.TEST_ANONYMOUS_RESPONSES_ASSERTION_IN_ACTION
-          + ", Actual:" + action);
-    }
-    try {
-      String to = getTo(context);
-      TestUtil.logMsg("[To=" + to + "]");
-      System.out.println("[To=" + to + "]");
-    } catch (Exception e) {
-      TestUtil.logMsg("Exception occurred: " + e);
-    }
-    String replyTo = null;
-    try {
-      replyTo = getReplyTo(context);
-      TestUtil.logMsg("[ReplyTo=" + replyTo + "]");
-      System.out.println("[ReplyTo=" + replyTo + "]");
-    } catch (Exception e) {
-      TestUtil.logMsg("Exception occurred: " + e);
-    }
-    if (replyTo != null) {
-      if (!replyTo.equals(W3CAddressingConstants.WSA_ANONYMOUS_ADDRESS_URI)
-          && !replyTo.equals(W3CAddressingConstants.WSA_NONE_ADDRESS)) {
-        throw new AddressingPropertyException("Expected: wsa:ReplyTo="
-            + W3CAddressingConstants.WSA_ANONYMOUS_ADDRESS_URI + " or "
-            + W3CAddressingConstants.WSA_NONE_ADDRESS + ", Actual: wsa:ReplyTo="
-            + replyTo);
-      }
-    }
-    try {
-      String messageID = getMessageId(context);
-      TestUtil.logMsg("[MessageID=" + messageID + "]");
-      System.out.println("[MessageID=" + messageID + "]");
-    } catch (Exception e) {
-      throw new AddressingPropertyException(
-          "wsa:MessageID was not set (unexpected)");
-    }
-  }
+	private static final Logger logger = (Logger) System.getLogger(ServerSOAPHandler.class.getName());
 
-  private void VerifyAddressingHeadersForNonAnonymousResponsesAssertion(
-      SOAPMessageContext context, String action) {
-    TestUtil.logMsg(
-        "ServerSOAPHandler.VerifyAddressingHeadersForNonAnonymousResponsesAssertion");
-    System.out.println(
-        "ServerSOAPHandler.VerifyAddressingHeadersForNonAnonymousResponsesAssertion");
-    if (!TestConstants.TEST_NONANONYMOUS_RESPONSES_ASSERTION_IN_ACTION
-        .equals(action)) {
-      throw new ActionNotSupportedException("Expected:"
-          + TestConstants.TEST_NONANONYMOUS_RESPONSES_ASSERTION_IN_ACTION
-          + ", Actual:" + action);
-    }
-    try {
-      String to = getTo(context);
-      TestUtil.logMsg("[To=" + to + "]");
-      System.out.println("[To=" + to + "]");
-    } catch (Exception e) {
-      TestUtil.logMsg("Exception occurred: " + e);
-    }
-    String replyTo;
-    try {
-      replyTo = getReplyTo(context);
-      TestUtil.logMsg("[ReplyTo=" + replyTo + "]");
-      System.out.println("[ReplyTo=" + replyTo + "]");
-    } catch (Exception e) {
-      throw new AddressingPropertyException(
-          "wsa:ReplyTo was not set (unexpected)");
-    }
-    if (replyTo.equals(W3CAddressingConstants.WSA_ANONYMOUS_ADDRESS_URI))
-      throw new AddressingPropertyException("Expected: wsa:ReplyTo=!"
-          + W3CAddressingConstants.WSA_ANONYMOUS_ADDRESS_URI
-          + ", Actual: wsa:ReplyTo=" + replyTo);
-    try {
-      String messageID = getMessageId(context);
-      TestUtil.logMsg("[MessageID=" + messageID + "]");
-      System.out.println("[MessageID=" + messageID + "]");
-    } catch (Exception e) {
-      throw new AddressingPropertyException(
-          "wsa:MessageID was not set (unexpected)");
-    }
-  }
+	protected void checkInboundAction(SOAPMessageContext context, String oper, String action) {
+		logger.log(Level.INFO,
+				"ServerSOAPHandler.checkInboundAction: [operation=" + oper + ", input action=" + action + "]");
+		System.out
+				.println("ServerSOAPHandler.checkInboundAction: [operation=" + oper + ", input action=" + action + "]");
+		if (Handler_Util.checkForMsg(context, "testAnonymousResponsesAssertion")) {
+			VerifyAddressingHeadersForAnonymousResponsesAssertion(context, action);
+		} else if (Handler_Util.checkForMsg(context, "testNonAnonymousResponsesAssertion")) {
+			VerifyAddressingHeadersForNonAnonymousResponsesAssertion(context, action);
+		}
+	}
 
-  protected String whichHandler() {
-    return "ServerSOAPHandler";
-  }
+	private void VerifyAddressingHeadersForAnonymousResponsesAssertion(SOAPMessageContext context, String action) {
+		logger.log(Level.INFO, "ServerSOAPHandler.VerifyAddressingHeadersForAnonymousResponsesAssertion");
+		System.out.println("ServerSOAPHandler.VerifyAddressingHeadersForAnonymousResponsesAssertion");
+		if (!TestConstants.TEST_ANONYMOUS_RESPONSES_ASSERTION_IN_ACTION.equals(action)) {
+			throw new ActionNotSupportedException(
+					"Expected:" + TestConstants.TEST_ANONYMOUS_RESPONSES_ASSERTION_IN_ACTION + ", Actual:" + action);
+		}
+		try {
+			String to = getTo(context);
+			logger.log(Level.INFO, "[To=" + to + "]");
+			System.out.println("[To=" + to + "]");
+		} catch (Exception e) {
+			logger.log(Level.INFO, "Exception occurred: " + e);
+		}
+		String replyTo = null;
+		try {
+			replyTo = getReplyTo(context);
+			logger.log(Level.INFO, "[ReplyTo=" + replyTo + "]");
+			System.out.println("[ReplyTo=" + replyTo + "]");
+		} catch (Exception e) {
+			logger.log(Level.INFO, "Exception occurred: " + e);
+		}
+		if (replyTo != null) {
+			if (!replyTo.equals(W3CAddressingConstants.WSA_ANONYMOUS_ADDRESS_URI)
+					&& !replyTo.equals(W3CAddressingConstants.WSA_NONE_ADDRESS)) {
+				throw new AddressingPropertyException(
+						"Expected: wsa:ReplyTo=" + W3CAddressingConstants.WSA_ANONYMOUS_ADDRESS_URI + " or "
+								+ W3CAddressingConstants.WSA_NONE_ADDRESS + ", Actual: wsa:ReplyTo=" + replyTo);
+			}
+		}
+		try {
+			String messageID = getMessageId(context);
+			logger.log(Level.INFO, "[MessageID=" + messageID + "]");
+			System.out.println("[MessageID=" + messageID + "]");
+		} catch (Exception e) {
+			throw new AddressingPropertyException("wsa:MessageID was not set (unexpected)");
+		}
+	}
+
+	private void VerifyAddressingHeadersForNonAnonymousResponsesAssertion(SOAPMessageContext context, String action) {
+		logger.log(Level.INFO, "ServerSOAPHandler.VerifyAddressingHeadersForNonAnonymousResponsesAssertion");
+		System.out.println("ServerSOAPHandler.VerifyAddressingHeadersForNonAnonymousResponsesAssertion");
+		if (!TestConstants.TEST_NONANONYMOUS_RESPONSES_ASSERTION_IN_ACTION.equals(action)) {
+			throw new ActionNotSupportedException(
+					"Expected:" + TestConstants.TEST_NONANONYMOUS_RESPONSES_ASSERTION_IN_ACTION + ", Actual:" + action);
+		}
+		try {
+			String to = getTo(context);
+			logger.log(Level.INFO, "[To=" + to + "]");
+			System.out.println("[To=" + to + "]");
+		} catch (Exception e) {
+			logger.log(Level.INFO, "Exception occurred: " + e);
+		}
+		String replyTo;
+		try {
+			replyTo = getReplyTo(context);
+			logger.log(Level.INFO, "[ReplyTo=" + replyTo + "]");
+			System.out.println("[ReplyTo=" + replyTo + "]");
+		} catch (Exception e) {
+			throw new AddressingPropertyException("wsa:ReplyTo was not set (unexpected)");
+		}
+		if (replyTo.equals(W3CAddressingConstants.WSA_ANONYMOUS_ADDRESS_URI))
+			throw new AddressingPropertyException("Expected: wsa:ReplyTo=!"
+					+ W3CAddressingConstants.WSA_ANONYMOUS_ADDRESS_URI + ", Actual: wsa:ReplyTo=" + replyTo);
+		try {
+			String messageID = getMessageId(context);
+			logger.log(Level.INFO, "[MessageID=" + messageID + "]");
+			System.out.println("[MessageID=" + messageID + "]");
+		} catch (Exception e) {
+			throw new AddressingPropertyException("wsa:MessageID was not set (unexpected)");
+		}
+	}
+
+	protected String whichHandler() {
+		return "ServerSOAPHandler";
+	}
 }

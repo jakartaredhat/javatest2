@@ -20,80 +20,84 @@
 
 package com.sun.ts.tests.jaxws.wsi.w2j.rpc.literal.R2744;
 
-import java.util.Properties;
+import java.io.IOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 
-import com.sun.javatest.Status;
+import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.sun.ts.tests.jaxws.common.BaseClient;
 import com.sun.ts.tests.jaxws.sharedclients.ClientFactory;
 
-import com.sun.ts.lib.harness.*;
+public class Client extends BaseClient {
+	/**
+	 * The one string to be echoed.
+	 */
+	private static final String STRING = "R2744";
 
-public class Client extends ServiceEETest {
-  /**
-   * The one string to be echoed.
-   */
-  private static final String STRING = "R2744";
+	/**
+	 * The one client.
+	 */
+	private W2JRLR2744Client client;
 
-  /**
-   * The one client.
-   */
-  private W2JRLR2744Client client;
+	static W2JRLR2744TestService service = null;
 
-  static W2JRLR2744TestService service = null;
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  /**
-   * Test entry point.
-   * 
-   * @param args
-   *          the command-line arguments.
-   */
-  public static void main(String[] args) {
-    Client client = new Client();
-    Status status = client.run(args, System.out, System.err);
-    status.exit();
-  }
+	@Deployment(testable = false)
+	public static WebArchive createDeployment() throws IOException {
+		return createWebArchive(Client.class);
+	}
 
-  /**
-   * @class.testArgs: -ap jaxws-url-props.dat
-   * @class.setup_props: webServerHost; webServerPort; platform.mode;
-   *
-   * @param args
-   * @param properties
-   *
-   * @throws Fault
-   */
-  public void setup(String[] args, Properties properties) throws Fault {
-    client = (W2JRLR2744Client) ClientFactory.getClient(W2JRLR2744Client.class,
-        properties, this, service);
-    logMsg("setup ok");
-  }
+	/**
+	 * @class.testArgs: -ap jaxws-url-props.dat
+	 * @class.setup_props: webServerHost; webServerPort; platform.mode;
+	 *
+	 * @param args
+	 * @param properties
+	 *
+	 * @throws Exception
+	 */
+	@BeforeEach
+	public void setup() throws Exception {
+		super.setup();
+		client = (W2JRLR2744Client) ClientFactory.getClient(W2JRLR2744Client.class, service);
+		logger.log(Level.INFO, "setup ok");
+	}
 
-  public void cleanup() {
-    logMsg("cleanup");
-  }
+	@AfterEach
+	public void cleanup() {
+		logger.log(Level.INFO, "cleanup");
+	}
 
-  /**
-   * @testName: testSOAPAction
-   *
-   * @assertion_ids: WSI:SPEC:R2744; WSASB:SPEC:4001; WSASB:SPEC:4001.1;
-   *                 WSASB:SPEC:4001.2;
-   *
-   * @test_Strategy: The supplied WSDL, containing a soap:operation with a
-   *                 soapAction attribute, has been used by the WSDL-to-Java
-   *                 tool to generate an endpoint and client. A handler verifies
-   *                 the presence of the SOAPAction header and its quoted value.
-   *
-   * @throws Fault
-   */
-  public void testSOAPAction() throws Fault {
-    String result;
-    try {
-      result = client.echoString(STRING);
-      System.out.println("result=" + result);
-    } catch (Exception e) {
-      throw new Fault("Unable to invoke echoString operation (BP-R2744)", e);
-    }
-    if (!result.equals(STRING)) {
-      throw new Fault("Missing or invalid SOAPAction header (BP-R2744)");
-    }
-  }
+	/**
+	 * @testName: testSOAPAction
+	 *
+	 * @assertion_ids: WSI:SPEC:R2744; WSASB:SPEC:4001; WSASB:SPEC:4001.1;
+	 *                 WSASB:SPEC:4001.2;
+	 *
+	 * @test_Strategy: The supplied WSDL, containing a soap:operation with a
+	 *                 soapAction attribute, has been used by the WSDL-to-Java tool
+	 *                 to generate an endpoint and client. A handler verifies the
+	 *                 presence of the SOAPAction header and its quoted value.
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void testSOAPAction() throws Exception {
+		String result;
+		try {
+			result = client.echoString(STRING);
+			System.out.println("result=" + result);
+		} catch (Exception e) {
+			throw new Exception("Unable to invoke echoString operation (BP-R2744)", e);
+		}
+		if (!result.equals(STRING)) {
+			throw new Exception("Missing or invalid SOAPAction header (BP-R2744)");
+		}
+	}
 }

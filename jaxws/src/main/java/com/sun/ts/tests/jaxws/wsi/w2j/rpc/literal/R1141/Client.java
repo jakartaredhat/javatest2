@@ -20,352 +20,284 @@
 
 package com.sun.ts.tests.jaxws.wsi.w2j.rpc.literal.R1141;
 
-import com.sun.ts.lib.util.*;
-import com.sun.ts.lib.porting.*;
-import com.sun.ts.lib.harness.*;
-
-import java.io.*;
-import java.net.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Iterator;
 
 import javax.xml.namespace.QName;
 
-import com.sun.javatest.Status;
+import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import com.sun.ts.tests.jaxws.common.*;
+import com.sun.ts.lib.util.TestUtil;
+import com.sun.ts.tests.jaxws.common.BaseClient;
+import com.sun.ts.tests.jaxws.common.JAXWS_Util;
 
-public class Client extends ServiceEETest {
-  // The webserver defaults (overidden by harness properties)
-  private static final String PROTOCOL = "http";
+public class Client extends BaseClient {
 
-  private static final String HOSTNAME = "localhost";
+	private static final String PKG_NAME = "com.sun.ts.tests.jaxws.wsi.w2j.rpc.literal.R1141.";
 
-  private static final int PORTNUM = 8000;
+	// RPC service and port information
+	private static final String NAMESPACE_URI = "http://w2jrlr1141testservice.org/wsdl";
 
-  // The webserver host and port property names (harness properties)
-  private static final String WEBSERVERHOSTPROP = "webServerHost";
+	private static final String SERVICE_NAME = "W2JRLR1141TestService";
 
-  private static final String WEBSERVERPORTPROP = "webServerPort";
+	private static final String PORT_NAME = "HelloPort";
 
-  private static final String MODEPROP = "platform.mode";
+	private QName SERVICE_QNAME;
 
-  String modeProperty = null; // platform.mode -> (standalone|jakartaEE)
+	private QName PORT_QNAME;
 
-  private static final String PKG_NAME = "com.sun.ts.tests.jaxws.wsi.w2j.rpc.literal.R1141.";
+	private static final Class PORT_CLASS = Hello.class;
 
-  // The webserver username and password property names (harness properties)
-  private static final String USERNAME = "user";
+	// URL properties used by the test
+	private static final String ENDPOINT_URL = "wsi.w2jrlr1141.endpoint.1";
 
-  private static final String PASSWORD = "password";
+	private static final String WSDLLOC_URL = "wsi.w2jrlr1141.wsdlloc.1";
 
-  // RPC service and port information
-  private static final String NAMESPACE_URI = "http://w2jrlr1141testservice.org/wsdl";
+	private String url = null;
 
-  private static final String SERVICE_NAME = "W2JRLR1141TestService";
+	private URL wsdlurl = null;
 
-  private static final String PORT_NAME = "HelloPort";
+	static W2JRLR1141TestService service;
 
-  private QName SERVICE_QNAME;
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  private QName PORT_QNAME;
+	@Deployment(testable = false)
+	public static WebArchive createDeployment() throws IOException {
+		return createWebArchive(Client.class);
+	}
 
-  private static final Class PORT_CLASS = Hello.class;
+	// expect 2xx http status code
+	String GoodSoapMessage = "<?xml version=\"1.0\" encoding=\"utf-8\"?><soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:enc=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns=\"http://w2jrlr1141testservice.org/types\"><soap:Body><ns:HelloRequestElement><string>Rocky</string></ns:HelloRequestElement></soap:Body></soap:Envelope>";
 
-  private TSURL ctsurl = new TSURL();
+	protected void getTestURLs() throws Exception {
+		logger.log(Level.INFO, "Get URL's used by the test");
+		String file = JAXWS_Util.getURLFromProp(ENDPOINT_URL);
+		url = ctsurl.getURLString(PROTOCOL, hostname, portnum, file);
+		file = JAXWS_Util.getURLFromProp(WSDLLOC_URL);
+		wsdlurl = ctsurl.getURL(PROTOCOL, hostname, portnum, file);
+		logger.log(Level.INFO, "Service Endpoint URL: " + url);
+		logger.log(Level.INFO, "WSDL Location URL:    " + wsdlurl);
+	}
 
-  private Properties props = null;
+	private void getTargetEndpointAddress(Object port) throws Exception {
+		logger.log(Level.INFO, "Get Target Endpoint Address for port=" + port);
+		String url = JAXWS_Util.getTargetEndpointAddress(port);
+		logger.log(Level.INFO, "Target Endpoint Address=" + url);
+	}
 
-  private String hostname = HOSTNAME;
+	Hello port = null;
 
-  private int portnum = PORTNUM;
+	protected void getPortStandalone() throws Exception {
+		port = (Hello) JAXWS_Util.getPort(wsdlurl, SERVICE_QNAME, W2JRLR1141TestService.class, PORT_QNAME, Hello.class);
+		JAXWS_Util.setTargetEndpointAddress(port, url);
+	}
 
-  private String username = null;
+	protected void getPortJavaEE() throws Exception {
+		logger.log(Level.INFO, "Obtain service via WebServiceRef annotation");
+		logger.log(Level.INFO, "Obtained service");
+		port = (Hello) service.getPort(Hello.class);
+		logger.log(Level.INFO, "Obtained port");
+		getTargetEndpointAddress(port);
+		// JAXWS_Util.setTargetEndpointAddress(port, url);
+	}
 
-  private String password = null;
+	protected void getService() {
+		service = (W2JRLR1141TestService) getSharedObject();
+	}
 
-  // URL properties used by the test
-  private static final String ENDPOINT_URL = "wsi.w2jrlr1141.endpoint.1";
+	/* Test setup */
 
-  private static final String WSDLLOC_URL = "wsi.w2jrlr1141.wsdlloc.1";
+	/*
+	 * @class.testArgs: -ap jaxws-url-props.dat
+	 * 
+	 * @class.setup_props: webServerHost; webServerPort; user; password;
+	 * platform.mode;
+	 */
+	@BeforeEach
+	public void setup() throws Exception {
+		// Initialize QNames used by the test
+		SERVICE_QNAME = new QName(NAMESPACE_URI, SERVICE_NAME);
+		PORT_QNAME = new QName(NAMESPACE_URI, PORT_NAME);
+		super.setup();
+	}
 
-  private String url = null;
+	@AfterEach
+	public void cleanup() throws Exception {
+		logger.log(Level.INFO, "cleanup ok");
+	}
 
-  private URL wsdlurl = null;
+	/*
+	 * @testName: TestHTTP10Message
+	 *
+	 * @assertion_ids: WSI:SPEC:R1141
+	 *
+	 * @test_Strategy: Send a good SOAP RPC request over an HttpURLConnection use a
+	 * http version of 1.0. Verify that we get a correct HTTP status code of 2xx.
+	 */
+	@Test
+	public void TestHTTP10Message() throws Exception {
+		boolean pass = true;
+		Iterator iterator = null;
+		try {
+			logger.log(Level.INFO, "TestHTTP10Message");
+			logger.log(Level.INFO, "Send good SOAP RPC request (expect 2xx status code)");
+			HttpURLConnection conn = openHttp10Connection(url);
+			TestUtil.logMsg("HTTP VERSION = " + conn.getRequestProperty("HTTP-Version"));
+			int httpStatusCode = sendRequest(conn, GoodSoapMessage, "utf-8");
+			closeHttpConnection(conn);
+			if (httpStatusCode < 200 || httpStatusCode > 299) {
+				TestUtil.logErr("Expected 2xx status code, instead got " + httpStatusCode);
+				pass = false;
+			} else
+				TestUtil.logMsg("Received expected 2xx status code of " + httpStatusCode);
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("TestGoodSoapMessage failed", e);
+		}
 
-  static W2JRLR1141TestService service;
+		if (!pass)
+			throw new Exception("TestGoodSoapMessage failed");
+	}
 
-  // expect 2xx http status code
-  String GoodSoapMessage = "<?xml version=\"1.0\" encoding=\"utf-8\"?><soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:enc=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:ns=\"http://w2jrlr1141testservice.org/types\"><soap:Body><ns:HelloRequestElement><string>Rocky</string></ns:HelloRequestElement></soap:Body></soap:Envelope>";
+	/*
+	 * @testName: TestHTTP11Message
+	 *
+	 * @assertion_ids: WSI:SPEC:R1141
+	 *
+	 * @test_Strategy: Send a good SOAP RPC request over an HttpURLConnection use a
+	 * http version of 1.1. Verify that we get a correct HTTP status code of 2xx.
+	 */
+	@Test
+	public void TestHTTP11Message() throws Exception {
+		boolean pass = true;
+		Iterator iterator = null;
+		try {
+			logger.log(Level.INFO, "TestHTTP10Message");
+			logger.log(Level.INFO, "Send good SOAP RPC request (expect 2xx status code)");
+			HttpURLConnection conn = openHttpConnection(url);
+			TestUtil.logMsg("HTTP VERSION = " + conn.getRequestProperty("HTTP-Version"));
+			int httpStatusCode = sendRequest(conn, GoodSoapMessage, "utf-8");
+			closeHttpConnection(conn);
+			if (httpStatusCode < 200 || httpStatusCode > 299) {
+				TestUtil.logErr("Expected 2xx status code, instead got " + httpStatusCode);
+				pass = false;
+			} else
+				TestUtil.logMsg("Received expected 2xx status code of " + httpStatusCode);
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("TestGoodSoapMessage failed", e);
+		}
 
-  private void getTestURLs() throws Exception {
-    TestUtil.logMsg("Get URL's used by the test");
-    String file = JAXWS_Util.getURLFromProp(ENDPOINT_URL);
-    url = ctsurl.getURLString(PROTOCOL, hostname, portnum, file);
-    file = JAXWS_Util.getURLFromProp(WSDLLOC_URL);
-    wsdlurl = ctsurl.getURL(PROTOCOL, hostname, portnum, file);
-    TestUtil.logMsg("Service Endpoint URL: " + url);
-    TestUtil.logMsg("WSDL Location URL:    " + wsdlurl);
-  }
+		if (!pass)
+			throw new Exception("TestGoodSoapMessage failed");
+	}
 
-  private void getTargetEndpointAddress(Object port) throws Exception {
-    TestUtil.logMsg("Get Target Endpoint Address for port=" + port);
-    String url = JAXWS_Util.getTargetEndpointAddress(port);
-    TestUtil.logMsg("Target Endpoint Address=" + url);
-  }
+	private HttpURLConnection openHttpConnection(String s) throws IOException {
+		HttpURLConnection conn = (HttpURLConnection) new URL(s).openConnection();
+		conn.setDoOutput(true);
+		conn.setDoInput(true);
+		conn.setRequestMethod("POST");
+		conn.setRequestProperty("HTTP-Version", "HTTP/1.1");
+		conn.setRequestProperty("Content-Type", "text/xml");
+		conn.setRequestProperty("SOAPAction", "\"\"");
+		return conn;
+	}
 
-  Hello port = null;
+	private HttpURLConnection openHttp10Connection(String s) throws IOException {
+		HttpURLConnection conn = (HttpURLConnection) new URL(s).openConnection();
+		conn.setDoOutput(true);
+		conn.setDoInput(true);
+		conn.setRequestMethod("POST");
+		conn.setRequestProperty("HTTP-Version", "HTTP/1.0");
+		conn.setRequestProperty("Content-Type", "text/xml");
+		conn.setRequestProperty("SOAPAction", "\"\"");
+		return conn;
+	}
 
-  private void getPortStandalone() throws Exception {
-    port = (Hello) JAXWS_Util.getPort(wsdlurl, SERVICE_QNAME,
-        W2JRLR1141TestService.class, PORT_QNAME, Hello.class);
-    JAXWS_Util.setTargetEndpointAddress(port, url);
-  }
+	private void closeHttpConnection(HttpURLConnection conn) throws IOException {
+		conn.disconnect();
+	}
 
-  private void getPortJavaEE() throws Exception {
-    TestUtil.logMsg("Obtain service via WebServiceRef annotation");
-    TestUtil.logMsg("Obtained service");
-    port = (Hello) service.getPort(Hello.class);
-    TestUtil.logMsg("Obtained port");
-    getTargetEndpointAddress(port);
-    // JAXWS_Util.setTargetEndpointAddress(port, url);
-  }
+	private int sendRequest(HttpURLConnection conn, String request) throws IOException {
 
-  public static void main(String[] args) {
-    Client theTests = new Client();
-    Status s = theTests.run(args, System.out, System.err);
-    s.exit();
-  }
+		logger.log(Level.INFO, "Request=" + request);
+		return _sendRequest(conn, request.getBytes());
+	}
 
-  /* Test setup */
+	private int sendRequest(HttpURLConnection conn, String request, String charsetName) throws IOException {
 
-  /*
-   * @class.testArgs: -ap jaxws-url-props.dat
-   * 
-   * @class.setup_props: webServerHost; webServerPort; user; password;
-   * platform.mode;
-   */
+		logger.log(Level.INFO, "Request=" + request);
+		return _sendRequest(conn, request.getBytes(charsetName));
+	}
 
-  public void setup(String[] args, Properties p) throws Fault {
-    props = p;
-    boolean pass = true;
+	private int sendRequest(HttpURLConnection conn, byte[] request, String encoding) throws IOException {
 
-    // Initialize QNames used by the test
-    SERVICE_QNAME = new QName(NAMESPACE_URI, SERVICE_NAME);
-    PORT_QNAME = new QName(NAMESPACE_URI, PORT_NAME);
+		logger.log(Level.INFO, "Request=" + new String(request, encoding));
+		return _sendRequest(conn, request);
+	}
 
-    try {
-      hostname = p.getProperty(WEBSERVERHOSTPROP);
-      if (hostname == null)
-        pass = false;
-      else if (hostname.equals(""))
-        pass = false;
-      try {
-        portnum = Integer.parseInt(p.getProperty(WEBSERVERPORTPROP));
-      } catch (Exception e) {
-        TestUtil.printStackTrace(e);
-        pass = false;
-      }
-      username = p.getProperty(USERNAME);
-      password = p.getProperty(PASSWORD);
-      TestUtil.logMsg("Creating stub instance ...");
-      modeProperty = p.getProperty(MODEPROP);
-      if (modeProperty.equals("standalone")) {
-        getTestURLs();
-        getPortStandalone();
-      } else {
-        TestUtil.logMsg(
-            "WebServiceRef is not set in Client (get it from specific vehicle)");
-        service = (W2JRLR1141TestService) getSharedObject();
-        getTestURLs();
-        getPortJavaEE();
-      }
-    } catch (Exception e) {
-      throw new Fault("setup failed:", e);
-    }
-    if (!pass) {
-      TestUtil.logErr(
-          "Please specify host & port of web server " + "in config properties: "
-              + WEBSERVERHOSTPROP + ", " + WEBSERVERPORTPROP);
-      throw new Fault("setup failed:");
-    }
-    logMsg("setup ok");
-  }
+	private int _sendRequest(HttpURLConnection conn, byte[] data) throws IOException {
 
-  public void cleanup() throws Fault {
-    logMsg("cleanup ok");
-  }
+		int length = data.length;
+		conn.setRequestProperty("Content-Length", new Integer(data.length).toString());
+		OutputStream outputStream = null;
+		try {
+			outputStream = conn.getOutputStream();
+			outputStream.write(data);
+		} finally {
+			try {
+				outputStream.close();
+			} catch (Throwable t) {
+			}
+		}
 
-  /*
-   * @testName: TestHTTP10Message
-   *
-   * @assertion_ids: WSI:SPEC:R1141
-   *
-   * @test_Strategy: Send a good SOAP RPC request over an HttpURLConnection use
-   * a http version of 1.0. Verify that we get a correct HTTP status code of
-   * 2xx.
-   */
-  public void TestHTTP10Message() throws Fault {
-    boolean pass = true;
-    Iterator iterator = null;
-    try {
-      TestUtil.logMsg("TestHTTP10Message");
-      TestUtil.logMsg("Send good SOAP RPC request (expect 2xx status code)");
-      HttpURLConnection conn = openHttp10Connection(url);
-      TestUtil
-          .logMsg("HTTP VERSION = " + conn.getRequestProperty("HTTP-Version"));
-      int httpStatusCode = sendRequest(conn, GoodSoapMessage, "utf-8");
-      closeHttpConnection(conn);
-      if (httpStatusCode < 200 || httpStatusCode > 299) {
-        TestUtil
-            .logErr("Expected 2xx status code, instead got " + httpStatusCode);
-        pass = false;
-      } else
-        TestUtil
-            .logMsg("Received expected 2xx status code of " + httpStatusCode);
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("TestGoodSoapMessage failed", e);
-    }
+		boolean isFailure = true;
+		int responseCode = conn.getResponseCode();
 
-    if (!pass)
-      throw new Fault("TestGoodSoapMessage failed");
-  }
+		String responseMessage = conn.getResponseMessage();
 
-  /*
-   * @testName: TestHTTP11Message
-   *
-   * @assertion_ids: WSI:SPEC:R1141
-   *
-   * @test_Strategy: Send a good SOAP RPC request over an HttpURLConnection use
-   * a http version of 1.1. Verify that we get a correct HTTP status code of
-   * 2xx.
-   */
-  public void TestHTTP11Message() throws Fault {
-    boolean pass = true;
-    Iterator iterator = null;
-    try {
-      TestUtil.logMsg("TestHTTP10Message");
-      TestUtil.logMsg("Send good SOAP RPC request (expect 2xx status code)");
-      HttpURLConnection conn = openHttpConnection(url);
-      TestUtil
-          .logMsg("HTTP VERSION = " + conn.getRequestProperty("HTTP-Version"));
-      int httpStatusCode = sendRequest(conn, GoodSoapMessage, "utf-8");
-      closeHttpConnection(conn);
-      if (httpStatusCode < 200 || httpStatusCode > 299) {
-        TestUtil
-            .logErr("Expected 2xx status code, instead got " + httpStatusCode);
-        pass = false;
-      } else
-        TestUtil
-            .logMsg("Received expected 2xx status code of " + httpStatusCode);
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("TestGoodSoapMessage failed", e);
-    }
+		logger.log(Level.INFO, "ResponseCode=" + responseCode);
+		logger.log(Level.INFO, "ResponseMessage=" + responseMessage);
+		if (responseCode == HttpURLConnection.HTTP_OK) {
+			isFailure = false;
+		}
+		InputStream istream = null;
+		BufferedReader reader = null;
+		try {
+			istream = !isFailure ? conn.getInputStream() : conn.getErrorStream();
+			if (istream != null) {
+				String response = null;
+				String buf = null;
+				reader = new BufferedReader(new InputStreamReader(istream));
+				while ((buf = reader.readLine()) != null) {
+					if (response != null)
+						response += buf;
+					else
+						response = buf;
+				}
+			}
+		} finally {
+			try {
+				reader.close();
+				istream.close();
+			} catch (Throwable t) {
+			}
+		}
 
-    if (!pass)
-      throw new Fault("TestGoodSoapMessage failed");
-  }
-
-  private HttpURLConnection openHttpConnection(String s) throws IOException {
-    HttpURLConnection conn = (HttpURLConnection) new URL(s).openConnection();
-    conn.setDoOutput(true);
-    conn.setDoInput(true);
-    conn.setRequestMethod("POST");
-    conn.setRequestProperty("HTTP-Version", "HTTP/1.1");
-    conn.setRequestProperty("Content-Type", "text/xml");
-    conn.setRequestProperty("SOAPAction", "\"\"");
-    return conn;
-  }
-
-  private HttpURLConnection openHttp10Connection(String s) throws IOException {
-    HttpURLConnection conn = (HttpURLConnection) new URL(s).openConnection();
-    conn.setDoOutput(true);
-    conn.setDoInput(true);
-    conn.setRequestMethod("POST");
-    conn.setRequestProperty("HTTP-Version", "HTTP/1.0");
-    conn.setRequestProperty("Content-Type", "text/xml");
-    conn.setRequestProperty("SOAPAction", "\"\"");
-    return conn;
-  }
-
-  private void closeHttpConnection(HttpURLConnection conn) throws IOException {
-    conn.disconnect();
-  }
-
-  private int sendRequest(HttpURLConnection conn, String request)
-      throws IOException {
-
-    TestUtil.logMsg("Request=" + request);
-    return _sendRequest(conn, request.getBytes());
-  }
-
-  private int sendRequest(HttpURLConnection conn, String request,
-      String charsetName) throws IOException {
-
-    TestUtil.logMsg("Request=" + request);
-    return _sendRequest(conn, request.getBytes(charsetName));
-  }
-
-  private int sendRequest(HttpURLConnection conn, byte[] request,
-      String encoding) throws IOException {
-
-    TestUtil.logMsg("Request=" + new String(request, encoding));
-    return _sendRequest(conn, request);
-  }
-
-  private int _sendRequest(HttpURLConnection conn, byte[] data)
-      throws IOException {
-
-    int length = data.length;
-    conn.setRequestProperty("Content-Length",
-        new Integer(data.length).toString());
-    OutputStream outputStream = null;
-    try {
-      outputStream = conn.getOutputStream();
-      outputStream.write(data);
-    } finally {
-      try {
-        outputStream.close();
-      } catch (Throwable t) {
-      }
-    }
-
-    boolean isFailure = true;
-    int responseCode = conn.getResponseCode();
-
-    String responseMessage = conn.getResponseMessage();
-
-    TestUtil.logMsg("ResponseCode=" + responseCode);
-    TestUtil.logMsg("ResponseMessage=" + responseMessage);
-    if (responseCode == HttpURLConnection.HTTP_OK) {
-      isFailure = false;
-    }
-    InputStream istream = null;
-    BufferedReader reader = null;
-    try {
-      istream = !isFailure ? conn.getInputStream() : conn.getErrorStream();
-      if (istream != null) {
-        String response = null;
-        String buf = null;
-        reader = new BufferedReader(new InputStreamReader(istream));
-        while ((buf = reader.readLine()) != null) {
-          if (response != null)
-            response += buf;
-          else
-            response = buf;
-        }
-      }
-    } finally {
-      try {
-        reader.close();
-        istream.close();
-      } catch (Throwable t) {
-      }
-    }
-
-    return responseCode;
-  }
+		return responseCode;
+	}
 }

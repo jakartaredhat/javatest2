@@ -20,46 +20,51 @@
 
 package com.sun.ts.tests.jaxws.api.jakarta_xml_ws.AsyncHandler;
 
-import com.sun.ts.tests.jaxws.sharedclients.doclithelloclient.*;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 
-import com.sun.ts.lib.util.*;
+import com.sun.ts.tests.jaxws.sharedclients.doclithelloclient.HelloResponse;
+
 import jakarta.xml.ws.AsyncHandler;
 import jakarta.xml.ws.Response;
 
 public class JAXBAsyncHandler implements AsyncHandler<Object> {
-  private boolean dataReady = false;
+	
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  private HelloResponse theData;
+	private boolean dataReady = false;
 
-  private java.util.Map<String, Object> theContext;
+	private HelloResponse theData;
 
-  public JAXBAsyncHandler() {
-    TestUtil.logMsg("in JAXBAsyncHandler");
-  }
+	private java.util.Map<String, Object> theContext;
 
-  public synchronized boolean isDataReady() {
-    return dataReady;
-  }
+	public JAXBAsyncHandler() {
+		logger.log(Level.INFO, "in JAXBAsyncHandler");
+	}
 
-  public HelloResponse getData() {
-    return theData;
-  }
+	public synchronized boolean isDataReady() {
+		return dataReady;
+	}
 
-  public java.util.Map<String, Object> getContext() {
-    return theContext;
-  }
+	public HelloResponse getData() {
+		return theData;
+	}
 
-  public void handleResponse(Response<Object> res) {
-    TestUtil.logMsg("in JAXBAsyncHandler.handleResponse()");
-    try {
-      theData = (HelloResponse) res.get();
-      theContext = res.getContext();
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    synchronized (this) {
-      dataReady = true;
-    }
+	public java.util.Map<String, Object> getContext() {
+		return theContext;
+	}
 
-  }
+	public void handleResponse(Response<Object> res) {
+		logger.log(Level.INFO, "in JAXBAsyncHandler.handleResponse()");
+		try {
+			theData = (HelloResponse) res.get();
+			theContext = res.getContext();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		synchronized (this) {
+			dataReady = true;
+		}
+
+	}
 }

@@ -19,144 +19,135 @@
  */
 package com.sun.ts.tests.jaxws.wsa.w2j.document.literal.addressingfeature;
 
-import com.sun.ts.lib.util.TestUtil;
 import com.sun.ts.tests.jaxws.common.Handler_Util;
-import com.sun.ts.tests.jaxws.wsa.common.WsaBaseSOAPHandler;
 import com.sun.ts.tests.jaxws.wsa.common.ActionNotSupportedException;
-import jakarta.xml.ws.handler.soap.SOAPMessageContext;
+import com.sun.ts.tests.jaxws.wsa.common.WsaBaseSOAPHandler;
+
 import jakarta.xml.soap.SOAPException;
+import jakarta.xml.ws.handler.soap.SOAPMessageContext;
+
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+
 
 public class ClientSOAPHandler extends WsaBaseSOAPHandler {
-  protected void checkInboundAction(SOAPMessageContext context, String oper,
-      String action) {
-    TestUtil.logMsg("ClientSOAPHandler.checkInboundAction: [operation=" + oper
-        + ", input action=" + action + "]");
-    // figure out which testname i'm checking for and call appropropriate
-    // verify*(...)
-    if (Handler_Util.checkForMsg(context,
-        "ClientEnabledREQServerEnabledNotREQ")) {
-      verifyClientEnabledREQServerEnabledNotREQ(context, action);
-    } else if (Handler_Util.checkForMsg(context,
-        "ClientNotEnabledServerEnabledNotREQ")) {
-      verifyClientNotEnabledServerEnabledNotREQ(context, action);
-    } else if (Handler_Util.checkForMsg(context,
-        "ClientEnabledREQServerEnabledREQ")) {
-      verifyClientEnabledREQServerEnabledREQ(context, action);
-    } else if (Handler_Util.checkForMsg(context,
-        "ClientEnabledNotREQServerNotEnabled")) {
-      verifyClientEnabledNotREQServerNotEnabled(context, action);
-    } else if (Handler_Util.checkForMsg(context,
-        "ClientEnabledNotREQServerEnabledREQ")) {
-      verifyClientEnabledNotREQServerEnabledREQ(context, action);
-    } else if (Handler_Util.checkForMsg(context,
-        "ClientEnabledNotREQServerEnabledNotREQ")) {
-      verifyClientEnabledNotREQServerEnabledNotREQ(context, action);
-    }
-  }
 
-  private void verifyClientEnabledREQServerEnabledNotREQ(
-      SOAPMessageContext context, String action) {
-    // verify specific headers for ClientEnabledREQServerEnabledNotREQ here...
-    checkAddressingHeadersExist(context, action);
-  }
+			private static final Logger logger = (Logger) System.getLogger(ClientSOAPHandler.class.getName());
 
-  private void verifyClientNotEnabledServerEnabledNotREQ(
-      SOAPMessageContext context, String action) {
-    // verify specific headers for ClientNotEnabledServerEnabledNotREQ here...
-    checkAddressingHeadersDoNotExist(context, action);
-  }
+	protected void checkInboundAction(SOAPMessageContext context, String oper, String action) {
+		logger.log(Level.INFO,
+				"ClientSOAPHandler.checkInboundAction: [operation=" + oper + ", input action=" + action + "]");
+		// figure out which testname i'm checking for and call appropropriate
+		// verify*(...)
+		if (Handler_Util.checkForMsg(context, "ClientEnabledREQServerEnabledNotREQ")) {
+			verifyClientEnabledREQServerEnabledNotREQ(context, action);
+		} else if (Handler_Util.checkForMsg(context, "ClientNotEnabledServerEnabledNotREQ")) {
+			verifyClientNotEnabledServerEnabledNotREQ(context, action);
+		} else if (Handler_Util.checkForMsg(context, "ClientEnabledREQServerEnabledREQ")) {
+			verifyClientEnabledREQServerEnabledREQ(context, action);
+		} else if (Handler_Util.checkForMsg(context, "ClientEnabledNotREQServerNotEnabled")) {
+			verifyClientEnabledNotREQServerNotEnabled(context, action);
+		} else if (Handler_Util.checkForMsg(context, "ClientEnabledNotREQServerEnabledREQ")) {
+			verifyClientEnabledNotREQServerEnabledREQ(context, action);
+		} else if (Handler_Util.checkForMsg(context, "ClientEnabledNotREQServerEnabledNotREQ")) {
+			verifyClientEnabledNotREQServerEnabledNotREQ(context, action);
+		}
+	}
 
-  private void verifyClientEnabledREQServerEnabledREQ(
-      SOAPMessageContext context, String action) {
-    // verify specific headers for ClientEnabledREQServerEnabledREQ here...
-    checkAddressingHeadersExist(context, action);
-  }
+	private void verifyClientEnabledREQServerEnabledNotREQ(SOAPMessageContext context, String action) {
+		// verify specific headers for ClientEnabledREQServerEnabledNotREQ here...
+		checkAddressingHeadersExist(context, action);
+	}
 
-  private void verifyClientEnabledNotREQServerNotEnabled(
-      SOAPMessageContext context, String action) {
-    // verify specific headers for ClientEnabledNotREQServerNotEnabled here...
-    checkAddressingHeadersDoNotExist(context, action);
-  }
+	private void verifyClientNotEnabledServerEnabledNotREQ(SOAPMessageContext context, String action) {
+		// verify specific headers for ClientNotEnabledServerEnabledNotREQ here...
+		checkAddressingHeadersDoNotExist(context, action);
+	}
 
-  private void verifyClientEnabledNotREQServerEnabledREQ(
-      SOAPMessageContext context, String action) {
-    // verify specific headers for ClientEnabledNotREQServerEnabledREQ here...
-    checkAddressingHeadersMayExist(context, action);
-  }
+	private void verifyClientEnabledREQServerEnabledREQ(SOAPMessageContext context, String action) {
+		// verify specific headers for ClientEnabledREQServerEnabledREQ here...
+		checkAddressingHeadersExist(context, action);
+	}
 
-  private void verifyClientEnabledNotREQServerEnabledNotREQ(
-      SOAPMessageContext context, String action) {
-    // verify specific headers for ClientEnabledNotREQServerEnabledNotREQ
-    // here...
-    checkAddressingHeadersMayExist(context, action);
-  }
+	private void verifyClientEnabledNotREQServerNotEnabled(SOAPMessageContext context, String action) {
+		// verify specific headers for ClientEnabledNotREQServerNotEnabled here...
+		checkAddressingHeadersDoNotExist(context, action);
+	}
 
-  private void verifyAction(String action) {
-    TestUtil.logMsg("ClientSOAPHandler.verifyAction: [action=" + action + "]");
-    if (!TestConstants.ADD_NUMBERS_OUT_ACTION.equals(action)) {
-      throw new ActionNotSupportedException("Expected:"
-          + TestConstants.ADD_NUMBERS_OUT_ACTION + ", Actual:" + action);
-    }
-  }
+	private void verifyClientEnabledNotREQServerEnabledREQ(SOAPMessageContext context, String action) {
+		// verify specific headers for ClientEnabledNotREQServerEnabledREQ here...
+		checkAddressingHeadersMayExist(context, action);
+	}
 
-  private void checkAddressingHeadersMayExist(SOAPMessageContext context,
-      String action) {
-    TestUtil.logMsg("ClientSOAPHandler.checkAddressingHeadersMayExist");
-    // If Addressing headers exist then check them otherwise don't
-    if (action != null) {
-      verifyAction(action);
-      checkInboundToExist(context);
-      checkInboundRelatesToExist(context);
-    }
-  }
+	private void verifyClientEnabledNotREQServerEnabledNotREQ(SOAPMessageContext context, String action) {
+		// verify specific headers for ClientEnabledNotREQServerEnabledNotREQ
+		// here...
+		checkAddressingHeadersMayExist(context, action);
+	}
 
-  private void checkAddressingHeadersExist(SOAPMessageContext context,
-      String action) {
-    TestUtil.logMsg("ClientSOAPHandler.checkAddressingHeadersExist");
-    verifyAction(action);
-    checkInboundToExist(context);
-    checkInboundRelatesToExist(context);
-  }
+	private void verifyAction(String action) {
+		logger.log(Level.INFO, "ClientSOAPHandler.verifyAction: [action=" + action + "]");
+		if (!TestConstants.ADD_NUMBERS_OUT_ACTION.equals(action)) {
+			throw new ActionNotSupportedException(
+					"Expected:" + TestConstants.ADD_NUMBERS_OUT_ACTION + ", Actual:" + action);
+		}
+	}
 
-  private void checkAddressingHeadersDoNotExist(SOAPMessageContext context,
-      String action) {
-    TestUtil.logMsg("ClientSOAPHandler.checkAddressingHeadersDoNotExist");
-    checkActionDoesNotExist(action);
-    checkInboundToDoesNotExist(context);
-    checkInboundRelatesToDoesNotExist(context);
-  }
+	private void checkAddressingHeadersMayExist(SOAPMessageContext context, String action) {
+		logger.log(Level.INFO, "ClientSOAPHandler.checkAddressingHeadersMayExist");
+		// If Addressing headers exist then check them otherwise don't
+		if (action != null) {
+			verifyAction(action);
+			checkInboundToExist(context);
+			checkInboundRelatesToExist(context);
+		}
+	}
 
-  protected String getAction(SOAPMessageContext context) throws SOAPException {
-    String testName = (String) context.get("test.name");
-    TestUtil.logMsg("ClientSOAPHandler.getAction(): testName=" + testName);
-    if (testName == null) {
-      return super.getAction(context);
-    }
-    /* Headers MAY be present on SOAPResponse */
-    else if (testName.equals("ClientEnabledNotREQServerEnabledNotREQ")
-        || testName.equals("ClientEnabledNotREQServerEnabledREQ")) {
-      try {
-        return super.getAction(context);
-      } catch (Exception e) {
-        return null;
-      }
-    }
-    /* Headers MUST be present on SOAPResponse */
-    else if (testName.equals("ClientEnabledREQServerEnabledNotREQ")
-        || testName.equals("ClientEnabledREQServerEnabledREQ")) {
-      return super.getAction(context);
-    }
-    /* Headers MUST NOT be present on SOAPResponse */
-    else if (testName.equals("ClientNotEnabledServerEnabledNotREQ")
-        || testName.equals("ClientEnabledNotREQServerNotEnabled")) {
-      return super.getActionDoesNotExist(context);
-    }
-    /* Fault case just return null */
-    else
-      return null;
-  }
+	private void checkAddressingHeadersExist(SOAPMessageContext context, String action) {
+		logger.log(Level.INFO, "ClientSOAPHandler.checkAddressingHeadersExist");
+		verifyAction(action);
+		checkInboundToExist(context);
+		checkInboundRelatesToExist(context);
+	}
 
-  protected String whichHandler() {
-    return "ClientSOAPHandler";
-  }
+	private void checkAddressingHeadersDoNotExist(SOAPMessageContext context, String action) {
+		logger.log(Level.INFO, "ClientSOAPHandler.checkAddressingHeadersDoNotExist");
+		checkActionDoesNotExist(action);
+		checkInboundToDoesNotExist(context);
+		checkInboundRelatesToDoesNotExist(context);
+	}
+
+	protected String getAction(SOAPMessageContext context) throws SOAPException {
+		String testName = (String) context.get("test.name");
+		logger.log(Level.INFO, "ClientSOAPHandler.getAction(): testName=" + testName);
+		if (testName == null) {
+			return super.getAction(context);
+		}
+		/* Headers MAY be present on SOAPResponse */
+		else if (testName.equals("ClientEnabledNotREQServerEnabledNotREQ")
+				|| testName.equals("ClientEnabledNotREQServerEnabledREQ")) {
+			try {
+				return super.getAction(context);
+			} catch (Exception e) {
+				return null;
+			}
+		}
+		/* Headers MUST be present on SOAPResponse */
+		else if (testName.equals("ClientEnabledREQServerEnabledNotREQ")
+				|| testName.equals("ClientEnabledREQServerEnabledREQ")) {
+			return super.getAction(context);
+		}
+		/* Headers MUST NOT be present on SOAPResponse */
+		else if (testName.equals("ClientNotEnabledServerEnabledNotREQ")
+				|| testName.equals("ClientEnabledNotREQServerNotEnabled")) {
+			return super.getActionDoesNotExist(context);
+		}
+		/* Exception case just return null */
+		else
+			return null;
+	}
+
+	protected String whichHandler() {
+		return "ClientSOAPHandler";
+	}
 }

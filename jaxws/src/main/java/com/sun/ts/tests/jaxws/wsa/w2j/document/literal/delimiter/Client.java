@@ -20,276 +20,226 @@
 
 package com.sun.ts.tests.jaxws.wsa.w2j.document.literal.delimiter;
 
-import com.sun.ts.lib.util.*;
-import com.sun.ts.lib.porting.*;
-import com.sun.ts.lib.harness.*;
-
-import com.sun.ts.tests.jaxws.common.*;
-
+import java.io.IOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.net.URL;
-
-import java.util.Properties;
 
 import javax.xml.namespace.QName;
 
-import com.sun.javatest.Status;
+import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class Client extends ServiceEETest {
+import com.sun.ts.lib.util.TestUtil;
+import com.sun.ts.tests.jaxws.common.BaseClient;
+import com.sun.ts.tests.jaxws.common.JAXWS_Util;
 
-  // The webserver defaults (overidden by harness properties)
-  private static final String PROTOCOL = "http";
+public class Client extends BaseClient {
 
-  private static final String HOSTNAME = "localhost";
+	private static final String PKG_NAME = "com.sun.ts.tests.jaxws.wsa.w2j.document.literal.delimiter.";
 
-  private static final int PORTNUM = 8000;
+	// URL properties used by the test
+	private static final String ENDPOINT_URL = "wsaw2jdldelimitertest.endpoint.1";
 
-  // The webserver host and port property names (harness properties)
-  private static final String WEBSERVERHOSTPROP = "webServerHost";
+	private static final String WSDLLOC_URL = "wsaw2jdldelimitertest.wsdlloc.1";
 
-  private static final String WEBSERVERPORTPROP = "webServerPort";
+	private String url = null;
 
-  private static final String MODEPROP = "platform.mode";
+	// service and port information
+	private static final String NAMESPACEURI = "urn:example.com";
 
-  String modeProperty = null; // platform.mode -> (standalone|jakartaEE)
+	private static final String SERVICE_NAME = "AddNumbersService";
 
-  private static final String PKG_NAME = "com.sun.ts.tests.jaxws.wsa.w2j.document.literal.delimiter.";
+	private static final String PORT_NAME = "AddNumbersPort";
 
-  private TSURL ctsurl = new TSURL();
+	private QName SERVICE_QNAME = new QName(NAMESPACEURI, SERVICE_NAME);
 
-  private Properties props = null;
+	private QName PORT_QNAME = new QName(NAMESPACEURI, PORT_NAME);
 
-  private String hostname = HOSTNAME;
+	private URL wsdlurl = null;
 
-  private int portnum = PORTNUM;
+	AddNumbersPortType port = null;
 
-  // URL properties used by the test
-  private static final String ENDPOINT_URL = "wsaw2jdldelimitertest.endpoint.1";
+	static AddNumbersService service = null;
 
-  private static final String WSDLLOC_URL = "wsaw2jdldelimitertest.wsdlloc.1";
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  private String url = null;
+	protected void getTestURLs() throws Exception {
+		logger.log(Level.INFO, "Get URL's used by the test");
+		String file = JAXWS_Util.getURLFromProp(ENDPOINT_URL);
+		url = ctsurl.getURLString(PROTOCOL, hostname, portnum, file);
+		file = JAXWS_Util.getURLFromProp(WSDLLOC_URL);
+		wsdlurl = ctsurl.getURL(PROTOCOL, hostname, portnum, file);
+		logger.log(Level.INFO, "Service Endpoint URL: " + url);
+		logger.log(Level.INFO, "WSDL Location URL:    " + wsdlurl);
+	}
 
-  // service and port information
-  private static final String NAMESPACEURI = "urn:example.com";
+	protected void getPortStandalone() throws Exception {
+		port = (AddNumbersPortType) JAXWS_Util.getPort(wsdlurl, SERVICE_QNAME, AddNumbersService.class, PORT_QNAME,
+				AddNumbersPortType.class);
+		logger.log(Level.INFO, "port=" + port);
+		JAXWS_Util.setTargetEndpointAddress(port, url);
+	}
 
-  private static final String SERVICE_NAME = "AddNumbersService";
+	protected void getPortJavaEE() throws Exception {
+		logger.log(Level.INFO, "Obtain service via WebServiceRef annotation");
+		logger.log(Level.INFO, "service=" + service);
+		port = (AddNumbersPortType) service.getAddNumbersPort();
+		logger.log(Level.INFO, "port=" + port);
+		logger.log(Level.INFO, "Obtained port");
+		JAXWS_Util.dumpTargetEndpointAddress(port);
+	}
 
-  private static final String PORT_NAME = "AddNumbersPort";
+	protected void getService() {
+		service = (AddNumbersService) getSharedObject();
+	}
 
-  private QName SERVICE_QNAME = new QName(NAMESPACEURI, SERVICE_NAME);
+	@Deployment(testable = false)
+	public static WebArchive createDeployment() throws IOException {
+		return createWebArchive(Client.class);
+	}
 
-  private QName PORT_QNAME = new QName(NAMESPACEURI, PORT_NAME);
+	/* Test setup */
 
-  private URL wsdlurl = null;
+	/*
+	 * @class.testArgs: -ap jaxws-url-props.dat
+	 * 
+	 * @class.setup_props: webServerHost; webServerPort; platform.mode;
+	 */
+	@BeforeEach
+	public void setup() throws Exception {
+		super.setup();
+	}
 
-  AddNumbersPortType port = null;
+	@AfterEach
+	public void cleanup() throws Exception {
+		logger.log(Level.INFO, "cleanup ok");
+	}
 
-  static AddNumbersService service = null;
+	/*
+	 * @testName: testURNDefaultInputOutputActions
+	 *
+	 * @assertion_ids: WSAMD:SPEC:4004; WSAMD:SPEC:4004.1; WSAMD:SPEC:4004.2;
+	 *
+	 * @test_Strategy: Test default action pattern for WSDL input/output with URN
+	 * targetNamespace
+	 *
+	 */
+	@Test
+	public void testURNDefaultInputOutputActions() throws Exception {
+		logger.log(Level.INFO, "testURNDefaultInputOutputActions");
+		boolean pass = true;
 
-  private void getTestURLs() throws Exception {
-    TestUtil.logMsg("Get URL's used by the test");
-    String file = JAXWS_Util.getURLFromProp(ENDPOINT_URL);
-    url = ctsurl.getURLString(PROTOCOL, hostname, portnum, file);
-    file = JAXWS_Util.getURLFromProp(WSDLLOC_URL);
-    wsdlurl = ctsurl.getURL(PROTOCOL, hostname, portnum, file);
-    TestUtil.logMsg("Service Endpoint URL: " + url);
-    TestUtil.logMsg("WSDL Location URL:    " + wsdlurl);
-  }
+		try {
+			int result = port.addNumbers(10, 10);
+			if (result != 20) {
+				TestUtil.logErr("result mismatch, expected 20, received " + result);
+				pass = false;
+			} else
+				logger.log(Level.INFO, "result match");
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("testURNDefaultInputOutputActions failed", e);
+		}
 
-  private void getPortStandalone() throws Exception {
-    port = (AddNumbersPortType) JAXWS_Util.getPort(wsdlurl, SERVICE_QNAME,
-        AddNumbersService.class, PORT_QNAME, AddNumbersPortType.class);
-    TestUtil.logMsg("port=" + port);
-    JAXWS_Util.setTargetEndpointAddress(port, url);
-  }
+		if (!pass)
+			throw new Exception("testURNDefaultInputOutputActions failed");
+	}
 
-  private void getPortJavaEE() throws Exception {
-    TestUtil.logMsg("Obtain service via WebServiceRef annotation");
-    TestUtil.logMsg("service=" + service);
-    port = (AddNumbersPortType) service.getAddNumbersPort();
-    TestUtil.logMsg("port=" + port);
-    TestUtil.logMsg("Obtained port");
-    JAXWS_Util.dumpTargetEndpointAddress(port);
-  }
+	/*
+	 * @testName: testURNDefaultFaultAction
+	 *
+	 * @assertion_ids: WSAMD:SPEC:4004; WSAMD:SPEC:4004.3;
+	 *
+	 * @test_Strategy: Test default action pattern for WSDL Exception with URN
+	 * targetNamespace
+	 *
+	 */
+	@Test
+	public void testURNDefaultFaultAction() throws Exception {
+		logger.log(Level.INFO, "testURNDefaultFaultAction");
+		boolean pass = true;
 
-  public static void main(String[] args) {
-    Client theTests = new Client();
-    Status s = theTests.run(args, System.out, System.err);
-    s.exit();
-  }
+		try {
+			port.addNumbers(-10, 10);
+			TestUtil.logErr("AddNumbersFault_Exception must be thrown");
+			pass = false;
+		} catch (AddNumbersFault_Exception ex) {
+			logger.log(Level.INFO, "AddNumbersFault_Exception was thrown as expected");
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("testURNDefaultFaultAction failed", e);
+		}
 
-  /* Test setup */
+		if (!pass)
+			throw new Exception("testURNDefaultAddFaultAction failed");
+	}
 
-  /*
-   * @class.testArgs: -ap jaxws-url-props.dat
-   * 
-   * @class.setup_props: webServerHost; webServerPort; platform.mode;
-   */
+	/*
+	 * @testName: testURNExplicitInputOutputActions
+	 *
+	 * @assertion_ids: WSAMD:SPEC:4004; WSAMD:SPEC:4003; WSAMD:SPEC:4003.1;
+	 * WSAMD:SPEC:4003.1; JAXWS:SPEC:2077; JAXWS:SPEC:2078; JAXWS:SPEC:2079;
+	 *
+	 * @test_Strategy: Test explicit association for WSDL input/output with URN
+	 * targetNamespace
+	 *
+	 */
+	@Test
+	public void testURNExplicitInputOutputActions() throws Exception {
+		logger.log(Level.INFO, "testURNExplicitInputOutputActions");
+		boolean pass = true;
 
-  public void setup(String[] args, Properties p) throws Fault {
-    props = p;
-    boolean pass = true;
+		try {
+			int result = port.addNumbers2(10, 10);
+			if (result != 20) {
+				TestUtil.logErr("result mismatch, expected 20, received " + result);
+				pass = false;
+			} else
+				logger.log(Level.INFO, "result match");
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("testURNExplicitInputOutputActions failed", e);
+		}
 
-    try {
-      hostname = p.getProperty(WEBSERVERHOSTPROP);
+		if (!pass)
+			throw new Exception("testURNExplicitInputOutputActions failed");
+	}
 
-      if (hostname == null)
-        pass = false;
-      else if (hostname.equals(""))
-        pass = false;
+	/*
+	 * @testName: testURNExplicitFaultAction
+	 *
+	 * @assertion_ids: WSAMD:SPEC:4004; WSAMD:SPEC:4003; WSAMD:SPEC:4003.3;
+	 * JAXWS:SPEC:2080; JAXWS:SPEC:2081; JAXWS:SPEC:2082; JAXWS:SPEC:2083;
+	 *
+	 * @test_Strategy: Test explicit association for WSDL Exception with URN
+	 * targetNamespace
+	 *
+	 */
+	@Test
+	public void testURNExplicitFaultAction() throws Exception {
+		logger.log(Level.INFO, "testURNExplicitFaultAction");
+		boolean pass = true;
 
-      try {
-        portnum = Integer.parseInt(p.getProperty(WEBSERVERPORTPROP));
-      } catch (Exception e) {
-        TestUtil.printStackTrace(e);
-        pass = false;
-      }
-      modeProperty = p.getProperty(MODEPROP);
-      if (modeProperty.equals("standalone")) {
-        getTestURLs();
-        getPortStandalone();
-      } else {
-        TestUtil.logMsg(
-            "WebServiceRef is not set in Client (get it from specific vehicle)");
-        service = (AddNumbersService) getSharedObject();
-        getTestURLs();
-        getPortJavaEE();
-      }
-    } catch (Exception e) {
-      TestUtil.printStackTrace(e);
-      throw new Fault("setup failed:", e);
-    }
+		try {
+			int result = port.addNumbers2(-10, 10);
+			TestUtil.logErr("AddNumbersFault_Exception must be thrown");
+			pass = false;
+		} catch (AddNumbersFault_Exception ex) {
+			logger.log(Level.INFO, "AddNumbersFault_Exception was thrown as expected");
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("testURNExplicitFaultAction failed", e);
+		}
 
-    if (!pass) {
-      TestUtil.logErr(
-          "Please specify host & port of web server " + "in config properties: "
-              + WEBSERVERHOSTPROP + ", " + WEBSERVERPORTPROP);
-      throw new Fault("setup failed:");
-    }
-    logMsg("setup ok");
-  }
-
-  public void cleanup() throws Fault {
-    logMsg("cleanup ok");
-  }
-
-  /*
-   * @testName: testURNDefaultInputOutputActions
-   *
-   * @assertion_ids: WSAMD:SPEC:4004; WSAMD:SPEC:4004.1; WSAMD:SPEC:4004.2;
-   *
-   * @test_Strategy: Test default action pattern for WSDL input/output with URN
-   * targetNamespace
-   *
-   */
-  public void testURNDefaultInputOutputActions() throws Fault {
-    TestUtil.logMsg("testURNDefaultInputOutputActions");
-    boolean pass = true;
-
-    try {
-      int result = port.addNumbers(10, 10);
-      if (result != 20) {
-        TestUtil.logErr("result mismatch, expected 20, received " + result);
-        pass = false;
-      } else
-        TestUtil.logMsg("result match");
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("testURNDefaultInputOutputActions failed", e);
-    }
-
-    if (!pass)
-      throw new Fault("testURNDefaultInputOutputActions failed");
-  }
-
-  /*
-   * @testName: testURNDefaultFaultAction
-   *
-   * @assertion_ids: WSAMD:SPEC:4004; WSAMD:SPEC:4004.3;
-   *
-   * @test_Strategy: Test default action pattern for WSDL fault with URN
-   * targetNamespace
-   *
-   */
-  public void testURNDefaultFaultAction() throws Fault {
-    TestUtil.logMsg("testURNDefaultFaultAction");
-    boolean pass = true;
-
-    try {
-      port.addNumbers(-10, 10);
-      TestUtil.logErr("AddNumbersFault_Exception must be thrown");
-      pass = false;
-    } catch (AddNumbersFault_Exception ex) {
-      TestUtil.logMsg("AddNumbersFault_Exception was thrown as expected");
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("testURNDefaultFaultAction failed", e);
-    }
-
-    if (!pass)
-      throw new Fault("testURNDefaultAddFaultAction failed");
-  }
-
-  /*
-   * @testName: testURNExplicitInputOutputActions
-   *
-   * @assertion_ids: WSAMD:SPEC:4004; WSAMD:SPEC:4003; WSAMD:SPEC:4003.1;
-   * WSAMD:SPEC:4003.1; JAXWS:SPEC:2077; JAXWS:SPEC:2078; JAXWS:SPEC:2079;
-   *
-   * @test_Strategy: Test explicit association for WSDL input/output with URN
-   * targetNamespace
-   *
-   */
-  public void testURNExplicitInputOutputActions() throws Fault {
-    TestUtil.logMsg("testURNExplicitInputOutputActions");
-    boolean pass = true;
-
-    try {
-      int result = port.addNumbers2(10, 10);
-      if (result != 20) {
-        TestUtil.logErr("result mismatch, expected 20, received " + result);
-        pass = false;
-      } else
-        TestUtil.logMsg("result match");
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("testURNExplicitInputOutputActions failed", e);
-    }
-
-    if (!pass)
-      throw new Fault("testURNExplicitInputOutputActions failed");
-  }
-
-  /*
-   * @testName: testURNExplicitFaultAction
-   *
-   * @assertion_ids: WSAMD:SPEC:4004; WSAMD:SPEC:4003; WSAMD:SPEC:4003.3;
-   * JAXWS:SPEC:2080; JAXWS:SPEC:2081; JAXWS:SPEC:2082; JAXWS:SPEC:2083;
-   *
-   * @test_Strategy: Test explicit association for WSDL fault with URN
-   * targetNamespace
-   *
-   */
-  public void testURNExplicitFaultAction() throws Fault {
-    TestUtil.logMsg("testURNExplicitFaultAction");
-    boolean pass = true;
-
-    try {
-      int result = port.addNumbers2(-10, 10);
-      TestUtil.logErr("AddNumbersFault_Exception must be thrown");
-      pass = false;
-    } catch (AddNumbersFault_Exception ex) {
-      TestUtil.logMsg("AddNumbersFault_Exception was thrown as expected");
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("testURNExplicitFaultAction failed", e);
-    }
-
-    if (!pass)
-      throw new Fault("testURNExplicitFaultAction failed");
-  }
+		if (!pass)
+			throw new Exception("testURNExplicitFaultAction failed");
+	}
 }

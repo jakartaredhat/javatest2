@@ -20,9 +20,8 @@
 
 package com.sun.ts.tests.jaxws.ee.w2j.document.literal.onewayhandlertest.server;
 
-import com.sun.ts.lib.util.*;
-
-import com.sun.ts.tests.jaxws.common.*;
+import com.sun.ts.lib.util.TestUtil;
+import com.sun.ts.tests.jaxws.common.Handler_Util;
 
 // Service Implementation Class - as outlined in JAX-WS Specification
 
@@ -32,18 +31,18 @@ import jakarta.jws.WebService;
 
 public class HelloImpl implements Hello {
 
-  public void doHandlerTest1(
-      com.sun.ts.tests.jaxws.ee.w2j.document.literal.onewayhandlertest.server.MyAction action) {
+	public void doHandlerTest1(
+			com.sun.ts.tests.jaxws.ee.w2j.document.literal.onewayhandlertest.server.MyAction action) {
 
-    Handler_Util.setTraceFlag(action.getHarnesslogtraceflag());
+		Handler_Util.setTraceFlag(action.getHarnesslogtraceflag());
 
-    Handler_Util.initTestUtil("HelloImpl", action.getHarnessloghost(),
-        action.getHarnesslogport(), action.getHarnesslogtraceflag());
+		Handler_Util.initTestUtil("HelloImpl", action.getHarnessloghost(), action.getHarnesslogport(),
+				action.getHarnesslogtraceflag());
 
-    TestUtil.logTrace("*** in HelloImpl:doHandlerTest1 ***");
-    String theAction = action.getAction();
-    TestUtil.logTrace("*** action = " + theAction + " ***");
-    String testType = action.getTestType();
-    TestUtil.logTrace("*** testType = " + testType + " ***");
-  }
+		TestUtil.logTrace("*** in HelloImpl:doHandlerTest1 ***");
+		String theAction = action.getAction();
+		TestUtil.logTrace("*** action = " + theAction + " ***");
+		String testType = action.getTestType();
+		TestUtil.logTrace("*** testType = " + testType + " ***");
+	}
 }

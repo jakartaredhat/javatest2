@@ -19,114 +19,116 @@
  */
 package com.sun.ts.tests.jaxws.wsi.w2j.rpc.literal.R2011;
 
-import java.util.Properties;
+import java.io.IOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 
-import com.sun.javatest.Status;
+import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.sun.ts.tests.jaxws.common.BaseClient;
 import com.sun.ts.tests.jaxws.sharedclients.ClientFactory;
-import com.sun.ts.lib.harness.*;
 
-public class Client extends ServiceEETest {
-  /**
-   * The string to be echoed.
-   */
-  private static final String R = "R";
+public class Client extends BaseClient {
+	/**
+	 * The string to be echoed.
+	 */
+	private static final String R = "R";
 
-  private static final String NUMBER = "2011";
+	private static final String NUMBER = "2011";
 
-  private static final String STRING = R + NUMBER;
+	private static final String STRING = R + NUMBER;
 
-  /**
-   * The client.
-   */
-  private W2JRLR2011Client client;
+	/**
+	 * The client.
+	 */
+	private W2JRLR2011Client client;
 
-  static W2JRLR2011TestService service = null;
+	static W2JRLR2011TestService service = null;
 
-  /**
-   * Test entry point.
-   * 
-   * @param args
-   *          the command-line arguments.
-   */
-  public static void main(String[] args) {
-    Client client = new Client();
-    Status status = client.run(args, System.out, System.err);
-    status.exit();
-  }
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  /**
-   * @class.testArgs: -ap jaxws-url-props.dat
-   * @class.setup_props: webServerHost; webServerPort; platform.mode;
-   *
-   * @param args
-   * @param properties
-   *
-   * @throws Fault
-   */
-  public void setup(String[] args, Properties properties) throws Fault {
-    client = (W2JRLR2011Client) ClientFactory.getClient(W2JRLR2011Client.class,
-        properties, this, service);
-    logMsg("setup ok");
-  }
+	@Deployment(testable = false)
+	public static WebArchive createDeployment() throws IOException {
+		return createWebArchive(Client.class);
+	}
 
-  public void cleanup() {
-    logMsg("cleanup");
-  }
+	/**
+	 * @class.testArgs: -ap jaxws-url-props.dat
+	 * @class.setup_props: webServerHost; webServerPort; platform.mode;
+	 *
+	 * @param args
+	 * @param properties
+	 *
+	 * @throws Exception
+	 */
+	@BeforeEach
+	public void setup() throws Exception {
+		super.setup();
+		client = (W2JRLR2011Client) ClientFactory.getClient(W2JRLR2011Client.class, service);
+		logger.log(Level.INFO, "setup ok");
+	}
 
-  /**
-   * @testName: testVersionImportDirectlySchema
-   *
-   * @assertion_ids: WSI:SPEC:R2011
-   *
-   * @test_Strategy: The supplied WSDL, directly imports an XML Schema that uses
-   *                 a version of 1.0 which has been used by the WSDL-to-Java
-   *                 tool to generate an end point. If the tool works correctly,
-   *                 the end-point has been built and deployed, so it should
-   *                 simply be reachable.
-   *
-   * @throws Fault
-   */
-  public void testVersionImportDirectlySchema() throws Fault {
-    String result;
-    try {
-      result = client.echoImportDirectlyStringTest(STRING);
-    } catch (Exception e) {
-      throw new Fault(
-          "Unable to invoke echoImportDirectlyStringTest operation (BP-R2011)",
-          e);
-    }
-    if (!STRING.equals(result)) {
-      throw new Fault("echoImportDirectlyStringTest operation returns '"
-          + result + "' in stead of '" + STRING + "' (BP-R2011)");
-    }
-  }
+	@AfterEach
+	public void cleanup() {
+		logger.log(Level.INFO, "cleanup");
+	}
 
-  /**
-   * @testName: testVersionImportIndirectlySchema
-   *
-   * @assertion_ids: WSI:SPEC:R2011
-   *
-   * @test_Strategy: The supplied WSDL, indirectly imports an XML Schema that
-   *                 uses a version of 1.0 which has been used by the
-   *                 WSDL-to-Java tool to generate an end point. If the tool
-   *                 works correctly, the end-point has been built and deployed,
-   *                 so it should simply be reachable.
-   *
-   * @throws Fault
-   */
-  public void testVersionImportIndirectlySchema() throws Fault {
-    String result;
-    try {
-      result = client.echoImportIndirectlyStringTest(STRING);
-    } catch (Exception e) {
-      throw new Fault(
-          "Unable to invoke echoImportIndirectlyStringTest operation (BP-R2011)",
-          e);
-    }
-    if (!STRING.equals(result)) {
-      throw new Fault("echoImportIndirectlyStringTest operation returns '"
-          + result + "' in stead of '" + STRING + "' (BP-R2011)");
-    }
-  }
+	/**
+	 * @testName: testVersionImportDirectlySchema
+	 *
+	 * @assertion_ids: WSI:SPEC:R2011
+	 *
+	 * @test_Strategy: The supplied WSDL, directly imports an XML Schema that uses a
+	 *                 version of 1.0 which has been used by the WSDL-to-Java tool
+	 *                 to generate an end point. If the tool works correctly, the
+	 *                 end-point has been built and deployed, so it should simply be
+	 *                 reachable.
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void testVersionImportDirectlySchema() throws Exception {
+		String result;
+		try {
+			result = client.echoImportDirectlyStringTest(STRING);
+		} catch (Exception e) {
+			throw new Exception("Unable to invoke echoImportDirectlyStringTest operation (BP-R2011)", e);
+		}
+		if (!STRING.equals(result)) {
+			throw new Exception("echoImportDirectlyStringTest operation returns '" + result + "' in stead of '" + STRING
+					+ "' (BP-R2011)");
+		}
+	}
+
+	/**
+	 * @testName: testVersionImportIndirectlySchema
+	 *
+	 * @assertion_ids: WSI:SPEC:R2011
+	 *
+	 * @test_Strategy: The supplied WSDL, indirectly imports an XML Schema that uses
+	 *                 a version of 1.0 which has been used by the WSDL-to-Java tool
+	 *                 to generate an end point. If the tool works correctly, the
+	 *                 end-point has been built and deployed, so it should simply be
+	 *                 reachable.
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void testVersionImportIndirectlySchema() throws Exception {
+		String result;
+		try {
+			result = client.echoImportIndirectlyStringTest(STRING);
+		} catch (Exception e) {
+			throw new Exception("Unable to invoke echoImportIndirectlyStringTest operation (BP-R2011)", e);
+		}
+		if (!STRING.equals(result)) {
+			throw new Exception("echoImportIndirectlyStringTest operation returns '" + result + "' in stead of '"
+					+ STRING + "' (BP-R2011)");
+		}
+	}
 
 }

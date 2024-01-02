@@ -20,53 +20,55 @@
 
 package com.sun.ts.tests.jaxws.wsi.w2j.rpc.literal.R1005;
 
+import java.util.Iterator;
+
 import com.sun.ts.tests.jaxws.common.RequestConformanceChecker;
 
+import jakarta.xml.soap.Name;
+import jakarta.xml.soap.SOAPElement;
+import jakarta.xml.soap.SOAPException;
 import jakarta.xml.ws.handler.soap.SOAPMessageContext;
-import jakarta.xml.soap.*;
-import java.util.Iterator;
 
 public class R1005ConformanceChecker extends RequestConformanceChecker {
 
-  public void test(SOAPMessageContext context) throws SOAPException {
-    test(context.getMessage().getSOAPPart().getEnvelope());
-  }
+	public void test(SOAPMessageContext context) throws SOAPException {
+		test(context.getMessage().getSOAPPart().getEnvelope());
+	}
 
-  private void test(SOAPElement elem) {
-    boolean fails = false;
-    String namespace = elem.getElementName().getURI();
-    if (namespace != null && namespace.equals(SOAP_ENV_NS)) {
-      fails = hasEncodingStyleAttr(elem);
-    }
-    if (!fails) {
-      Iterator children = elem.getChildElements();
-      while (children.hasNext()) {
-        Object o = children.next();
-        if (o instanceof SOAPElement) {
-          test((SOAPElement) o);
-        }
-      }
-    } else {
-      response = "failed. Elements with namespace of http://schemas.xmlsoap.org/soap/envelope/"
-          + "cannot have soap:encodingStyle attribute.";
-    }
-  }
+	private void test(SOAPElement elem) {
+		boolean fails = false;
+		String namespace = elem.getElementName().getURI();
+		if (namespace != null && namespace.equals(SOAP_ENV_NS)) {
+			fails = hasEncodingStyleAttr(elem);
+		}
+		if (!fails) {
+			Iterator children = elem.getChildElements();
+			while (children.hasNext()) {
+				Object o = children.next();
+				if (o instanceof SOAPElement) {
+					test((SOAPElement) o);
+				}
+			}
+		} else {
+			response = "failed. Elements with namespace of http://schemas.xmlsoap.org/soap/envelope/"
+					+ "cannot have soap:encodingStyle attribute.";
+		}
+	}
 
-  private boolean hasEncodingStyleAttr(SOAPElement elem) {
-    Iterator attrs = elem.getAllAttributes();
-    Name name;
-    String uri;
-    while (attrs.hasNext()) {
-      name = (Name) attrs.next();
-      uri = name.getURI();
-      if (uri == null) {
-        uri = "";
-      }
-      if (name.getLocalName().equals(SOAP_ENC_STYLE)
-          && uri.equals(SOAP_ENV_NS)) {
-        return true;
-      }
-    }
-    return false;
-  }
+	private boolean hasEncodingStyleAttr(SOAPElement elem) {
+		Iterator attrs = elem.getAllAttributes();
+		Name name;
+		String uri;
+		while (attrs.hasNext()) {
+			name = (Name) attrs.next();
+			uri = name.getURI();
+			if (uri == null) {
+				uri = "";
+			}
+			if (name.getLocalName().equals(SOAP_ENC_STYLE) && uri.equals(SOAP_ENV_NS)) {
+				return true;
+			}
+		}
+		return false;
+	}
 }

@@ -20,650 +20,614 @@
 
 package com.sun.ts.tests.jaxws.mapping.w2jmapping.rpc.literal.customization;
 
-import com.sun.ts.lib.util.*;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.lang.reflect.Method;
 
-import java.lang.reflect.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import com.sun.javatest.Status;
-import com.sun.ts.lib.harness.ServiceEETest;
-import java.util.Properties;
-
-import com.sun.ts.tests.jaxws.common.JAXWS_Util;
+import com.sun.ts.lib.util.TestUtil;
 import com.sun.ts.tests.jaxws.common.AnnotationUtils;
+import com.sun.ts.tests.jaxws.common.JAXWS_Util;
 
-public class Client extends ServiceEETest {
-  private static final String PKG = "com.sun.ts.tests.jaxws.mapping.w2jmapping.rpc.literal.customization.";
+public class Client {
 
-  // Expected mappings for wsdl:fault element mapping
-  private static final String EXPECTED_FAULT_WRAPPER = PKG + "W2JRLFault";
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  private static final String EXPECTED_FAULT_WRAPPER2 = PKG + "MyFault";
+	private static final String PKG = "com.sun.ts.tests.jaxws.mapping.w2jmapping.rpc.literal.customization.";
 
-  private static final String EXPECTED_FAULT_BEAN = PKG + "MyFaultReason";
+	// Expected mappings for wsdl:fault element mapping
+	private static final String EXPECTED_FAULT_WRAPPER = PKG + "W2JRLFault";
 
-  // Expected mappings for wsdl:service and wsdl:port element mapping
-  private static final String EXPECTED_SERVICE = PKG + "W2JRLCustomization";
+	private static final String EXPECTED_FAULT_WRAPPER2 = PKG + "MyFault";
 
-  private static final String EXPECTED_ENDPOINT = PKG
-      + "W2JRLCustomizationEndpoint";
+	private static final String EXPECTED_FAULT_BEAN = PKG + "MyFaultReason";
 
-  private static final String EXPECTED_SERVICE_INTERFACE = "jakarta.xml.ws.Service";
+	// Expected mappings for wsdl:service and wsdl:port element mapping
+	private static final String EXPECTED_SERVICE = PKG + "W2JRLCustomization";
 
-  private static final String EXPECTED_SERVICE_EXCEPTION = "jakarta.xml.ws.WebServiceException";
+	private static final String EXPECTED_ENDPOINT = PKG + "W2JRLCustomizationEndpoint";
 
-  private static final String EXPECTED_GET_PORTNAME_METHOD = "getW2JRLCustomizationEndpointPort";
+	private static final String EXPECTED_SERVICE_INTERFACE = "jakarta.xml.ws.Service";
 
-  // Used for soap:header binding test
-  private static final String EXPECTED_HEADER_TYPE = PKG + "MyHeader";
+	private static final String EXPECTED_SERVICE_EXCEPTION = "jakarta.xml.ws.WebServiceException";
 
-  // Used for wrapper style tests
-  private static final String ENABLEWRAPPER_TRUE_METHOD = "wrapperElement1";
+	private static final String EXPECTED_GET_PORTNAME_METHOD = "getW2JRLCustomizationEndpointPort";
 
-  private static final String EXPECTED_ENABLEWRAPPER_TRUE_RETURN_TYPE = PKG
-      + "WrapperElement11";
+	// Used for soap:header binding test
+	private static final String EXPECTED_HEADER_TYPE = PKG + "MyHeader";
 
-  private static final String EXPECTED_ENABLEWRAPPER_TRUE_PARAMETER_TYPE = PKG
-      + "WrapperElement1";
+	// Used for wrapper style tests
+	private static final String ENABLEWRAPPER_TRUE_METHOD = "wrapperElement1";
 
-  private static final String ENABLEWRAPPER_FALSE_METHOD = "wrapperElement2";
+	private static final String EXPECTED_ENABLEWRAPPER_TRUE_RETURN_TYPE = PKG + "WrapperElement11";
 
-  private static final String EXPECTED_ENABLEWRAPPER_FALSE_RETURN_TYPE = PKG
-      + "WrapperElement22";
+	private static final String EXPECTED_ENABLEWRAPPER_TRUE_PARAMETER_TYPE = PKG + "WrapperElement1";
 
-  private static final String EXPECTED_ENABLEWRAPPER_FALSE_PARAMETER_TYPE = PKG
-      + "WrapperElement2";
+	private static final String ENABLEWRAPPER_FALSE_METHOD = "wrapperElement2";
 
-  // Used for soap:header and soap:fault binding test
-  private static final String EXPECTED_HEADER2_TYPE = PKG + "ConfigHeader";
+	private static final String EXPECTED_ENABLEWRAPPER_FALSE_RETURN_TYPE = PKG + "WrapperElement22";
 
-  private static final String EXPECTED_FAULT1_EXCEPTION = PKG + "Fault1";
+	private static final String EXPECTED_ENABLEWRAPPER_FALSE_PARAMETER_TYPE = PKG + "WrapperElement2";
 
-  private static final String EXPECTED_FAULT2_EXCEPTION = PKG + "Fault2";
+	// Used for soap:header and soap:fault binding test
+	private static final String EXPECTED_HEADER2_TYPE = PKG + "ConfigHeader";
 
-  /*
-   * Test entry point.
-   * 
-   */
-  public static void main(String[] args) {
-    Client test = new Client();
-    Status status = test.run(args, System.out, System.err);
-    status.exit();
-  }
+	private static final String EXPECTED_FAULT1_EXCEPTION = PKG + "Fault1";
 
-  /*
-   * @class.setup_props: ts.home;
-   */
-  public void setup(String[] args, Properties properties) throws Fault {
-    TestUtil.logMsg("setup ok");
-  }
+	private static final String EXPECTED_FAULT2_EXCEPTION = PKG + "Fault2";
 
-  public void cleanup() {
-    TestUtil.logMsg("cleanup");
-  }
+	/*
+	 * @class.setup_props:
+	 */
+	@BeforeEach
+	public void setup() throws Exception {
+		logger.log(Level.INFO, "setup ok");
+	}
 
-  /*
-   * @testName: PortTypeTest
-   *
-   * @assertion_ids: JAXWS:SPEC:2001; JAXWS:SPEC:2002; JAXWS:SPEC:2003;
-   * JAXWS:SPEC:2004; JAXWS:SPEC:2005; JAXWS:SPEC:2010; JAXWS:SPEC:2041;
-   *
-   * @test_Strategy: Verify wsdl:definitions and wsdl:portType mapping
-   */
-  public void PortTypeTest() throws Fault {
-    TestUtil.logTrace("PortTypeTest");
-    boolean pass = true;
-    try {
-      TestUtil.logMsg("Verify wsdl:portType mapping");
-      Class.forName(EXPECTED_ENDPOINT, false, this.getClass().getClassLoader());
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("PortTypeTest failed", e);
-    }
+	@AfterEach
+	public void cleanup() {
 
-    if (!pass)
-      throw new Fault("PortTypeTest failed");
-  }
+		logger.log(Level.INFO, "cleanup");
+	}
 
-  /*
-   * @testName: OperationTest
-   *
-   * @assertion_ids: JAXWS:SPEC:2001; JAXWS:SPEC:2002; JAXWS:SPEC:2003;
-   * JAXWS:SPEC:2004; JAXWS:SPEC:2013; JAXWS:SPEC:2014; JAXWS:SPEC:2018;
-   * JAXWS:SPEC:2017; JAXWS:SPEC:2041;
-   *
-   * @test_Strategy: Verify mapping of wsdl:operation
-   */
-  public void OperationTest() throws Fault {
-    TestUtil.logTrace("OperationTest");
-    boolean pass = true;
-    try {
-      TestUtil.logMsg("Verify wsdl:operation mapping");
-      Class c = Class.forName(EXPECTED_ENDPOINT, false,
-          this.getClass().getClassLoader());
-      String methodName = "helloOperation";
-      if (!JAXWS_Util.doesMethodExist(c, methodName)) {
-        TestUtil.logErr("Method " + methodName + ", was not found");
-        pass = false;
-      }
-      methodName = "onewayOperation";
-      if (!JAXWS_Util.doesMethodExist(c, methodName)) {
-        TestUtil.logErr("Method " + methodName + ", was not found");
-        pass = false;
-      }
-      methodName = "mode1Operation";
-      if (!JAXWS_Util.doesMethodExist(c, methodName)) {
-        TestUtil.logErr("Method " + methodName + ", was not found");
-        pass = false;
-      }
-      methodName = "mode2Operation";
-      if (!JAXWS_Util.doesMethodExist(c, methodName)) {
-        TestUtil.logErr("Method " + methodName + ", was not found");
-        pass = false;
-      }
-      methodName = "mode3Operation";
-      if (!JAXWS_Util.doesMethodExist(c, methodName)) {
-        TestUtil.logErr("Method " + methodName + ", was not found");
-        pass = false;
-      }
-      if (!pass) {
-        TestUtil.logErr("One ofthe operations does not exist in the SEI");
-      }
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("OperationTest failed", e);
-    }
+	/*
+	 * @testName: PortTypeTest
+	 *
+	 * @assertion_ids: JAXWS:SPEC:2001; JAXWS:SPEC:2002; JAXWS:SPEC:2003;
+	 * JAXWS:SPEC:2004; JAXWS:SPEC:2005; JAXWS:SPEC:2010; JAXWS:SPEC:2041;
+	 *
+	 * @test_Strategy: Verify wsdl:definitions and wsdl:portType mapping
+	 */
+	@Test
+	public void PortTypeTest() throws Exception {
+		TestUtil.logTrace("PortTypeTest");
+		boolean pass = true;
+		try {
+			logger.log(Level.INFO, "Verify wsdl:portType mapping");
+			Class.forName(EXPECTED_ENDPOINT, false, this.getClass().getClassLoader());
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("PortTypeTest failed", e);
+		}
 
-    if (!pass)
-      throw new Fault("OperationTest failed");
-  }
+		if (!pass)
+			throw new Exception("PortTypeTest failed");
+	}
 
-  /*
-   * @testName: FaultTest
-   *
-   * @assertion_ids: JAXWS:SPEC:2001; JAXWS:SPEC:2002; JAXWS:SPEC:2003;
-   * JAXWS:SPEC:2004; JAXWS:SPEC:2043; JAXWS:SPEC:2044; JAXWS:SPEC:2041;
-   * JAXWS:SPEC:2061;
-   *
-   * @test_Strategy: Verify wsdl:fault element mapping
-   */
-  public void FaultTest() throws Fault {
-    TestUtil.logTrace("FaultTest");
-    boolean pass = true;
+	/*
+	 * @testName: OperationTest
+	 *
+	 * @assertion_ids: JAXWS:SPEC:2001; JAXWS:SPEC:2002; JAXWS:SPEC:2003;
+	 * JAXWS:SPEC:2004; JAXWS:SPEC:2013; JAXWS:SPEC:2014; JAXWS:SPEC:2018;
+	 * JAXWS:SPEC:2017; JAXWS:SPEC:2041;
+	 *
+	 * @test_Strategy: Verify mapping of wsdl:operation
+	 */
+	@Test
+	public void OperationTest() throws Exception {
+		TestUtil.logTrace("OperationTest");
+		boolean pass = true;
+		try {
+			logger.log(Level.INFO, "Verify wsdl:operation mapping");
+			Class c = Class.forName(EXPECTED_ENDPOINT, false, this.getClass().getClassLoader());
+			String methodName = "helloOperation";
+			if (!JAXWS_Util.doesMethodExist(c, methodName)) {
+				TestUtil.logErr("Method " + methodName + ", was not found");
+				pass = false;
+			}
+			methodName = "onewayOperation";
+			if (!JAXWS_Util.doesMethodExist(c, methodName)) {
+				TestUtil.logErr("Method " + methodName + ", was not found");
+				pass = false;
+			}
+			methodName = "mode1Operation";
+			if (!JAXWS_Util.doesMethodExist(c, methodName)) {
+				TestUtil.logErr("Method " + methodName + ", was not found");
+				pass = false;
+			}
+			methodName = "mode2Operation";
+			if (!JAXWS_Util.doesMethodExist(c, methodName)) {
+				TestUtil.logErr("Method " + methodName + ", was not found");
+				pass = false;
+			}
+			methodName = "mode3Operation";
+			if (!JAXWS_Util.doesMethodExist(c, methodName)) {
+				TestUtil.logErr("Method " + methodName + ", was not found");
+				pass = false;
+			}
+			if (!pass) {
+				TestUtil.logErr("One ofthe operations does not exist in the SEI");
+			}
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("OperationTest failed", e);
+		}
 
-    TestUtil.logMsg("Verify wsdl:fault mapping");
-    TestUtil.logMsg("Loading fault wrapper " + EXPECTED_FAULT_WRAPPER);
-    Class faultWrapper = null;
-    try {
-      faultWrapper = Class.forName(EXPECTED_FAULT_WRAPPER);
-    } catch (Exception e) {
-      TestUtil.logErr("Exception loading class: " + e);
-      pass = false;
-    }
+		if (!pass)
+			throw new Exception("OperationTest failed");
+	}
 
-    // Check to ensure Wrapper Exception class is annotated using the WebFault
-    // annotation.
-    boolean found = AnnotationUtils.verifyWebFaultAnnotation(faultWrapper,
-        "MyFaultReason", "http://w2jrlcustomization/types",
-        EXPECTED_FAULT_BEAN);
-    if (!found) {
-      TestUtil.logErr(
-          "Wrapper Exception Class is not annotated with WebFault annotation - "
-              + EXPECTED_FAULT_WRAPPER);
-      pass = false;
-    } else
-      TestUtil.logMsg(
-          "Wrapper Exception Class is annotated with WebFault annotation - "
-              + EXPECTED_FAULT_WRAPPER);
+	/*
+	 * @testName: FaultTest
+	 *
+	 * @assertion_ids: JAXWS:SPEC:2001; JAXWS:SPEC:2002; JAXWS:SPEC:2003;
+	 * JAXWS:SPEC:2004; JAXWS:SPEC:2043; JAXWS:SPEC:2044; JAXWS:SPEC:2041;
+	 * JAXWS:SPEC:2061;
+	 *
+	 * @test_Strategy: Verify wsdl:fault element mapping
+	 */
+	@Test
+	public void FaultTest() throws Exception {
+		TestUtil.logTrace("FaultTest");
+		boolean pass = true;
 
-    TestUtil.logMsg("Loading fault bean " + EXPECTED_FAULT_BEAN);
-    try {
-      Class.forName(EXPECTED_FAULT_BEAN);
-    } catch (Exception e) {
-      TestUtil.logErr("Exception loading class: " + e);
-      pass = false;
-    }
+		logger.log(Level.INFO, "Verify wsdl:fault mapping");
+		logger.log(Level.INFO, "Loading Exception wrapper " + EXPECTED_FAULT_WRAPPER);
+		Class faultWrapper = null;
+		try {
+			faultWrapper = Class.forName(EXPECTED_FAULT_WRAPPER);
+		} catch (Exception e) {
+			TestUtil.logErr("Exception loading class: " + e);
+			pass = false;
+		}
 
-    TestUtil.logMsg("Instantiate fault bean and call its methods ... "
-        + EXPECTED_FAULT_BEAN);
-    com.sun.ts.tests.jaxws.mapping.w2jmapping.rpc.literal.customization.MyFaultReason mfr = new com.sun.ts.tests.jaxws.mapping.w2jmapping.rpc.literal.customization.MyFaultReason();
-    TestUtil.logMsg("setMessage to foo");
-    mfr.setMessage("foo");
-    TestUtil.logMsg("getMessage=" + mfr.getMessage());
+		// Check to ensure Wrapper Exception class is annotated using the WebFault
+		// annotation.
+		boolean found = AnnotationUtils.verifyWebFaultAnnotation(faultWrapper, "MyFaultReason",
+				"http://w2jrlcustomization/types", EXPECTED_FAULT_BEAN);
+		if (!found) {
+			TestUtil.logErr(
+					"Wrapper Exception Class is not annotated with WebFault annotation - " + EXPECTED_FAULT_WRAPPER);
+			pass = false;
+		} else
+			logger.log(Level.INFO,
+					"Wrapper Exception Class is annotated with WebFault annotation - " + EXPECTED_FAULT_WRAPPER);
 
-    TestUtil.logMsg("Instantiate fault wrapper exception constructor 1 ... "
-        + EXPECTED_FAULT_WRAPPER);
-    com.sun.ts.tests.jaxws.mapping.w2jmapping.rpc.literal.customization.W2JRLFault mf = new com.sun.ts.tests.jaxws.mapping.w2jmapping.rpc.literal.customization.W2JRLFault(
-        "myfault", mfr);
+		logger.log(Level.INFO, "Loading Exception bean " + EXPECTED_FAULT_BEAN);
+		try {
+			Class.forName(EXPECTED_FAULT_BEAN);
+		} catch (Exception e) {
+			TestUtil.logErr("Exception loading class: " + e);
+			pass = false;
+		}
 
-    TestUtil.logMsg("getFaultInfo from wrapper exception ... ");
-    mfr = mf.getFaultInfo();
-    TestUtil.logMsg("mfr=" + mfr);
+		logger.log(Level.INFO, "Instantiate Exception bean and call its methods ... " + EXPECTED_FAULT_BEAN);
+		com.sun.ts.tests.jaxws.mapping.w2jmapping.rpc.literal.customization.MyFaultReason mfr = new com.sun.ts.tests.jaxws.mapping.w2jmapping.rpc.literal.customization.MyFaultReason();
+		logger.log(Level.INFO, "setMessage to foo");
+		mfr.setMessage("foo");
+		logger.log(Level.INFO, "getMessage=" + mfr.getMessage());
 
-    TestUtil.logMsg("Instantiate fault wrapper exception constructor 2 ... "
-        + EXPECTED_FAULT_WRAPPER);
-    mf = new com.sun.ts.tests.jaxws.mapping.w2jmapping.rpc.literal.customization.W2JRLFault(
-        "myfault", mfr, new Exception("foo"));
-    TestUtil.logMsg("mf=" + mf);
+		logger.log(Level.INFO, "Instantiate Exception wrapper exception constructor 1 ... " + EXPECTED_FAULT_WRAPPER);
+		com.sun.ts.tests.jaxws.mapping.w2jmapping.rpc.literal.customization.W2JRLFault mf = new com.sun.ts.tests.jaxws.mapping.w2jmapping.rpc.literal.customization.W2JRLFault(
+				"myfault", mfr);
 
-    // A generate endpoint interface must be created from wsdl:portType name
-    TestUtil.logMsg("Loading endpoint interface " + EXPECTED_ENDPOINT);
-    Class endpointClass = null;
-    try {
-      endpointClass = Class.forName(EXPECTED_ENDPOINT);
-    } catch (Exception e) {
-      TestUtil.logErr("Exception loading class: " + e);
-      pass = false;
-    }
+		logger.log(Level.INFO, "getFaultInfo from wrapper exception ... ");
+		mfr = mf.getFaultInfo();
+		logger.log(Level.INFO, "mfr=" + mfr);
 
-    // Fault Equivalence Test
-    try {
-      Method[] methods = endpointClass.getMethods();
-      Method helloOp = null;
-      Method helloOp2 = null;
-      for (int i = 0; i < methods.length; i++) {
-        if (methods[i].getName().equals("helloOperation"))
-          helloOp = methods[i];
-        if (methods[i].getName().equals("helloOperation2"))
-          helloOp2 = methods[i];
-      }
+		logger.log(Level.INFO, "Instantiate Exception wrapper exception constructor 2 ... " + EXPECTED_FAULT_WRAPPER);
+		mf = new com.sun.ts.tests.jaxws.mapping.w2jmapping.rpc.literal.customization.W2JRLFault("myfault", mfr,
+				new Exception("foo"));
+		logger.log(Level.INFO, "mf=" + mf);
 
-      found = false;
-      Class exceptions[] = helloOp.getExceptionTypes();
-      for (int i = 0; i < exceptions.length; i++) {
-        String name = exceptions[i].getName();
-        TestUtil.logMsg("exceptions[" + i + "]=" + name);
-        if (name.equals(EXPECTED_FAULT_WRAPPER))
-          found = true;
-      }
-      if (!found) {
-        TestUtil.logErr("helloOperation does not declare throws of exception "
-            + EXPECTED_FAULT_WRAPPER);
-        pass = false;
-      } else
-        TestUtil.logMsg("helloOperation does declare throws of exception "
-            + EXPECTED_FAULT_WRAPPER);
+		// A generate endpoint interface must be created from wsdl:portType name
+		logger.log(Level.INFO, "Loading endpoint interface " + EXPECTED_ENDPOINT);
+		Class endpointClass = null;
+		try {
+			endpointClass = Class.forName(EXPECTED_ENDPOINT);
+		} catch (Exception e) {
+			TestUtil.logErr("Exception loading class: " + e);
+			pass = false;
+		}
 
-      found = false;
-      exceptions = helloOp2.getExceptionTypes();
-      for (int i = 0; i < exceptions.length; i++) {
-        String name = exceptions[i].getName();
-        TestUtil.logMsg("exceptions[" + i + "]=" + name);
-        if (name.equals(EXPECTED_FAULT_WRAPPER2))
-          found = true;
-      }
-      if (!found) {
-        TestUtil.logErr("helloOperation2 does not declare throws of exception "
-            + EXPECTED_FAULT_WRAPPER2);
-        pass = false;
-      } else
-        TestUtil.logMsg("helloOperation2 does declare throws of exception "
-            + EXPECTED_FAULT_WRAPPER2);
-    } catch (Exception e) {
-      TestUtil.logErr("Exception: " + e);
-    }
+		// Exception Equivalence Test
+		try {
+			Method[] methods = endpointClass.getMethods();
+			Method helloOp = null;
+			Method helloOp2 = null;
+			for (int i = 0; i < methods.length; i++) {
+				if (methods[i].getName().equals("helloOperation"))
+					helloOp = methods[i];
+				if (methods[i].getName().equals("helloOperation2"))
+					helloOp2 = methods[i];
+			}
 
-    if (!pass)
-      throw new Fault("FaultTest failed");
-  }
+			found = false;
+			Class exceptions[] = helloOp.getExceptionTypes();
+			for (int i = 0; i < exceptions.length; i++) {
+				String name = exceptions[i].getName();
+				logger.log(Level.INFO, "exceptions[" + i + "]=" + name);
+				if (name.equals(EXPECTED_FAULT_WRAPPER))
+					found = true;
+			}
+			if (!found) {
+				TestUtil.logErr("helloOperation does not declare throws of exception " + EXPECTED_FAULT_WRAPPER);
+				pass = false;
+			} else
+				logger.log(Level.INFO, "helloOperation does declare throws of exception " + EXPECTED_FAULT_WRAPPER);
 
-  /*
-   * @testName: ServiceAndPortTest
-   *
-   * @assertion_ids: JAXWS:SPEC:2001; JAXWS:SPEC:2002; JAXWS:SPEC:2003;
-   * JAXWS:SPEC:2004; JAXWS:SPEC:2054; JAXWS:SPEC:2055; JAXWS:SPEC:2056;
-   * JAXWS:SPEC:2041; JAXWS:SPEC:2045;
-   *
-   * @test_Strategy: Verify wsdl:service and wsdl:port element mapping
-   */
-  public void ServiceAndPortTest() throws Fault {
-    TestUtil.logTrace("ServiceAndPortTest");
-    boolean pass = true;
+			found = false;
+			exceptions = helloOp2.getExceptionTypes();
+			for (int i = 0; i < exceptions.length; i++) {
+				String name = exceptions[i].getName();
+				logger.log(Level.INFO, "exceptions[" + i + "]=" + name);
+				if (name.equals(EXPECTED_FAULT_WRAPPER2))
+					found = true;
+			}
+			if (!found) {
+				TestUtil.logErr("helloOperation2 does not declare throws of exception " + EXPECTED_FAULT_WRAPPER2);
+				pass = false;
+			} else
+				logger.log(Level.INFO, "helloOperation2 does declare throws of exception " + EXPECTED_FAULT_WRAPPER2);
+		} catch (Exception e) {
+			TestUtil.logErr("Exception: " + e);
+		}
 
-    TestUtil.logMsg("Verify wsdl:service and wsdl:port mapping");
-    // A generate service interface must be created from wsdl:service name
-    TestUtil.logMsg("Loading service interface " + EXPECTED_SERVICE);
-    Class serviceClass = null;
-    try {
-      serviceClass = Class.forName(EXPECTED_SERVICE);
-    } catch (Exception e) {
-      TestUtil.logErr("Exception loading class: " + e);
-      pass = false;
-    }
+		if (!pass)
+			throw new Exception("FaultTest failed");
+	}
 
-    // A generate endpoint interface must be created from wsdl:portType name
-    TestUtil.logMsg("Loading endpoint interface " + EXPECTED_ENDPOINT);
-    try {
-      Class.forName(EXPECTED_ENDPOINT);
-    } catch (Exception e) {
-      TestUtil.logErr("Exception loading class: " + e);
-      pass = false;
-    }
+	/*
+	 * @testName: ServiceAndPortTest
+	 *
+	 * @assertion_ids: JAXWS:SPEC:2001; JAXWS:SPEC:2002; JAXWS:SPEC:2003;
+	 * JAXWS:SPEC:2004; JAXWS:SPEC:2054; JAXWS:SPEC:2055; JAXWS:SPEC:2056;
+	 * JAXWS:SPEC:2041; JAXWS:SPEC:2045;
+	 *
+	 * @test_Strategy: Verify wsdl:service and wsdl:port element mapping
+	 */
+	@Test
+	public void ServiceAndPortTest() throws Exception {
+		TestUtil.logTrace("ServiceAndPortTest");
+		boolean pass = true;
 
-    // Service Class Interface MUST extend Service interface
-    boolean found = false;
-    if (serviceClass != null) {
-      String name = serviceClass.getSuperclass().getName();
-      if (name.equals(EXPECTED_SERVICE_INTERFACE)) {
-        found = true;
-      }
-      if (!found) {
-        TestUtil.logErr("Service Class Interface " + name + " does not extend "
-            + EXPECTED_SERVICE_INTERFACE);
-        pass = false;
-      } else
-        TestUtil.logMsg("Service Class Interface " + name + " does extend "
-            + EXPECTED_SERVICE_INTERFACE);
+		logger.log(Level.INFO, "Verify wsdl:service and wsdl:port mapping");
+		// A generate service interface must be created from wsdl:service name
+		logger.log(Level.INFO, "Loading service interface " + EXPECTED_SERVICE);
+		Class serviceClass = null;
+		try {
+			serviceClass = Class.forName(EXPECTED_SERVICE);
+		} catch (Exception e) {
+			TestUtil.logErr("Exception loading class: " + e);
+			pass = false;
+		}
 
-    }
+		// A generate endpoint interface must be created from wsdl:portType name
+		logger.log(Level.INFO, "Loading endpoint interface " + EXPECTED_ENDPOINT);
+		try {
+			Class.forName(EXPECTED_ENDPOINT);
+		} catch (Exception e) {
+			TestUtil.logErr("Exception loading class: " + e);
+			pass = false;
+		}
 
-    // Service Class Interface MUST have a getPortName() method based on
-    // wsd:port name
-    found = false;
-    Method m = null;
-    if (serviceClass != null) {
-      try {
-        m = serviceClass.getDeclaredMethod(EXPECTED_GET_PORTNAME_METHOD,
-            (Class[]) null);
-      } catch (Exception e) {
-        TestUtil.logErr("Exception: " + e);
-        pass = false;
-      }
+		// Service Class Interface MUST extend Service interface
+		boolean found = false;
+		if (serviceClass != null) {
+			String name = serviceClass.getSuperclass().getName();
+			if (name.equals(EXPECTED_SERVICE_INTERFACE)) {
+				found = true;
+			}
+			if (!found) {
+				TestUtil.logErr("Service Class Interface " + name + " does not extend " + EXPECTED_SERVICE_INTERFACE);
+				pass = false;
+			} else
+				logger.log(Level.INFO,
+						"Service Class Interface " + name + " does extend " + EXPECTED_SERVICE_INTERFACE);
 
-      // getPortName() method MUST return Endpoint Interface Type
-      if (m != null) {
-        TestUtil.logMsg("Service Class Interface " + serviceClass.getName()
-            + " does have port method " + EXPECTED_GET_PORTNAME_METHOD);
-        Class<?> returnType = m.getReturnType();
-        found = false;
-        if (returnType != null) {
-          String name = returnType.getName();
-          TestUtil.logMsg("returnType=" + name);
-          if (name.equals(EXPECTED_ENDPOINT))
-            found = true;
-        }
-        if (!found) {
-          TestUtil.logErr("Service Port Method " + EXPECTED_GET_PORTNAME_METHOD
-              + " does not return type as " + EXPECTED_ENDPOINT);
-          pass = false;
-        } else
-          TestUtil.logMsg("Service Port Method " + EXPECTED_GET_PORTNAME_METHOD
-              + " does return type as " + EXPECTED_ENDPOINT);
-      } else {
-        TestUtil.logErr("Service Class Interface " + serviceClass.getName()
-            + " does not have port method " + EXPECTED_GET_PORTNAME_METHOD);
-        pass = false;
-      }
-    }
+		}
 
-    if (!pass)
-      throw new Fault("ServiceAndPortTest failed");
-  }
+		// Service Class Interface MUST have a getPortName() method based on
+		// wsd:port name
+		found = false;
+		Method m = null;
+		if (serviceClass != null) {
+			try {
+				m = serviceClass.getDeclaredMethod(EXPECTED_GET_PORTNAME_METHOD, (Class[]) null);
+			} catch (Exception e) {
+				TestUtil.logErr("Exception: " + e);
+				pass = false;
+			}
 
-  /*
-   * @testName: HeaderTest
-   *
-   * @assertion_ids: JAXWS:SPEC:2001; JAXWS:SPEC:2002; JAXWS:SPEC:2003;
-   * JAXWS:SPEC:2004; JAXWS:SPEC:2041;
-   *
-   * @test_Strategy: Verify soap:header (Header Binding Extension)
-   */
-  public void HeaderTest() throws Fault {
-    TestUtil.logTrace("HeaderTest");
-    boolean pass = true;
+			// getPortName() method MUST return Endpoint Interface Type
+			if (m != null) {
+				logger.log(Level.INFO, "Service Class Interface " + serviceClass.getName() + " does have port method "
+						+ EXPECTED_GET_PORTNAME_METHOD);
+				Class<?> returnType = m.getReturnType();
+				found = false;
+				if (returnType != null) {
+					String name = returnType.getName();
+					logger.log(Level.INFO, "returnType=" + name);
+					if (name.equals(EXPECTED_ENDPOINT))
+						found = true;
+				}
+				if (!found) {
+					TestUtil.logErr("Service Port Method " + EXPECTED_GET_PORTNAME_METHOD + " does not return type as "
+							+ EXPECTED_ENDPOINT);
+					pass = false;
+				} else
+					logger.log(Level.INFO, "Service Port Method " + EXPECTED_GET_PORTNAME_METHOD
+							+ " does return type as " + EXPECTED_ENDPOINT);
+			} else {
+				TestUtil.logErr("Service Class Interface " + serviceClass.getName() + " does not have port method "
+						+ EXPECTED_GET_PORTNAME_METHOD);
+				pass = false;
+			}
+		}
 
-    TestUtil.logMsg("Verify soap:header (Header Binding Extension)");
-    // A generate endpoint interface must be created from wsdl:portType name
-    TestUtil.logMsg("Loading endpoint interface " + EXPECTED_ENDPOINT);
-    try {
-      Class.forName(EXPECTED_ENDPOINT);
-    } catch (Exception e) {
-      TestUtil.logErr("Exception loading class: " + e);
-      pass = false;
-    }
+		if (!pass)
+			throw new Exception("ServiceAndPortTest failed");
+	}
 
-    // The Header generated type
-    TestUtil.logMsg("Loading header type " + EXPECTED_HEADER_TYPE);
-    Class headerClass = null;
-    try {
-      headerClass = Class.forName(EXPECTED_HEADER_TYPE);
-      TestUtil.logMsg("headerClass=" + headerClass);
-    } catch (Exception e) {
-      TestUtil.logErr("Exception loading class: " + e);
-      pass = false;
-    }
+	/*
+	 * @testName: HeaderTest
+	 *
+	 * @assertion_ids: JAXWS:SPEC:2001; JAXWS:SPEC:2002; JAXWS:SPEC:2003;
+	 * JAXWS:SPEC:2004; JAXWS:SPEC:2041;
+	 *
+	 * @test_Strategy: Verify soap:header (Header Binding Extension)
+	 */
+	@Test
+	public void HeaderTest() throws Exception {
+		TestUtil.logTrace("HeaderTest");
+		boolean pass = true;
 
-    if (!pass)
-      throw new Fault("HeaderTest failed");
-  }
+		logger.log(Level.INFO, "Verify soap:header (Header Binding Extension)");
+		// A generate endpoint interface must be created from wsdl:portType name
+		logger.log(Level.INFO, "Loading endpoint interface " + EXPECTED_ENDPOINT);
+		try {
+			Class.forName(EXPECTED_ENDPOINT);
+		} catch (Exception e) {
+			TestUtil.logErr("Exception loading class: " + e);
+			pass = false;
+		}
 
-  /*
-   * @testName: SoapHeaderAndFaultTest
-   *
-   * @assertion_ids: JAXWS:SPEC:2001; JAXWS:SPEC:2002; JAXWS:SPEC:2003;
-   * JAXWS:SPEC:2004; JAXWS:SPEC:2041;
-   *
-   * @test_Strategy: Verify soap:fault/soap:header mappings
-   */
-  public void SoapHeaderAndFaultTest() throws Fault {
-    TestUtil.logTrace("SoapHeaderAndFaultTest");
-    boolean pass = true;
+		// The Header generated type
+		logger.log(Level.INFO, "Loading header type " + EXPECTED_HEADER_TYPE);
+		Class headerClass = null;
+		try {
+			headerClass = Class.forName(EXPECTED_HEADER_TYPE);
+			logger.log(Level.INFO, "headerClass=" + headerClass);
+		} catch (Exception e) {
+			TestUtil.logErr("Exception loading class: " + e);
+			pass = false;
+		}
 
-    // The generated endpoint interface must be created from wsdl:portType name
-    TestUtil.logMsg("Loading endpoint interface " + EXPECTED_ENDPOINT);
-    Class endpointClass = null;
-    try {
-      endpointClass = Class.forName(EXPECTED_ENDPOINT);
-    } catch (Exception e) {
-      TestUtil.logErr("Exception loading class: " + e);
-      pass = false;
-    }
+		if (!pass)
+			throw new Exception("HeaderTest failed");
+	}
 
-    // The generated Header type
-    TestUtil.logMsg("Loading header type " + EXPECTED_HEADER2_TYPE);
-    Class headerClass = null;
-    try {
-      headerClass = Class.forName(EXPECTED_HEADER2_TYPE);
-      TestUtil.logMsg("headerClass=" + headerClass);
-    } catch (Exception e) {
-      TestUtil.logErr("Exception loading class: " + e);
-      pass = false;
-    }
+	/*
+	 * @testName: SoapHeaderAndFaultTest
+	 *
+	 * @assertion_ids: JAXWS:SPEC:2001; JAXWS:SPEC:2002; JAXWS:SPEC:2003;
+	 * JAXWS:SPEC:2004; JAXWS:SPEC:2041;
+	 *
+	 * @test_Strategy: Verify soap:fault/soap:header mappings
+	 */
+	@Test
+	public void SoapHeaderAndFaultTest() throws Exception {
+		TestUtil.logTrace("SoapHeaderAndFaultTest");
+		boolean pass = true;
 
-    // Customization via jaxws:enableAdditionalSOAPHeaderMapping means a header
-    // type
-    // as parameter to this method. Customization via jaxws:bindings in wsdl to
-    // override
-    // the generated header fault exception class name.
-    try {
-      Method theMethod = null;
-      Method[] methods = endpointClass.getMethods();
-      for (int i = 0; i < methods.length; i++) {
-        if (methods[i].getName().equals("operationWithHeaderAndFaults")) {
-          theMethod = methods[i];
-          break;
-        }
-      }
+		// The generated endpoint interface must be created from wsdl:portType name
+		logger.log(Level.INFO, "Loading endpoint interface " + EXPECTED_ENDPOINT);
+		Class endpointClass = null;
+		try {
+			endpointClass = Class.forName(EXPECTED_ENDPOINT);
+		} catch (Exception e) {
+			TestUtil.logErr("Exception loading class: " + e);
+			pass = false;
+		}
 
-      if (theMethod != null) {
+		// The generated Header type
+		logger.log(Level.INFO, "Loading header type " + EXPECTED_HEADER2_TYPE);
+		Class headerClass = null;
+		try {
+			headerClass = Class.forName(EXPECTED_HEADER2_TYPE);
+			logger.log(Level.INFO, "headerClass=" + headerClass);
+		} catch (Exception e) {
+			TestUtil.logErr("Exception loading class: " + e);
+			pass = false;
+		}
 
-        boolean found = false;
-        Class parameters[] = theMethod.getParameterTypes();
-        TestUtil.logMsg(
-            "Verify the jaxws:enableAdditionalSOAPHeaderMapping customization");
-        TestUtil.logMsg(
-            "Verify that the soap:header is mapped to a parameter of the operation");
-        for (int i = 0; i < parameters.length; i++) {
-          String name = parameters[i].getName();
-          TestUtil.logMsg("parameters[" + i + "]=" + name);
-          if (name.equals(EXPECTED_HEADER2_TYPE))
-            found = true;
-        }
-        if (!found) {
-          TestUtil.logErr(
-              "operationWithHeaderAndFaults does not declare a header as parameter for type "
-                  + EXPECTED_HEADER2_TYPE);
-          pass = false;
-        } else {
-          TestUtil.logMsg(
-              "operationWithHeaderAndFaults does declare a header as parameter for type "
-                  + EXPECTED_HEADER2_TYPE);
-        }
+		// Customization via jaxws:enableAdditionalSOAPHeaderMapping means a header
+		// type
+		// as parameter to this method. Customization via jaxws:bindings in wsdl to
+		// override
+		// the generated header Exception exception class name.
+		try {
+			Method theMethod = null;
+			Method[] methods = endpointClass.getMethods();
+			for (int i = 0; i < methods.length; i++) {
+				if (methods[i].getName().equals("operationWithHeaderAndFaults")) {
+					theMethod = methods[i];
+					break;
+				}
+			}
 
-        Class[] exceptions = theMethod.getExceptionTypes();
-        boolean exception1 = false;
-        boolean exception2 = false;
-        TestUtil.logMsg(
-            "Verify that each soap:fault is mapped to the expected exception name");
-        for (int j = 0; j < exceptions.length; j++) {
-          String exceptName = exceptions[j].getName();
-          TestUtil.logMsg("exception[" + j + "]=" + exceptName);
-          if (exceptName.equals(EXPECTED_FAULT1_EXCEPTION)) {
-            exception1 = true;
-          } else if (exceptName.equals(EXPECTED_FAULT2_EXCEPTION)) {
-            exception2 = true;
-          }
-        }
-        if (!exception1) {
-          TestUtil.logErr("The method: " + theMethod.getName()
-              + " did not declare exception\n" + EXPECTED_FAULT1_EXCEPTION);
-          pass = false;
-        }
-        if (!exception2) {
-          TestUtil.logErr("The method: " + theMethod.getName()
-              + " did not declare exception\n" + EXPECTED_FAULT2_EXCEPTION);
-          pass = false;
-        }
-      } else {
-        TestUtil.logErr("operationWithHeaderAndFaults was not found!");
-        pass = false;
-      }
-    } catch (Exception e) {
-      TestUtil.logErr("Exception: " + e);
-    }
+			if (theMethod != null) {
 
-    if (!pass)
-      throw new Fault("SoapHeaderAndFaultTest failed");
-  }
+				boolean found = false;
+				Class parameters[] = theMethod.getParameterTypes();
+				logger.log(Level.INFO, "Verify the jaxws:enableAdditionalSOAPHeaderMapping customization");
+				logger.log(Level.INFO, "Verify that the soap:header is mapped to a parameter of the operation");
+				for (int i = 0; i < parameters.length; i++) {
+					String name = parameters[i].getName();
+					logger.log(Level.INFO, "parameters[" + i + "]=" + name);
+					if (name.equals(EXPECTED_HEADER2_TYPE))
+						found = true;
+				}
+				if (!found) {
+					TestUtil.logErr("operationWithHeaderAndFaults does not declare a header as parameter for type "
+							+ EXPECTED_HEADER2_TYPE);
+					pass = false;
+				} else {
+					logger.log(Level.INFO, "operationWithHeaderAndFaults does declare a header as parameter for type "
+							+ EXPECTED_HEADER2_TYPE);
+				}
 
-  /*
-   * @testName: EnableWrapperStyleTrueTest
-   *
-   * @assertion_ids: JAXWS:SPEC:2001; JAXWS:SPEC:2002; JAXWS:SPEC:2003;
-   * JAXWS:SPEC:2024; JAXWS:SPEC:2025; JAXWS:SPEC:2027; JAXWS:SPEC:2041;
-   *
-   * @test_Strategy: Verify that each message results in a parameter
-   */
-  public void EnableWrapperStyleTrueTest() throws Fault {
-    TestUtil.logTrace("EnableWrapperStyleTrueTest");
-    boolean pass = true;
-    try {
-      Class c = Class.forName(EXPECTED_ENDPOINT, false,
-          this.getClass().getClassLoader());
-      Class returnType = JAXWS_Util.getMethodReturnType(c,
-          ENABLEWRAPPER_TRUE_METHOD);
-      if (returnType != null) {
-        String sReturnType = returnType.getName();
-        if (!sReturnType.equals(EXPECTED_ENABLEWRAPPER_TRUE_RETURN_TYPE)) {
-          TestUtil.logErr("The return type for method: "
-              + ENABLEWRAPPER_TRUE_METHOD + " was wrong");
-          TestUtil
-              .logErr("expected=" + EXPECTED_ENABLEWRAPPER_TRUE_RETURN_TYPE);
-          TestUtil.logErr("actual=" + sReturnType);
-          pass = false;
-        }
-      } else {
-        TestUtil.logErr("The method: " + ENABLEWRAPPER_TRUE_METHOD
-            + " was not found for class:" + EXPECTED_ENDPOINT);
-        pass = false;
-      }
-      Class parameterType = JAXWS_Util.getMethodParameterType(c,
-          ENABLEWRAPPER_TRUE_METHOD, 0);
-      if (parameterType != null) {
-        String sParameterType = parameterType.getName();
-        if (!sParameterType
-            .equals(EXPECTED_ENABLEWRAPPER_TRUE_PARAMETER_TYPE)) {
-          TestUtil.logErr("The parameter type for method: "
-              + ENABLEWRAPPER_TRUE_METHOD + " was wrong");
-          TestUtil
-              .logErr("expected=" + EXPECTED_ENABLEWRAPPER_TRUE_PARAMETER_TYPE);
-          TestUtil.logErr("actual=" + sParameterType);
-          pass = false;
-        }
-      } else {
-        TestUtil.logErr("The method: " + ENABLEWRAPPER_TRUE_METHOD
-            + " was not found for class:" + EXPECTED_ENDPOINT
-            + " or the specified parameter did not exist");
-        pass = false;
-      }
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("EnableWrapperStyleTrueTest failed", e);
-    }
+				Class[] exceptions = theMethod.getExceptionTypes();
+				boolean exception1 = false;
+				boolean exception2 = false;
+				logger.log(Level.INFO, "Verify that each soap:fault is mapped to the expected exception name");
+				for (int j = 0; j < exceptions.length; j++) {
+					String exceptName = exceptions[j].getName();
+					logger.log(Level.INFO, "exception[" + j + "]=" + exceptName);
+					if (exceptName.equals(EXPECTED_FAULT1_EXCEPTION)) {
+						exception1 = true;
+					} else if (exceptName.equals(EXPECTED_FAULT2_EXCEPTION)) {
+						exception2 = true;
+					}
+				}
+				if (!exception1) {
+					TestUtil.logErr("The method: " + theMethod.getName() + " did not declare exception\n"
+							+ EXPECTED_FAULT1_EXCEPTION);
+					pass = false;
+				}
+				if (!exception2) {
+					TestUtil.logErr("The method: " + theMethod.getName() + " did not declare exception\n"
+							+ EXPECTED_FAULT2_EXCEPTION);
+					pass = false;
+				}
+			} else {
+				TestUtil.logErr("operationWithHeaderAndFaults was not found!");
+				pass = false;
+			}
+		} catch (Exception e) {
+			TestUtil.logErr("Exception: " + e);
+		}
 
-    if (!pass)
-      throw new Fault("EnableWrapperStyleTrueTest failed");
-  }
+		if (!pass)
+			throw new Exception("SoapHeaderAndFaultTest failed");
+	}
 
-  /*
-   * @testName: EnableWrapperStyleFalseTest
-   *
-   * @assertion_ids: JAXWS:SPEC:2001; JAXWS:SPEC:2002; JAXWS:SPEC:2003;
-   * JAXWS:SPEC:2024; JAXWS:SPEC:2025; JAXWS:SPEC:2027; JAXWS:SPEC:2041;
-   *
-   * @test_Strategy: Verify that each message results in a paramenter
-   */
-  public void EnableWrapperStyleFalseTest() throws Fault {
-    TestUtil.logTrace("EnableWrapperStyleFalseTest");
-    boolean pass = true;
-    try {
-      Class c = Class.forName(EXPECTED_ENDPOINT, false,
-          this.getClass().getClassLoader());
-      Class returnType = JAXWS_Util.getMethodReturnType(c,
-          ENABLEWRAPPER_FALSE_METHOD);
-      if (returnType != null) {
-        String sReturnType = returnType.getName();
-        if (!sReturnType.equals(EXPECTED_ENABLEWRAPPER_FALSE_RETURN_TYPE)) {
-          TestUtil.logErr("The return type for method: "
-              + ENABLEWRAPPER_FALSE_METHOD + " was wrong");
-          TestUtil
-              .logErr("expected=" + EXPECTED_ENABLEWRAPPER_FALSE_RETURN_TYPE);
-          TestUtil.logErr("actual=" + sReturnType);
-          pass = false;
-        }
-      } else {
-        TestUtil.logErr("The method: " + ENABLEWRAPPER_FALSE_METHOD
-            + " was not found for class:" + EXPECTED_ENDPOINT);
-        pass = false;
-      }
-      Class parameterType = JAXWS_Util.getMethodParameterType(c,
-          ENABLEWRAPPER_FALSE_METHOD, 0);
-      if (parameterType != null) {
-        String sParameterType = parameterType.getName();
-        if (!sParameterType
-            .equals(EXPECTED_ENABLEWRAPPER_FALSE_PARAMETER_TYPE)) {
-          TestUtil.logErr("The parameter type for method: "
-              + ENABLEWRAPPER_FALSE_METHOD + " was wrong");
-          TestUtil.logErr(
-              "expected=" + EXPECTED_ENABLEWRAPPER_FALSE_PARAMETER_TYPE);
-          TestUtil.logErr("actual=" + sParameterType);
-          pass = false;
-        }
-      } else {
-        TestUtil.logErr("The method: " + ENABLEWRAPPER_FALSE_METHOD
-            + " was not found for class:" + EXPECTED_ENDPOINT
-            + " or the specified parameter did not exist");
-        pass = false;
-      }
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("EnableWrapperStyleFalseTest failed", e);
-    }
+	/*
+	 * @testName: EnableWrapperStyleTrueTest
+	 *
+	 * @assertion_ids: JAXWS:SPEC:2001; JAXWS:SPEC:2002; JAXWS:SPEC:2003;
+	 * JAXWS:SPEC:2024; JAXWS:SPEC:2025; JAXWS:SPEC:2027; JAXWS:SPEC:2041;
+	 *
+	 * @test_Strategy: Verify that each message results in a parameter
+	 */
+	@Test
+	public void EnableWrapperStyleTrueTest() throws Exception {
+		TestUtil.logTrace("EnableWrapperStyleTrueTest");
+		boolean pass = true;
+		try {
+			Class c = Class.forName(EXPECTED_ENDPOINT, false, this.getClass().getClassLoader());
+			Class returnType = JAXWS_Util.getMethodReturnType(c, ENABLEWRAPPER_TRUE_METHOD);
+			if (returnType != null) {
+				String sReturnType = returnType.getName();
+				if (!sReturnType.equals(EXPECTED_ENABLEWRAPPER_TRUE_RETURN_TYPE)) {
+					TestUtil.logErr("The return type for method: " + ENABLEWRAPPER_TRUE_METHOD + " was wrong");
+					TestUtil.logErr("expected=" + EXPECTED_ENABLEWRAPPER_TRUE_RETURN_TYPE);
+					TestUtil.logErr("actual=" + sReturnType);
+					pass = false;
+				}
+			} else {
+				TestUtil.logErr(
+						"The method: " + ENABLEWRAPPER_TRUE_METHOD + " was not found for class:" + EXPECTED_ENDPOINT);
+				pass = false;
+			}
+			Class parameterType = JAXWS_Util.getMethodParameterType(c, ENABLEWRAPPER_TRUE_METHOD, 0);
+			if (parameterType != null) {
+				String sParameterType = parameterType.getName();
+				if (!sParameterType.equals(EXPECTED_ENABLEWRAPPER_TRUE_PARAMETER_TYPE)) {
+					TestUtil.logErr("The parameter type for method: " + ENABLEWRAPPER_TRUE_METHOD + " was wrong");
+					TestUtil.logErr("expected=" + EXPECTED_ENABLEWRAPPER_TRUE_PARAMETER_TYPE);
+					TestUtil.logErr("actual=" + sParameterType);
+					pass = false;
+				}
+			} else {
+				TestUtil.logErr("The method: " + ENABLEWRAPPER_TRUE_METHOD + " was not found for class:"
+						+ EXPECTED_ENDPOINT + " or the specified parameter did not exist");
+				pass = false;
+			}
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("EnableWrapperStyleTrueTest failed", e);
+		}
 
-    if (!pass)
-      throw new Fault("EnableWrapperStyleFalseTest failed");
-  }
+		if (!pass)
+			throw new Exception("EnableWrapperStyleTrueTest failed");
+	}
+
+	/*
+	 * @testName: EnableWrapperStyleFalseTest
+	 *
+	 * @assertion_ids: JAXWS:SPEC:2001; JAXWS:SPEC:2002; JAXWS:SPEC:2003;
+	 * JAXWS:SPEC:2024; JAXWS:SPEC:2025; JAXWS:SPEC:2027; JAXWS:SPEC:2041;
+	 *
+	 * @test_Strategy: Verify that each message results in a paramenter
+	 */
+	@Test
+	public void EnableWrapperStyleFalseTest() throws Exception {
+		TestUtil.logTrace("EnableWrapperStyleFalseTest");
+		boolean pass = true;
+		try {
+			Class c = Class.forName(EXPECTED_ENDPOINT, false, this.getClass().getClassLoader());
+			Class returnType = JAXWS_Util.getMethodReturnType(c, ENABLEWRAPPER_FALSE_METHOD);
+			if (returnType != null) {
+				String sReturnType = returnType.getName();
+				if (!sReturnType.equals(EXPECTED_ENABLEWRAPPER_FALSE_RETURN_TYPE)) {
+					TestUtil.logErr("The return type for method: " + ENABLEWRAPPER_FALSE_METHOD + " was wrong");
+					TestUtil.logErr("expected=" + EXPECTED_ENABLEWRAPPER_FALSE_RETURN_TYPE);
+					TestUtil.logErr("actual=" + sReturnType);
+					pass = false;
+				}
+			} else {
+				TestUtil.logErr(
+						"The method: " + ENABLEWRAPPER_FALSE_METHOD + " was not found for class:" + EXPECTED_ENDPOINT);
+				pass = false;
+			}
+			Class parameterType = JAXWS_Util.getMethodParameterType(c, ENABLEWRAPPER_FALSE_METHOD, 0);
+			if (parameterType != null) {
+				String sParameterType = parameterType.getName();
+				if (!sParameterType.equals(EXPECTED_ENABLEWRAPPER_FALSE_PARAMETER_TYPE)) {
+					TestUtil.logErr("The parameter type for method: " + ENABLEWRAPPER_FALSE_METHOD + " was wrong");
+					TestUtil.logErr("expected=" + EXPECTED_ENABLEWRAPPER_FALSE_PARAMETER_TYPE);
+					TestUtil.logErr("actual=" + sParameterType);
+					pass = false;
+				}
+			} else {
+				TestUtil.logErr("The method: " + ENABLEWRAPPER_FALSE_METHOD + " was not found for class:"
+						+ EXPECTED_ENDPOINT + " or the specified parameter did not exist");
+				pass = false;
+			}
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("EnableWrapperStyleFalseTest failed", e);
+		}
+
+		if (!pass)
+			throw new Exception("EnableWrapperStyleFalseTest failed");
+	}
 }

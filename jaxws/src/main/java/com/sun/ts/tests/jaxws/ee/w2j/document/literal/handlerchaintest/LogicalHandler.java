@@ -20,54 +20,52 @@
 
 package com.sun.ts.tests.jaxws.ee.w2j.document.literal.handlerchaintest;
 
-import jakarta.xml.ws.handler.*;
+import java.io.StringReader;
+
+import javax.xml.transform.stream.StreamSource;
 
 import com.sun.ts.tests.jaxws.common.Handler_Util;
 
-import java.io.StringReader;
-import javax.xml.transform.stream.StreamSource;
+import jakarta.xml.ws.handler.LogicalMessageContext;
+import jakarta.xml.ws.handler.MessageContext;
 
-public class LogicalHandler
-    implements jakarta.xml.ws.handler.LogicalHandler<LogicalMessageContext> {
-  private final String HANDLER_NAME = "ServerLogicalHandler";
+public class LogicalHandler implements jakarta.xml.ws.handler.LogicalHandler<LogicalMessageContext> {
+	private final String HANDLER_NAME = "ServerLogicalHandler";
 
-  public boolean handleMessage(LogicalMessageContext context) {
-    System.out.println("in " + HANDLER_NAME + ":handleMessage");
+	public boolean handleMessage(LogicalMessageContext context) {
+		System.out.println("in " + HANDLER_NAME + ":handleMessage");
 
-    String direction = Handler_Util.getDirection(context);
-    if (Handler_Util.checkForMsg(this, context, "HandlerChainOnProviderTest")) {
-      HandlerChainOnProviderTest(context, direction);
-    } else {
-      System.out.println(
-          "didn't find HandlerChainOnProviderTest message, handler will ignore");
-    }
-    System.out.println("exiting " + HANDLER_NAME + ":handleMessage");
-    return true;
-  }
+		String direction = Handler_Util.getDirection(context);
+		if (Handler_Util.checkForMsg(this, context, "HandlerChainOnProviderTest")) {
+			HandlerChainOnProviderTest(context, direction);
+		} else {
+			System.out.println("didn't find HandlerChainOnProviderTest message, handler will ignore");
+		}
+		System.out.println("exiting " + HANDLER_NAME + ":handleMessage");
+		return true;
+	}
 
-  public void HandlerChainOnProviderTest(LogicalMessageContext context,
-      String direction) {
-    System.out.println("in " + HANDLER_NAME + ":HandlerChainOnProviderTest");
+	public void HandlerChainOnProviderTest(LogicalMessageContext context, String direction) {
+		System.out.println("in " + HANDLER_NAME + ":HandlerChainOnProviderTest");
 
-    Handler_Util.dumpMsg(context);
+		Handler_Util.dumpMsg(context);
 
-    String tmp = Handler_Util.getMessageAsString(context);
-    String newTmp = tmp.replaceAll("HandlerChainOnProviderTest",
-        "HandlerChainOnProviderTest" + direction + HANDLER_NAME);
-    context.getMessage().setPayload(new StreamSource(new StringReader(newTmp)));
-    Handler_Util.dumpMsg(context);
+		String tmp = Handler_Util.getMessageAsString(context);
+		String newTmp = tmp.replaceAll("HandlerChainOnProviderTest",
+				"HandlerChainOnProviderTest" + direction + HANDLER_NAME);
+		context.getMessage().setPayload(new StreamSource(new StringReader(newTmp)));
+		Handler_Util.dumpMsg(context);
 
-    System.out
-        .println("exiting " + HANDLER_NAME + ":HandlerChainOnProviderTest");
-  }
+		System.out.println("exiting " + HANDLER_NAME + ":HandlerChainOnProviderTest");
+	}
 
-  public void close(MessageContext context) {
-    System.out.println("in " + HANDLER_NAME + ":close");
-  }
+	public void close(MessageContext context) {
+		System.out.println("in " + HANDLER_NAME + ":close");
+	}
 
-  public boolean handleFault(LogicalMessageContext context) {
-    System.out.println("in " + HANDLER_NAME + ":handleFault");
-    return true;
-  }
+	public boolean handleFault(LogicalMessageContext context) {
+		System.out.println("in " + HANDLER_NAME + ":handleFault");
+		return true;
+	}
 
 }

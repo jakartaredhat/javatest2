@@ -20,273 +20,266 @@
 
 package com.sun.ts.tests.jaxws.sharedclients;
 
-import com.sun.ts.tests.jaxws.common.JAXWS_Util;
-import com.sun.ts.lib.util.*;
+import java.net.URL;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 
 import javax.xml.namespace.QName;
 
+import com.sun.ts.lib.util.TestUtil;
+import com.sun.ts.tests.jaxws.common.JAXWS_Util;
+
 import jakarta.xml.ws.WebServiceFeature;
-import java.net.URL;
 
 public class StubContext {
 
-  /**
-   * The test name property name.
-   */
-  public static final String TEST_NAME = "testName";
+	private static final Logger logger = (Logger) System.getLogger(SOAPClient.class.getName());
 
-  /**
-   * The web server host property name.
-   */
-  public static final String WEB_SERVER_HOST = "webServerHost";
+	/**
+	 * The test name property name.
+	 */
+	public static final String TEST_NAME = "testName";
 
-  /**
-   * The web server port property name.
-   */
-  public static final String WEB_SERVER_PORT = "webServerPort";
+	/**
+	 * The web server host property name.
+	 */
+	public static final String WEB_SERVER_HOST = "webServerHost";
 
-  /**
-   * The secure web server port property name.
-   */
-  public static final String SECURE_WEB_SERVER_PORT = "secureWebServerPort";
+	/**
+	 * The web server port property name.
+	 */
+	public static final String WEB_SERVER_PORT = "webServerPort";
 
-  /**
-   * The monitor server port property name.
-   */
-  public static final String MONITOR_PORT = "monitorPort";
+	/**
+	 * The secure web server port property name.
+	 */
+	public static final String SECURE_WEB_SERVER_PORT = "secureWebServerPort";
 
-  /**
-   * The WSI home property name.
-   */
-  public static final String WSI_HOME = "wsiHome";
+	/**
+	 * The monitor server port property name.
+	 */
+	public static final String MONITOR_PORT = "monitorPort";
 
-  private int mode;
+	/**
+	 * The WSI home property name.
+	 */
+	public static final String WSI_HOME = "wsiHome";
 
-  private String endpointURL;
+	private int mode;
 
-  private String wsdllocURL;
+	private String endpointURL;
 
-  private String namespace;
+	private String wsdllocURL;
 
-  private String service;
+	private String namespace;
 
-  private String port;
+	private String service;
 
-  private Class endpointInterface;
+	private String port;
 
-  private QName serviceName;
+	private Class endpointInterface;
 
-  private QName portName;
+	private QName serviceName;
 
-  private Object stub;
+	private QName portName;
 
-  private jakarta.xml.ws.Service webServiceRef;
+	private Object stub;
 
-  private WebServiceFeature[] wsf;
+	private jakarta.xml.ws.Service webServiceRef;
 
-  public int getMode() {
-    return mode;
-  }
+	private WebServiceFeature[] wsf;
 
-  public void setMode(int mode) {
-    this.mode = mode;
-  }
+	public int getMode() {
+		return mode;
+	}
 
-  public String getEndpointURL() {
-    return endpointURL;
-  }
+	public void setMode(int mode) {
+		this.mode = mode;
+	}
 
-  public void setEndpointURL(String endpointURL) {
-    this.endpointURL = endpointURL;
-  }
+	public String getEndpointURL() {
+		return endpointURL;
+	}
 
-  public String getWsdllocURL() {
-    return wsdllocURL;
-  }
+	public void setEndpointURL(String endpointURL) {
+		this.endpointURL = endpointURL;
+	}
 
-  public void setWsdllocURL(String wsdllocURL) {
-    this.wsdllocURL = wsdllocURL;
-  }
+	public String getWsdllocURL() {
+		return wsdllocURL;
+	}
 
-  public WebServiceFeature[] getWSF() {
-    return wsf;
-  }
+	public void setWsdllocURL(String wsdllocURL) {
+		this.wsdllocURL = wsdllocURL;
+	}
 
-  public void setWSF(WebServiceFeature[] w) {
-    this.wsf = w;
-  }
+	public WebServiceFeature[] getWSF() {
+		return wsf;
+	}
 
-  /**
-   * Initializes the stub.
-   *
-   * @throws java.lang.Exception
-   */
-  protected void initStub() throws Exception {
-    if (stub == null) {
-      if (mode == SOAPClient.MODE_STANDALONE) {
-        createJAXWSStub();
-        JAXWS_Util.setTargetEndpointAddress(stub, getEndpointURL());
-      } else {
-        createJavaEEStub();
-      }
-    }
-  }
+	public void setWSF(WebServiceFeature[] w) {
+		this.wsf = w;
+	}
 
-  protected void createJAXWSStub() throws Exception {
-    TestUtil.logMsg("entering createJAXWSStub()");
-    try {
-      serviceName = new QName(namespace, service);
-      portName = new QName(namespace, port);
-      Class siClass = Class
-          .forName(endpointInterface.getPackage().getName() + "." + service);
-      stub = JAXWS_Util.getPort(new URL(getWsdllocURL()), serviceName, siClass,
-          portName, endpointInterface, wsf);
-      JAXWS_Util.setSOAPLogging(stub); // For Debug only
-    } catch (Exception e) {
-      TestUtil.logMsg(
-          "StubContext.createJAXWSStub() could not get stub (caught exception)");
-      TestUtil.printStackTrace(e);
-      throw e;
-    }
-  }
+	/**
+	 * Initializes the stub.
+	 *
+	 * @throws java.lang.Exception
+	 */
+	protected void initStub() throws Exception {
+		if (stub == null) {
+			if (mode == SOAPClient.MODE_STANDALONE) {
+				createJAXWSStub();
+				JAXWS_Util.setTargetEndpointAddress(stub, getEndpointURL());
+			} else {
+				createJavaEEStub();
+			}
+		}
+	}
 
-  protected void createJavaEEStub() throws Exception {
-    TestUtil.logMsg("entering createJavaEEStub()");
-    try {
-      TestUtil.logMsg("webServiceRef=" + webServiceRef);
-      if (webServiceRef == null)
-        throw new Exception("webServiceRef is null");
-      TestUtil.logMsg(
-          "Getting port from WebServiceRef for " + endpointInterface.getName());
-      stub = webServiceRef.getPort(endpointInterface);
-      TestUtil.logMsg("port=" + stub);
-      JAXWS_Util.dumpTargetEndpointAddress(stub);
-      // JAXWS_Util.setSOAPLogging(stub); // For Debug only
-    } catch (Exception e) {
-      TestUtil.logMsg(
-          "StubContext.createJavaEEStub() could not get stub (caught exception)");
-      TestUtil.printStackTrace(e);
-      throw e;
-    }
-  }
+	protected void createJAXWSStub() throws Exception {
+		logger.log(Level.INFO, "entering createJAXWSStub()");
+		try {
+			serviceName = new QName(namespace, service);
+			portName = new QName(namespace, port);
+			Class siClass = Class.forName(endpointInterface.getPackage().getName() + "." + service);
+			stub = JAXWS_Util.getPort(new URL(getWsdllocURL()), serviceName, siClass, portName, endpointInterface, wsf);
+			JAXWS_Util.setSOAPLogging(stub); // For Debug only
+		} catch (Exception e) {
+			logger.log(Level.INFO, "StubContext.createJAXWSStub() could not get stub (caught exception)");
+			TestUtil.printStackTrace(e);
+			throw e;
+		}
+	}
 
-  /**
-   * @return String
-   */
-  public String getNamespace() {
-    return namespace;
-  }
+	protected void createJavaEEStub() throws Exception {
+		logger.log(Level.INFO, "entering createJavaEEStub()");
+		try {
+			logger.log(Level.INFO, "webServiceRef=" + webServiceRef);
+			if (webServiceRef == null)
+				throw new Exception("webServiceRef is null");
+			logger.log(Level.INFO, "Getting port from WebServiceRef for " + endpointInterface.getName());
+			stub = webServiceRef.getPort(endpointInterface);
+			logger.log(Level.INFO, "port=" + stub);
+			JAXWS_Util.dumpTargetEndpointAddress(stub);
+			// JAXWS_Util.setSOAPLogging(stub); // For Debug only
+		} catch (Exception e) {
+			logger.log(Level.INFO, "StubContext.createJavaEEStub() could not get stub (caught exception)");
+			TestUtil.printStackTrace(e);
+			throw e;
+		}
+	}
 
-  /**
-   * @return QName
-   */
-  public QName getPortName() {
-    return portName;
-  }
+	/**
+	 * @return String
+	 */
+	public String getNamespace() {
+		return namespace;
+	}
 
-  /**
-   * @return String
-   */
-  public String getPort() {
-    return port;
-  }
+	/**
+	 * @return QName
+	 */
+	public QName getPortName() {
+		return portName;
+	}
 
-  /**
-   * @return String
-   */
-  public String getService() {
-    return service;
-  }
+	/**
+	 * @return String
+	 */
+	public String getPort() {
+		return port;
+	}
 
-  /**
-   * @return Class
-   */
-  public Class getEndpointInterface() {
-    return endpointInterface;
-  }
+	/**
+	 * @return String
+	 */
+	public String getService() {
+		return service;
+	}
 
-  /**
-   * @return QName
-   */
-  public QName getServiceName() {
-    return serviceName;
-  }
+	/**
+	 * @return Class
+	 */
+	public Class getEndpointInterface() {
+		return endpointInterface;
+	}
 
-  /**
-   * @return Stub
-   */
-  public Object getStub() throws Exception {
-    initStub();
-    return stub;
-  }
+	/**
+	 * @return QName
+	 */
+	public QName getServiceName() {
+		return serviceName;
+	}
 
-  /**
-   * Sets the namespace.
-   * 
-   * @param namespace
-   *          The namespace to set
-   */
-  public void setNamespace(String namespace) {
-    this.namespace = namespace;
-  }
+	/**
+	 * @return Stub
+	 */
+	public Object getStub() throws Exception {
+		initStub();
+		return stub;
+	}
 
-  /**
-   * Sets the portName.
-   * 
-   * @param portName
-   *          The portName to set
-   */
-  public void setPortName(QName portName) {
-    this.portName = portName;
-  }
+	/**
+	 * Sets the namespace.
+	 * 
+	 * @param namespace The namespace to set
+	 */
+	public void setNamespace(String namespace) {
+		this.namespace = namespace;
+	}
 
-  /**
-   * Sets the port.
-   * 
-   * @param port
-   *          The port to set
-   */
-  public void setPort(String port) {
-    this.port = port;
-  }
+	/**
+	 * Sets the portName.
+	 * 
+	 * @param portName The portName to set
+	 */
+	public void setPortName(QName portName) {
+		this.portName = portName;
+	}
 
-  /**
-   * Sets the service.
-   * 
-   * @param service
-   *          The service to set
-   */
-  public void setService(String service) {
-    this.service = service;
-  }
+	/**
+	 * Sets the port.
+	 * 
+	 * @param port The port to set
+	 */
+	public void setPort(String port) {
+		this.port = port;
+	}
 
-  /**
-   * Sets the endpointInterface.
-   * 
-   * @param endpointInterface
-   *          The endpointInterface to set
-   */
-  public void setEndpointInterface(Class endpointInterface) {
-    this.endpointInterface = endpointInterface;
-  }
+	/**
+	 * Sets the service.
+	 * 
+	 * @param service The service to set
+	 */
+	public void setService(String service) {
+		this.service = service;
+	}
 
-  /**
-   * Sets the serviceName.
-   * 
-   * @param serviceName
-   *          The serviceName to set
-   */
-  public void setServiceName(QName serviceName) {
-    this.serviceName = serviceName;
-  }
+	/**
+	 * Sets the endpointInterface.
+	 * 
+	 * @param endpointInterface The endpointInterface to set
+	 */
+	public void setEndpointInterface(Class endpointInterface) {
+		this.endpointInterface = endpointInterface;
+	}
 
-  /**
-   * Sets the webServiceRef.
-   * 
-   * @param webServiceRef
-   *          The webServiceRef to set
-   */
-  public void setWebServiceRef(jakarta.xml.ws.Service webServiceRef) {
-    this.webServiceRef = webServiceRef;
-  }
+	/**
+	 * Sets the serviceName.
+	 * 
+	 * @param serviceName The serviceName to set
+	 */
+	public void setServiceName(QName serviceName) {
+		this.serviceName = serviceName;
+	}
+
+	/**
+	 * Sets the webServiceRef.
+	 * 
+	 * @param webServiceRef The webServiceRef to set
+	 */
+	public void setWebServiceRef(jakarta.xml.ws.Service webServiceRef) {
+		this.webServiceRef = webServiceRef;
+	}
 }

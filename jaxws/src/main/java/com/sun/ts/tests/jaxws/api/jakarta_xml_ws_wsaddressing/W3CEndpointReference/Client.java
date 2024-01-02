@@ -20,131 +20,130 @@
 
 package com.sun.ts.tests.jaxws.api.jakarta_xml_ws_wsaddressing.W3CEndpointReference;
 
-import com.sun.ts.lib.util.*;
-import com.sun.ts.lib.harness.*;
+import java.io.ByteArrayOutputStream;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 
-import java.io.*;
-import java.util.*;
-
-import jakarta.xml.ws.wsaddressing.W3CEndpointReference;
 import javax.xml.namespace.QName;
 import javax.xml.transform.stream.StreamResult;
 
-import com.sun.javatest.Status;
-import com.sun.ts.tests.jaxws.common.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.sun.ts.lib.util.TestUtil;
+import com.sun.ts.tests.jaxws.common.JAXWS_Util;
 import com.sun.ts.tests.jaxws.wsa.common.EprUtil;
 
-public class Client extends ServiceEETest {
+import jakarta.xml.ws.wsaddressing.W3CEndpointReference;
 
-  private static String xmlSource = "<EndpointReference xmlns=\"http://www.w3.org/2005/08/addressing\"><Address>http://localhost:8080/WSDLHelloService_web/jaxws/Hello</Address><Metadata><wsam:InterfaceName xmlns:wsam=\"http://www.w3.org/2007/05/addressing/metadata\" xmlns:wsa=\"http://www.w3.org/2005/08/addressing\" xmlns:wsns=\"http://helloservice.org/wsdl\">wsns:Hello</wsam:InterfaceName><wsam:ServiceName xmlns:wsam=\"http://www.w3.org/2007/05/addressing/metadata\" xmlns:ns3=\"http://www.w3.org/2005/08/addressing\" xmlns=\"\" xmlns:wsns=\"http://helloservice.org/wsdl\" EndpointName=\"HelloPort\">wsns:HelloService</wsam:ServiceName><wsdl:definitions xmlns:wsdl=\"http://schemas.xmlsoap.org/wsdl/\" xmlns:wsa=\"http://www.w3.org/2005/08/addressing\" xmlns:wsam=\"http://www.w3.org/2007/05/addressing/metadata\"><wsdl:import xmlns:ns5=\"http://www.w3.org/2005/08/addressing\" xmlns=\"\" location=\"http://localhost:8080/WSDLHelloService_web/jaxws/Hello?wsdl\" namespace=\"http://helloservice.org/wsdl\"/></wsdl:definitions></Metadata></EndpointReference>";
+import com.sun.ts.tests.jaxws.common.BaseClient;
 
-  private static final String URLENDPOINT = "http://localhost:8080/WSDLHelloService_web/jaxws/Hello";
+public class Client extends BaseClient {
 
-  private static final String NAMESPACEURI = "http://helloservice.org/wsdl";
+	private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
 
-  private static final String SERVICE_NAME = "HelloService";
+	private static String xmlSource = "<EndpointReference xmlns=\"http://www.w3.org/2005/08/addressing\"><Address>http://localhost:8080/WSDLHelloService_web/jaxws/Hello</Address><Metadata><wsam:InterfaceName xmlns:wsam=\"http://www.w3.org/2007/05/addressing/metadata\" xmlns:wsa=\"http://www.w3.org/2005/08/addressing\" xmlns:wsns=\"http://helloservice.org/wsdl\">wsns:Hello</wsam:InterfaceName><wsam:ServiceName xmlns:wsam=\"http://www.w3.org/2007/05/addressing/metadata\" xmlns:ns3=\"http://www.w3.org/2005/08/addressing\" xmlns=\"\" xmlns:wsns=\"http://helloservice.org/wsdl\" EndpointName=\"HelloPort\">wsns:HelloService</wsam:ServiceName><wsdl:definitions xmlns:wsdl=\"http://schemas.xmlsoap.org/wsdl/\" xmlns:wsa=\"http://www.w3.org/2005/08/addressing\" xmlns:wsam=\"http://www.w3.org/2007/05/addressing/metadata\"><wsdl:import xmlns:ns5=\"http://www.w3.org/2005/08/addressing\" xmlns=\"\" location=\"http://localhost:8080/WSDLHelloService_web/jaxws/Hello?wsdl\" namespace=\"http://helloservice.org/wsdl\"/></wsdl:definitions></Metadata></EndpointReference>";
 
-  private static final String PORT_NAME = "HelloPort";
+	private static final String URLENDPOINT = "http://localhost:8080/WSDLHelloService_web/jaxws/Hello";
 
-  private static final String PORT_TYPE_NAME = "Hello";
+	private static final String NAMESPACEURI = "http://helloservice.org/wsdl";
 
-  private QName SERVICE_QNAME = new QName(NAMESPACEURI, SERVICE_NAME);
+	private static final String SERVICE_NAME = "HelloService";
 
-  private QName PORT_QNAME = new QName(NAMESPACEURI, PORT_NAME);
+	private static final String PORT_NAME = "HelloPort";
 
-  private QName PORT_TYPE_QNAME = new QName(NAMESPACEURI, PORT_TYPE_NAME);
+	private static final String PORT_TYPE_NAME = "Hello";
 
-  public static void main(String[] args) {
-    Client theTests = new Client();
-    Status s = theTests.run(args, System.out, System.err);
-    s.exit();
-  }
+	private QName SERVICE_QNAME = new QName(NAMESPACEURI, SERVICE_NAME);
 
-  /* Test setup */
+	private QName PORT_QNAME = new QName(NAMESPACEURI, PORT_NAME);
 
-  /*
-   * @class.setup_props:
-   */
+	private QName PORT_TYPE_QNAME = new QName(NAMESPACEURI, PORT_TYPE_NAME);
 
-  public void setup(String[] args, Properties p) throws Fault {
-    logMsg("setup ok");
-  }
+	/* Test setup */
 
-  public void cleanup() throws Fault {
-    logMsg("cleanup ok");
-  }
+	/*
+	 * @class.setup_props:
+	 */
+	@BeforeEach
+	public void setup() throws Exception {
+		logger.log(Level.INFO, "setup ok");
+	}
 
-  /*
-   * @testName: W3CEndpointReferenceConstructorTest
-   *
-   * @assertion_ids: JAXWS:JAVADOC:184;
-   *
-   * @test_Strategy:
-   */
-  public void W3CEndpointReferenceConstructorTest() throws Fault {
-    TestUtil.logTrace("W3CEndpointReferenceConstructorTest");
-    boolean pass = true;
-    try {
-      TestUtil.logMsg("Create instance via W3CEndpointReference() ...");
-      W3CEndpointReference e = new W3CEndpointReference(
-          JAXWS_Util.makeSource(xmlSource, "StreamSource"));
-      if (e != null) {
-        TestUtil.logMsg("W3CEndpointReference object created successfully");
-      } else {
-        TestUtil.logErr("W3CEndpointReference object not created");
-        pass = false;
-      }
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("W3CEndpointReferenceConstructorTest failed", e);
-    }
+	@AfterEach
+	public void cleanup() throws Exception {
+		logger.log(Level.INFO, "cleanup ok");
+	}
 
-    if (!pass)
-      throw new Fault("W3CEndpointReferenceConstructorTest failed");
-  }
+	/*
+	 * @testName: W3CEndpointReferenceConstructorTest
+	 *
+	 * @assertion_ids: JAXWS:JAVADOC:184;
+	 *
+	 * @test_Strategy:
+	 */
+	@Test
+	public void W3CEndpointReferenceConstructorTest() throws Exception {
+		TestUtil.logTrace("W3CEndpointReferenceConstructorTest");
+		boolean pass = true;
+		try {
+			logger.log(Level.INFO, "Create instance via W3CEndpointReference() ...");
+			W3CEndpointReference e = new W3CEndpointReference(JAXWS_Util.makeSource(xmlSource, "StreamSource"));
+			if (e != null) {
+				logger.log(Level.INFO, "W3CEndpointReference object created successfully");
+			} else {
+				TestUtil.logErr("W3CEndpointReference object not created");
+				pass = false;
+			}
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("W3CEndpointReferenceConstructorTest failed", e);
+		}
 
-  /*
-   * @testName: writeToTest
-   *
-   * @assertion_ids: JAXWS:JAVADOC:185;
-   *
-   * @test_Strategy:
-   */
-  public void writeToTest() throws Fault {
-    TestUtil.logTrace("writeToTest");
-    boolean pass = true;
-    try {
-      TestUtil.logMsg("Create instance via W3CEndpointReference() ...");
-      W3CEndpointReference epr = new W3CEndpointReference(
-          JAXWS_Util.makeSource(xmlSource, "StreamSource"));
-      if (epr != null) {
-        TestUtil.logMsg("W3CEndpointReference object created successfully");
-      } else {
-        TestUtil.logErr("W3CEndpointReference object not created");
-        pass = false;
-      }
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      epr.writeTo(new StreamResult(baos));
-      TestUtil.logMsg("writeTo(): " + baos.toString());
-      TestUtil.logMsg(
-          "Now perform an epr.readFrom() of the results from epr.writeTo()");
-      epr = new W3CEndpointReference(
-          JAXWS_Util.makeSource(baos.toString(), "StreamSource"));
-      TestUtil.logMsg("Validate the EPR for correctness (Verify MetaData)");
-      if (!EprUtil.validateEPR(epr, URLENDPOINT, SERVICE_QNAME, PORT_QNAME,
-          PORT_TYPE_QNAME, Boolean.TRUE)) {
-        pass = false;
-        TestUtil.logErr("writeTo failed to write out xml source as expected");
-      } else
-        TestUtil.logMsg("writeTo passed to write out xml source as expected");
-    } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Fault("writeToTest failed", e);
-    }
+		if (!pass)
+			throw new Exception("W3CEndpointReferenceConstructorTest failed");
+	}
 
-    if (!pass)
-      throw new Fault("writeToTest failed");
-  }
+	/*
+	 * @testName: writeToTest
+	 *
+	 * @assertion_ids: JAXWS:JAVADOC:185;
+	 *
+	 * @test_Strategy:
+	 */
+	@Test
+	public void writeToTest() throws Exception {
+		TestUtil.logTrace("writeToTest");
+		boolean pass = true;
+		try {
+			logger.log(Level.INFO, "Create instance via W3CEndpointReference() ...");
+			W3CEndpointReference epr = new W3CEndpointReference(JAXWS_Util.makeSource(xmlSource, "StreamSource"));
+			if (epr != null) {
+				logger.log(Level.INFO, "W3CEndpointReference object created successfully");
+			} else {
+				TestUtil.logErr("W3CEndpointReference object not created");
+				pass = false;
+			}
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			epr.writeTo(new StreamResult(baos));
+			logger.log(Level.INFO, "writeTo(): " + baos.toString());
+			logger.log(Level.INFO, "Now perform an epr.readFrom() of the results from epr.writeTo()");
+			epr = new W3CEndpointReference(JAXWS_Util.makeSource(baos.toString(), "StreamSource"));
+			logger.log(Level.INFO, "Validate the EPR for correctness (Verify MetaData)");
+			if (!EprUtil.validateEPR(epr, URLENDPOINT, SERVICE_QNAME, PORT_QNAME, PORT_TYPE_QNAME, Boolean.TRUE)) {
+				pass = false;
+				TestUtil.logErr("writeTo failed to write out xml source as expected");
+			} else
+				logger.log(Level.INFO, "writeTo passed to write out xml source as expected");
+		} catch (Exception e) {
+			TestUtil.logErr("Caught exception: " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("writeToTest failed", e);
+		}
+
+		if (!pass)
+			throw new Exception("writeToTest failed");
+	}
 }
