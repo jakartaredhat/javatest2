@@ -199,6 +199,3 @@ jakarta.batch=2.0_se8
 # (This is JSR-375)
 jakarta.security.enterprise=2.0_se8
 
-# javax.rmi
-javax.rmi=1.0_se8
-
