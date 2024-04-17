@@ -1390,8 +1390,8 @@ sigTestClasspath=${s1as.modules}/glassfish-corba-omgapi.jar${pathsep}${s1as.modu
 ##           optional.tech.packages.to.ignore=jakarta.xml.bind 
 ##   
 #########################################################################
-optional.tech.packages.to.ignore=jakarta.xml.bind
-
+optional.tech.packages.to.ignore=jakarta.xml.bind,javax.rmi,org.omg.CORBA
+s
 ########################################################################
 ## These properties are used by the harness.  "harness.log.port"
 ## specifies the port that server components use to send logging

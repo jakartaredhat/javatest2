@@ -194,9 +194,19 @@ public abstract class SignatureTestDriver {
     if (packagesUnderTest != null && packagesUnderTest.length > 0) {
       TestUtil.logMsg("********** BEGIN PACKAGE LEVEL SIGNATURE "
           + "VALIDATION **********\n\n");
+
       for (int i = 0; i < packagesUnderTest.length; i++) {
 
         String packageName = packagesUnderTest[i];
+
+        if (arrayOptionalPkgsToIgnore != null) {
+          for (int ii = 0; ii < arrayOptionalPkgsToIgnore.length; ii++) {
+            if(packageName.equals(arrayOptionalPkgsToIgnore[ii])){
+                TestUtil.logMsg("********** " + packageName  + " is ignored\n\n");
+                return result;
+            }          
+          }
+        }
 
         TestUtil.logMsg("********** BEGIN VALIDATE PACKAGE '"
             + packagesUnderTest[i] + "' **********\n");
