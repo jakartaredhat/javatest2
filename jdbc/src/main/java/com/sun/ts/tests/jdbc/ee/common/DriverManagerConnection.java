@@ -20,6 +20,7 @@
 
 package com.sun.ts.tests.jdbc.ee.common;
 
+import java.lang.System.Logger;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -28,34 +29,34 @@ import java.util.Properties;
 import com.sun.ts.lib.harness.ServiceEETest;
 import com.sun.ts.lib.util.TestUtil;
 
-public class DriverManagerConnection extends ServiceEETest
-    implements JDBCTestConnectionManager {
+public class DriverManagerConnection implements JDBCTestConnectionManager {
 
-  public Connection getConnection(Properties p)
-      throws ClassNotFoundException, SQLException, Exception {
-    Connection con = null;
-    String dbName, dbUser, dbPassword, dbDriver;
-    dbName = dbUser = dbPassword = dbDriver = null;
+	private static final Logger logger = (Logger) System.getLogger(DriverManagerConnection.class.getName());
 
-    dbName = p.getProperty("db1", "");
-    dbUser = p.getProperty("user1", "");
-    dbPassword = p.getProperty("password1", "");
-    dbDriver = p.getProperty("Driver", "");
+	public Connection getConnection() throws ClassNotFoundException, SQLException, Exception {
+		Connection con = null;
+		String dbName, dbUser, dbPassword, dbDriver;
+		dbName = dbUser = dbPassword = dbDriver = null;
 
-    TestUtil.logTrace("Database1 : " + dbName);
-    TestUtil.logTrace("Username  : " + dbUser);
-    TestUtil.logTrace("Password  : " + dbPassword);
-    TestUtil.logTrace("Driver    : " + dbDriver);
+		dbName = System.getProperty("db1", "");
+		dbUser = System.getProperty("user1", "");
+		dbPassword = System.getProperty("password1", "");
+		dbDriver = System.getProperty("Driver", "");
 
-    TestUtil.logTrace("About to load the driver class");
-    Class.forName(dbDriver);
-    TestUtil.logMsg("Successfully loaded the driver class");
+		logger.log(Logger.Level.TRACE, "Database1 : " + dbName);
+		logger.log(Logger.Level.TRACE, "Username  : " + dbUser);
+		logger.log(Logger.Level.TRACE, "Password  : " + dbPassword);
+		logger.log(Logger.Level.TRACE, "Driver    : " + dbDriver);
 
-    TestUtil.logTrace("About to make the DB connection");
-    con = DriverManager.getConnection(dbName, dbUser, dbPassword);
-    TestUtil.logMsg("Made the JDBC connection to the DB");
+		logger.log(Logger.Level.TRACE, "About to load the driver class");
+		Class.forName(dbDriver);
+		logger.log(Logger.Level.INFO, "Successfully loaded the driver class");
 
-    return con;
-  }
+		logger.log(Logger.Level.TRACE, "About to make the DB connection");
+		con = DriverManager.getConnection(dbName, dbUser, dbPassword);
+		logger.log(Logger.Level.INFO, "Made the JDBC connection to the DB");
+
+		return con;
+	}
 
 }

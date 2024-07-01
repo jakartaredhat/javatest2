@@ -23,6 +23,7 @@
  */
 package com.sun.ts.tests.xa.ee.xresXcomp2;
 
+import java.lang.System.Logger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -34,6 +35,7 @@ import com.sun.ts.lib.util.TSNamingContext;
 import com.sun.ts.lib.util.TestUtil;
 import com.sun.ts.tests.common.connector.whitebox.TSConnection;
 import com.sun.ts.tests.common.connector.whitebox.TSEISDataSource;
+import com.sun.ts.tests.xa.ee.xresXcomp1.Ejb1TestEJB;
 
 import jakarta.ejb.EJBException;
 
@@ -60,6 +62,9 @@ public class Ejb2TestEJB {
   private TSEISDataSource ds2;
 
   private transient TSConnection con2 = null;
+  
+  private static final Logger logger = (Logger) System.getLogger(Ejb2TestEJB.class.getName());
+
 
   public Ejb2TestEJB() {
   }
@@ -70,7 +75,7 @@ public class Ejb2TestEJB {
     try {
       TestUtil.init(props);
       context = new TSNamingContext();
-      TestUtil.logTrace("got the context");
+      logger.log(Logger.Level.TRACE,"got the context");
 
       // get a connection object
       eMsg = "Exception looking up JDBCwhitebox-xa";
@@ -79,36 +84,36 @@ public class Ejb2TestEJB {
       eMsg = "Exception looking up EIS whitebox=xa";
       ds2 = (TSEISDataSource) context.lookup("java:comp/env/eis/whitebox-xa");
 
-      TestUtil.logMsg("ds1 : " + ds1);
-      TestUtil.logMsg("ds2 : " + ds2);
+      logger.log(Logger.Level.INFO,"ds1 : " + ds1);
+      logger.log(Logger.Level.INFO,"ds2 : " + ds2);
 
     } catch (Exception e) {
-      TestUtil.logTrace(eMsg);
-      TestUtil.logErr("EJB2: initialize failed", e);
+      logger.log(Logger.Level.TRACE,eMsg);
+      logger.log(Logger.Level.ERROR,"EJB2: initialize failed", e);
       throw new EJBException(e.getMessage());
     }
   }
 
   // ===========================================================
   public void dbConnect(String tName) {
-    TestUtil.logTrace("dbConnect");
+    logger.log(Logger.Level.TRACE,"dbConnect");
     try {
       if (tName.equals(dbTable1)) {
         // Make the dbTable1 connection
         conTable1();
-        TestUtil.logMsg("Made the JDBC connection to " + dbTable1 + " DB");
+        logger.log(Logger.Level.INFO,"Made the JDBC connection to " + dbTable1 + " DB");
       } else {
         conTable2();
-        TestUtil.logMsg("Made the connection to EIS");
+        logger.log(Logger.Level.INFO,"Made the connection to EIS");
       }
     } catch (Exception e) {
-      TestUtil.logErr("Unexpected exception on JDBC connection", e);
+      logger.log(Logger.Level.ERROR,"Unexpected exception on JDBC connection", e);
       throw new EJBException(e.getMessage());
     }
   }
 
   public void insert(String tName, int key) {
-    TestUtil.logMsg("Insert @Ejb2 ");
+    logger.log(Logger.Level.INFO,"Insert @Ejb2 ");
     String newName = null;
     // Insert a row into the specified table
     try {
@@ -121,51 +126,50 @@ public class Ejb2TestEJB {
         pStmt.setInt(1, key);
         pStmt.setString(2, newName);
         pStmt.setString(3, newName);
-        TestUtil
-            .logMsg("Insert a row into the table " + tName + " key : " + key);
+        logger.log(Logger.Level.INFO,"Insert a row into the table " + tName + " key : " + key);
         pStmt.executeUpdate();
         pStmt.close();
       } else {
         // Prepare the new data entry in EIS
         String key1 = Integer.toString(key);
-        TestUtil.logMsg("Insert row in EIS key : " + key1);
+        logger.log(Logger.Level.INFO,"Insert row in EIS key : " + key1);
         con2.insert(key1, key1);
-        TestUtil.logTrace("Inserted two elements in EIS ");
+        logger.log(Logger.Level.TRACE,"Inserted two elements in EIS ");
       }
     } catch (Exception e) {
-      TestUtil.logErr("Exception inserting a row into table " + tName + ";\n"
+      logger.log(Logger.Level.ERROR,"Exception inserting a row into table " + tName + ";\n"
           + e.getMessage(), e);
       throw new EJBException(e.getMessage());
     }
   }
 
   public void dbUnConnect(String tName) {
-    TestUtil.logTrace("dbUnConnect");
+    logger.log(Logger.Level.TRACE,"dbUnConnect");
     // Close the DB connections
     try {
       if (tName.equals(dbTable1)) {
         con1.close();
         con1 = null;
-        TestUtil.logTrace("Closed " + dbTable1 + " connection");
+        logger.log(Logger.Level.TRACE,"Closed " + dbTable1 + " connection");
       } else {
         con2.close();
         con2 = null;
-        TestUtil.logTrace("Closed EIS connection");
+        logger.log(Logger.Level.TRACE,"Closed EIS connection");
       }
     } catch (Exception e) {
-      TestUtil.logErr("Exception occured trying to close the DB connection", e);
+      logger.log(Logger.Level.ERROR,"Exception occured trying to close the DB connection", e);
       throw new EJBException(e.getMessage());
     }
   }
 
   public void initLogging(Properties p) {
-    TestUtil.logTrace("initLogging Ejb2");
+    logger.log(Logger.Level.TRACE,"initLogging Ejb2");
     // this.testProps = p;
     try {
       // TestUtil.init(p);
       // Get the dbTable1 DataSource
       dbTable1 = TestUtil.getTableName(TestUtil.getProperty("Xa_Tab1_Delete"));
-      TestUtil.logMsg(dbTable1 + " Ejb2 initLogging OK!");
+      logger.log(Logger.Level.INFO,dbTable1 + " Ejb2 initLogging OK!");
 
     } // catch(RemoteLoggingInitException e) {
     catch (Exception e) {
@@ -176,34 +180,34 @@ public class Ejb2TestEJB {
 
   // Exception methods
   public void throwEJBException() throws EJBException {
-    TestUtil.logTrace("throwEJBException");
+    logger.log(Logger.Level.TRACE,"throwEJBException");
     throw new EJBException("EJBException from Ejb1TestEJB");
   }
 
   // private methods
   private void conTable1() {
-    TestUtil.logTrace("conTable1");
+    logger.log(Logger.Level.TRACE,"conTable1");
     try {
       // Get connection info for dbTable1 DB
       con1 = ds1.getConnection();
-      TestUtil.logTrace("con1: " + con1.toString());
+      logger.log(Logger.Level.TRACE,"con1: " + con1.toString());
     } catch (SQLException e) {
-      TestUtil.logErr("SQLException connecting to " + dbTable1 + " DB", e);
+      logger.log(Logger.Level.ERROR,"SQLException connecting to " + dbTable1 + " DB", e);
       throw new EJBException(e.getMessage());
     } catch (Exception ee) {
-      TestUtil.logErr("Exception connecting to " + dbTable1 + " DB", ee);
+      logger.log(Logger.Level.ERROR,"Exception connecting to " + dbTable1 + " DB", ee);
       throw new EJBException(ee.getMessage());
     }
   }
 
   private void conTable2() {
-    TestUtil.logTrace("conTable2");
+    logger.log(Logger.Level.TRACE,"conTable2");
     try {
       // Get connection info for dbTable1 DB
       con2 = ds2.getConnection();
-      TestUtil.logTrace("con2: " + con2.toString());
+      logger.log(Logger.Level.TRACE,"con2: " + con2.toString());
     } catch (Exception ee) {
-      TestUtil.logErr("Exception connecting to EIS ", ee);
+      logger.log(Logger.Level.ERROR,"Exception connecting to EIS ", ee);
       throw new EJBException(ee.getMessage());
     }
   }

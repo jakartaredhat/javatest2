@@ -20,11 +20,15 @@
 package com.sun.ts.tests.javamail.ee.multipart;
 
 import java.io.Serializable;
+import java.lang.System.Logger;
 import java.util.Date;
 import java.util.Properties;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import com.sun.javatest.Status;
-import com.sun.ts.lib.harness.ServiceEETest;
 import com.sun.ts.lib.util.TestUtil;
 import com.sun.ts.tests.javamail.ee.common.MailTestUtil;
 
@@ -37,207 +41,205 @@ import jakarta.mail.internet.MimeBodyPart;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 
-public class multipart_Test extends ServiceEETest implements Serializable {
-  static String msgText1 = "This is a message body.\nHere's line two.";
+public class multipart_Test implements Serializable {
 
-  static String msgText2 = "This is the text in the message attachment.";
+	private static final Logger logger = (Logger) System.getLogger(multipart_Test.class.getName());
 
-  // get this from ts.jte
-  private String transport_protocol = null;
+	static String msgText1 = "This is a message body.\nHere's line two.";
 
-  // get this from ts.jte
-  private String mailTo = null;
+	static String msgText2 = "This is the text in the message attachment.";
 
-  private String user;
+	// get this from ts.jte
+	private String transport_protocol = null;
 
-  private String password;
+	// get this from ts.jte
+	private String mailTo = null;
 
-  private transient Session session;
+	private String user;
 
-  private String host;
+	private String password;
 
-  private transient MailTestUtil mailTestUtil;
+	private transient Session session;
 
-  // Harness requirements
+	private String host;
 
-  /* Run test in standalone mode */
-  public static void main(String[] args) {
-    multipart_Test theTests = new multipart_Test();
-    Status s = theTests.run(args, System.out, System.err);
-    s.exit();
-  }
+	private transient MailTestUtil mailTestUtil;
 
-  /* Test setup: */
-  /*
-   * @class.setup_props: javamail.protocol; javamail.server; javamail.username;
-   * javamail.password ; javamail.mailbox; javamail.root.path; mailuser1;
-   * mailHost; mailFrom; transport_protocol; smtp.port; imap.port;
-   */
-  public void setup(String[] args, Properties props) throws Exception {
-    try {
-      // mail recipient
-      mailTo = props.getProperty("mailuser1");
-      if (mailTo.length() == 0)
-        throw new Exception("Invalid mailuser1 - the mail to property");
 
-      transport_protocol = props.getProperty("transport_protocol");
-      if (transport_protocol.length() == 0)
-        throw new Exception("Invalid transport_protocol");
+	/* Test setup: */
+	/*
+	 * @class.setup_props: javamail.protocol; javamail.server; javamail.username;
+	 * javamail.password ; javamail.mailbox; javamail.root.path; mailuser1;
+	 * mailHost; mailFrom; transport_protocol; smtp.port; imap.port;
+	 */
+	@BeforeEach
+	public void setup() throws Exception {
+		try {
+			// mail recipient
+			mailTo = System.getProperty("mailuser1");
+			if (mailTo.length() == 0)
+				throw new Exception("Invalid mailuser1 - the mail to property");
 
-      user = TestUtil.getProperty("javamail.username");
-      password = TestUtil.getProperty("javamail.password");
-      host = TestUtil.getProperty("javamail.server");
+			transport_protocol = System.getProperty("transport_protocol");
+			if (transport_protocol.length() == 0)
+				throw new Exception("Invalid transport_protocol");
 
-      String smtpPortStr = TestUtil.getProperty("smtp.port");
-      int smtpPort = Integer.parseInt(smtpPortStr);
-      TestUtil.logTrace("SMTP Port = " + smtpPort);
+			user = System.getProperty("javamail.username");
+			password = System.getProperty("javamail.password");
+			host = System.getProperty("javamail.server");
 
-      String imapPortStr = TestUtil.getProperty("imap.port");
-      int imapPort = Integer.parseInt(imapPortStr);
-      TestUtil.logTrace("IMAP Port = " + imapPort);
+			String smtpPortStr = System.getProperty("smtp.port");
+			int smtpPort = Integer.parseInt(smtpPortStr);
+			logger.log(Logger.Level.TRACE,"SMTP Port = " + smtpPort);
 
-      mailTestUtil = new MailTestUtil();
-      session = mailTestUtil.createSession(host, smtpPortStr, user, password);
+			String imapPortStr = System.getProperty("imap.port");
+			int imapPort = Integer.parseInt(imapPortStr);
+			logger.log(Logger.Level.TRACE,"IMAP Port = " + imapPort);
 
-    } catch (Exception e) {
-      logErr("Exception : " + e.getMessage());
-      logErr("Setup Failed!");
-      TestUtil.printStackTrace(e);
-    }
-  }
+			mailTestUtil = new MailTestUtil();
+			session = mailTestUtil.createSession(host, smtpPortStr, user, password);
 
-  /*
-   * @testName: testAddBodyPart1
-   * 
-   * @assertion_ids: JavaEE:SPEC:235;
-   * 
-   * @test_Strategy: Call api with part argument, then verify by calling
-   * getCount.
-   */
-  // derived from javamail suite multipart_Test class
-  public void testAddBodyPart1() throws Exception {
-    String msgText = "Testing addBodyPart(BodyPart).\nPASS.";
+		} catch (Exception e) {
+			logger.log(Logger.Level.ERROR,"Exception : " + e.getMessage());
+			logger.log(Logger.Level.ERROR,"Setup Failed!");
+			TestUtil.printStackTrace(e);
+		}
+	}
 
-    try {
+	/*
+	 * @testName: testAddBodyPart1
+	 * 
+	 * @assertion_ids: JavaEE:SPEC:235;
+	 * 
+	 * @test_Strategy: Call api with part argument, then verify by calling getCount.
+	 */
+	// derived from javamail suite multipart_Test class
+	@Test
+	public void testAddBodyPart1() throws Exception {
+		String msgText = "Testing addBodyPart(BodyPart).\nPASS.";
 
-      // create a message
-      MimeMessage msg = new MimeMessage(session);
+		try {
 
-      InternetAddress[] address = { new InternetAddress(mailTo) };
+			// create a message
+			MimeMessage msg = new MimeMessage(session);
 
-      msg.setRecipients(Message.RecipientType.TO, address);
-      msg.setSubject("TestAddBodyPart1()" + new Date());
+			InternetAddress[] address = { new InternetAddress(mailTo) };
 
-      // create and fill the first message part
-      MimeBodyPart mbp1 = new MimeBodyPart();
-      mbp1.setText(msgText1);
+			msg.setRecipients(Message.RecipientType.TO, address);
+			msg.setSubject("TestAddBodyPart1()" + new Date());
 
-      // create and fill the second message part
-      MimeBodyPart mbp2 = new MimeBodyPart();
+			// create and fill the first message part
+			MimeBodyPart mbp1 = new MimeBodyPart();
+			mbp1.setText(msgText1);
 
-      // Use setText(text, charset), to show it off !
-      mbp2.setText(msgText2, "us-ascii");
+			// create and fill the second message part
+			MimeBodyPart mbp2 = new MimeBodyPart();
 
-      // create the Multipart and its parts to it
-      Multipart mp = new MimeMultipart();
+			// Use setText(text, charset), to show it off !
+			mbp2.setText(msgText2, "us-ascii");
 
-      // BEGIN UNIT TEST:
+			// create the Multipart and its parts to it
+			Multipart mp = new MimeMultipart();
 
-      mp.addBodyPart(mbp1); // API TEST
-      mp.addBodyPart(mbp2); // API TEST
-      mp.addBodyPart(mbp1); // API TEST
+			// BEGIN UNIT TEST:
 
-      if (mp.getCount() == 3)
-        TestUtil.logTrace("Multipart1: passed.\n");
-      else {
-        throw new Exception("Multipart1: count incorrect- failed\n");
-      }
-      TestUtil.logTrace("Count returned is : " + mp.getCount());
-      // END UNIT TEST:
+			mp.addBodyPart(mbp1); // API TEST
+			mp.addBodyPart(mbp2); // API TEST
+			mp.addBodyPart(mbp1); // API TEST
 
-      // add the Multipart to the message
-      msg.setContent(mp);
+			if (mp.getCount() == 3)
+				logger.log(Logger.Level.TRACE,"Multipart1: passed.\n");
+			else {
+				throw new Exception("Multipart1: count incorrect- failed\n");
+			}
+			logger.log(Logger.Level.TRACE,"Count returned is : " + mp.getCount());
+			// END UNIT TEST:
 
-      // send the message
-      Transport.send(msg);
+			// add the Multipart to the message
+			msg.setContent(mp);
 
-    } catch (Exception e) {
-      logErr("Unexpected Exception " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Exception("Call to testAddBodyPart1 Failed!", e);
-    }
+			// send the message
+			Transport.send(msg);
 
-  }
+		} catch (Exception e) {
+			logger.log(Logger.Level.ERROR,"Unexpected Exception " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("Call to testAddBodyPart1 Failed!", e);
+		}
 
-  /*
-   * @testName: testAddBodyPart2
-   * 
-   * @assertion_ids: JavaEE:SPEC:235;
-   * 
-   * @test_Strategy: Call api with part argument and position, then verify by
-   * calling getCount.
-   */
-  public void testAddBodyPart2() throws Exception {
+	}
 
-    try {
+	/*
+	 * @testName: testAddBodyPart2
+	 * 
+	 * @assertion_ids: JavaEE:SPEC:235;
+	 * 
+	 * @test_Strategy: Call api with part argument and position, then verify by
+	 * calling getCount.
+	 */
+	@Test
+	public void testAddBodyPart2() throws Exception {
 
-      // create a message
-      MimeMessage msg = new MimeMessage(session);
+		try {
 
-      InternetAddress[] address = { new InternetAddress(mailTo) };
+			// create a message
+			MimeMessage msg = new MimeMessage(session);
 
-      msg.setRecipients(Message.RecipientType.TO, address);
-      msg.setSubject("testAddBodyPart2()" + new Date());
+			InternetAddress[] address = { new InternetAddress(mailTo) };
 
-      // create and fill the first message part
-      MimeBodyPart mbp1 = new MimeBodyPart();
-      mbp1.setText(msgText1);
+			msg.setRecipients(Message.RecipientType.TO, address);
+			msg.setSubject("testAddBodyPart2()" + new Date());
 
-      // create and fill the second message part
-      MimeBodyPart mbp2 = new MimeBodyPart();
+			// create and fill the first message part
+			MimeBodyPart mbp1 = new MimeBodyPart();
+			mbp1.setText(msgText1);
 
-      // Use setText(text, charset), to show it off !
-      mbp2.setText(msgText2, "us-ascii");
+			// create and fill the second message part
+			MimeBodyPart mbp2 = new MimeBodyPart();
 
-      // create the Multipart and its parts to it
-      Multipart mp = new MimeMultipart();
+			// Use setText(text, charset), to show it off !
+			mbp2.setText(msgText2, "us-ascii");
 
-      // BEGIN UNIT TEST:
-      mp.addBodyPart(mbp1, 0); // API TEST
-      mp.addBodyPart(mbp2, 1); // API TEST
-      mp.addBodyPart(mbp1, 2); // API TEST
-      mp.addBodyPart(mbp2, 3); // API TEST
+			// create the Multipart and its parts to it
+			Multipart mp = new MimeMultipart();
 
-      if (mp.getCount() == 4)
-        TestUtil.logTrace("Multipart2: passed.\n");
-      else {
-        throw new Exception("Multipart2: count incorrect- failed\n");
-      }
-      TestUtil.logTrace("Count returned is : " + mp.getCount());
+			// BEGIN UNIT TEST:
+			mp.addBodyPart(mbp1, 0); // API TEST
+			mp.addBodyPart(mbp2, 1); // API TEST
+			mp.addBodyPart(mbp1, 2); // API TEST
+			mp.addBodyPart(mbp2, 3); // API TEST
 
-      // END UNIT TEST:
+			if (mp.getCount() == 4)
+				logger.log(Logger.Level.TRACE,"Multipart2: passed.\n");
+			else {
+				throw new Exception("Multipart2: count incorrect- failed\n");
+			}
+			logger.log(Logger.Level.TRACE,"Count returned is : " + mp.getCount());
 
-      // add the Multipart to the message
-      msg.setContent(mp);
+			// END UNIT TEST:
 
-      // send the message
-      Transport.send(msg);
+			// add the Multipart to the message
+			msg.setContent(mp);
 
-    } catch (Exception e) {
-      logErr("Unexpected Exception " + e.getMessage());
-      TestUtil.printStackTrace(e);
-      throw new Exception("Call to testAddBodyPart2 Failed!", e);
-    }
+			// send the message
+			Transport.send(msg);
 
-  }// end of testAddBodyPart2
-   //
+		} catch (Exception e) {
+			logger.log(Logger.Level.ERROR,"Unexpected Exception " + e.getMessage());
+			TestUtil.printStackTrace(e);
+			throw new Exception("Call to testAddBodyPart2 Failed!", e);
+		}
 
-  /* cleanup */
-  public void cleanup() throws Exception {
-    try {
-      logMsg("Cleanup ;");
-    } catch (Exception e) {
-      logErr("An error occurred in cleanup!", e);
-    }
-  }
+	}// end of testAddBodyPart2
+		//
+
+	/* cleanup */
+	@AfterEach
+	public void cleanup() throws Exception {
+		try {
+			logger.log(Logger.Level.INFO,"Cleanup ;");
+		} catch (Exception e) {
+			logger.log(Logger.Level.ERROR,"An error occurred in cleanup!", e);
+		}
+	}
 }

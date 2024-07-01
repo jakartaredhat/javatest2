@@ -20,39 +20,37 @@
 
 package com.sun.ts.tests.jdbc.ee.common;
 
+import java.lang.System.Logger;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Properties;
 
 import javax.sql.DataSource;
 
-import com.sun.ts.lib.harness.ServiceEETest;
 import com.sun.ts.lib.util.TSNamingContext;
 import com.sun.ts.lib.util.TSNamingContextInterface;
-import com.sun.ts.lib.util.TestUtil;
 
-public class DataSourceConnection extends ServiceEETest
-    implements JDBCTestConnectionManager {
+public class DataSourceConnection implements JDBCTestConnectionManager {
 
-  public Connection getConnection(Properties p)
-      throws ClassNotFoundException, SQLException, Exception {
-    TSNamingContextInterface jc = null;
-    DataSource ds1 = null;
-    Connection con = null;
+	private static final Logger logger = (Logger) System.getLogger(DataSourceConnection.class.getName());
 
-    TestUtil.logTrace("Getting the initial context");
-    jc = new TSNamingContext();
-    TestUtil.logTrace("jc: " + jc.toString());
+	public Connection getConnection() throws ClassNotFoundException, SQLException, Exception {
+		TSNamingContextInterface jc = null;
+		DataSource ds1 = null;
+		Connection con = null;
 
-    TestUtil.logTrace("Looking up the JNDI DataSource names");
-    ds1 = (DataSource) jc.lookup("java:comp/env/jdbc/DB1");
-    TestUtil.logTrace("ds1: " + ds1.toString());
+		logger.log(Logger.Level.TRACE, "Getting the initial context");
+		jc = new TSNamingContext();
+		logger.log(Logger.Level.TRACE, "jc: " + jc.toString());
 
-    TestUtil.logTrace("Attempting to make the connection");
-    con = ds1.getConnection();
-    TestUtil.logTrace("Made the connection via DataSource!");
+		logger.log(Logger.Level.TRACE, "Looking up the JNDI DataSource names");
+		ds1 = (DataSource) jc.lookup("java:comp/env/jdbc/DB1");
+		logger.log(Logger.Level.TRACE, "ds1: " + ds1.toString());
 
-    return con;
-  }
+		logger.log(Logger.Level.TRACE, "Attempting to make the connection");
+		con = ds1.getConnection();
+		logger.log(Logger.Level.TRACE, "Made the connection via DataSource!");
+
+		return con;
+	}
 
 }

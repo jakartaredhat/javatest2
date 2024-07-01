@@ -25,8 +25,13 @@
 package com.sun.ts.tests.xa.ee.resXcomp1;
 
 import java.io.Serializable;
+import java.lang.System.Logger;
 import java.util.Properties;
 import java.util.Vector;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.sun.javatest.Status;
 import com.sun.ts.lib.harness.ServiceEETest;
@@ -35,7 +40,10 @@ import com.sun.ts.lib.util.TestUtil;
 
 import jakarta.transaction.UserTransaction;
 
-public class Client extends ServiceEETest implements Serializable {
+public class Client implements Serializable {
+	
+  private static final Logger logger = (Logger) System.getLogger(Client.class.getName());
+
   private TSNamingContext nctx = null;
 
   private Properties testProps = null;
@@ -56,12 +64,6 @@ public class Client extends ServiceEETest implements Serializable {
 
   private Integer toKey2 = null;
 
-  public static void main(String[] args) {
-    Client client = new Client();
-    Status s = client.run(args, System.out, System.err);
-    s.exit();
-  }
-
   /* Test setup: */
 
   /*
@@ -69,57 +71,58 @@ public class Client extends ServiceEETest implements Serializable {
    * 
    * @class.testArgs: -ap tssql.stmt
    */
-  public void setup(String args[], Properties p) throws Exception {
+  @BeforeEach
+  public void setup() throws Exception {
     try {
       this.testProps = p;
       TestUtil.init(p);
-      TestUtil.logMsg("Setup tests");
+      logger.log(Logger.Level.INFO,"Setup tests");
 
-      TestUtil.logMsg("Obtain naming context");
+      logger.log(Logger.Level.INFO,"Obtain naming context");
       nctx = new TSNamingContext();
 
-      TestUtil.logMsg("Lookup TxBean: " + txRef);
+      logger.log(Logger.Level.INFO,"Lookup TxBean: " + txRef);
       beanRef = (TxBean) nctx.lookup(txRef, TxBean.class);
 
-      TestUtil.logMsg("Lookup java:comp/UserTransaction");
+      logger.log(Logger.Level.INFO,"Lookup java:comp/UserTransaction");
       ut = (UserTransaction) nctx.lookup("java:comp/UserTransaction");
 
       // Get the table names
-      TestUtil.logMsg("Lookup environment variables");
+      logger.log(Logger.Level.INFO,"Lookup environment variables");
       this.tName1 = TestUtil
           .getTableName(TestUtil.getProperty("Xa_Tab1_Delete"));
-      TestUtil.logTrace("tName1: " + this.tName1);
+      logger.log(Logger.Level.TRACE,"tName1: " + this.tName1);
 
       // Get the table sizes
       this.tSize = (Integer) nctx.lookup("java:comp/env/size");
-      TestUtil.logTrace("tSize: " + this.tSize);
+      logger.log(Logger.Level.TRACE,"tSize: " + this.tSize);
 
       this.fromKey1 = (Integer) nctx.lookup("java:comp/env/fromKey1");
-      TestUtil.logTrace("fromKey1: " + this.fromKey1);
+      logger.log(Logger.Level.TRACE,"fromKey1: " + this.fromKey1);
 
       this.fromKey2 = (Integer) nctx.lookup("java:comp/env/fromKey2");
-      TestUtil.logTrace("fromKey2: " + this.fromKey2);
+      logger.log(Logger.Level.TRACE,"fromKey2: " + this.fromKey2);
 
       this.toKey2 = (Integer) nctx.lookup("java:comp/env/toKey2");
-      TestUtil.logTrace("toKey2: " + this.toKey2);
+      logger.log(Logger.Level.TRACE,"toKey2: " + this.toKey2);
 
-      TestUtil.logMsg("Initialize " + txRef);
+      logger.log(Logger.Level.INFO,"Initialize " + txRef);
       beanRef.initialize();
 
-      TestUtil.logMsg("Initialize logging data from server");
+      logger.log(Logger.Level.INFO,"Initialize logging data from server");
       beanRef.initLogging(p);
 
-      TestUtil.logMsg("Setup ok");
+      logger.log(Logger.Level.INFO,"Setup ok");
     } catch (Exception e) {
-      TestUtil.logErr("Exception in setup: ", e);
+      logger.log(Logger.Level.ERROR,"Exception in setup: ", e);
       throw new Exception("setup failed", e);
     }
   }
 
   /* Test cleanup */
-
+@AfterEach
   public void cleanup() throws Exception {
-    TestUtil.logMsg("Cleanup ok");
+    logger.log(Logger.Level.INFO,"Cleanup ok");
   }
 
   /* Run test */
@@ -138,6 +141,7 @@ public class Client extends ServiceEETest implements Serializable {
    * Database Access is performed from TxBean EJB.
    *
    */
+  @Test
   public void test1() throws Exception {
     String testname = "test1";
     Vector dbResults = new Vector();
@@ -149,37 +153,37 @@ public class Client extends ServiceEETest implements Serializable {
     int tRng = this.fromKey1.intValue();
 
     try {
-      TestUtil.logTrace(testname);
-      TestUtil.logMsg("Transaction propagation from Servlet, EJB or JSP");
-      TestUtil.logMsg("Insert/Delete followed by a commit to a single table");
-      TestUtil.logMsg("Database access is performed from TxBean EJB");
+      logger.log(Logger.Level.TRACE,testname);
+      logger.log(Logger.Level.INFO,"Transaction propagation from Servlet, EJB or JSP");
+      logger.log(Logger.Level.INFO,"Insert/Delete followed by a commit to a single table");
+      logger.log(Logger.Level.INFO,"Database access is performed from TxBean EJB");
 
-      TestUtil.logMsg("Creating the table");
+      logger.log(Logger.Level.INFO,"Creating the table");
       ut.begin();
       beanRef.dbConnect(tName1);
       beanRef.createData(tName1);
       beanRef.dbUnConnect(tName1);
       ut.commit();
 
-      TestUtil.logMsg("Insert and delete some rows");
+      logger.log(Logger.Level.INFO,"Insert and delete some rows");
       ut.begin();
       beanRef.dbConnect(tName1);
-      TestUtil.logMsg("Inserting 2 new rows");
+      logger.log(Logger.Level.INFO,"Inserting 2 new rows");
       if (beanRef.insert(tName1, tSize + 1))
         tSize++;
       if (beanRef.insert(tName1, tSize + 1))
         tSize++;
-      TestUtil.logMsg("Deleting a row");
+      logger.log(Logger.Level.INFO,"Deleting a row");
       beanRef.delete(tName1, tRng, tRng);
       beanRef.dbUnConnect(tName1);
       ut.commit();
 
-      TestUtil.logMsg("Get test results");
+      logger.log(Logger.Level.INFO,"Get test results");
       ut.begin();
       beanRef.dbConnect(tName1);
       dbResults = beanRef.getResults(tName1);
 
-      TestUtil.logMsg("Verifying the test results");
+      logger.log(Logger.Level.INFO,"Verifying the test results");
       if (!dbResults.contains(new Integer(tRng)))
         b1 = true;
 
@@ -202,7 +206,7 @@ public class Client extends ServiceEETest implements Serializable {
         testResult = true;
       //
     } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
+      logger.log(Logger.Level.ERROR,"Caught exception: " + e.getMessage());
       TestUtil.printStackTrace(e);
       throw new Exception(testname + " failed", e);
     } finally {
@@ -235,6 +239,7 @@ public class Client extends ServiceEETest implements Serializable {
    * Database Access is performed from TxBean EJB.
    *
    */
+  @Test
   public void test2() throws Exception {
     String testname = "test2";
     Vector dbResults = new Vector();
@@ -248,37 +253,37 @@ public class Client extends ServiceEETest implements Serializable {
     int tRngTo = this.toKey2.intValue();
 
     try {
-      TestUtil.logTrace(testname);
-      TestUtil.logMsg("Transaction propagation from Servlet, EJB or JSP");
-      TestUtil.logMsg("Insert/Delete followed by a rollback to a single table");
-      TestUtil.logMsg("Database access is performed from TxBean EJB");
+      logger.log(Logger.Level.TRACE,testname);
+      logger.log(Logger.Level.INFO,"Transaction propagation from Servlet, EJB or JSP");
+      logger.log(Logger.Level.INFO,"Insert/Delete followed by a rollback to a single table");
+      logger.log(Logger.Level.INFO,"Database access is performed from TxBean EJB");
 
-      TestUtil.logMsg("Creating the table");
+      logger.log(Logger.Level.INFO,"Creating the table");
       ut.begin();
       beanRef.dbConnect(tName1);
       beanRef.createData(tName1);
       beanRef.dbUnConnect(tName1);
       ut.commit();
 
-      TestUtil.logMsg("Insert and delete some rows");
+      logger.log(Logger.Level.INFO,"Insert and delete some rows");
       ut.begin();
       beanRef.dbConnect(tName1);
-      TestUtil.logMsg("Inserting 2 new rows");
+      logger.log(Logger.Level.INFO,"Inserting 2 new rows");
       if (beanRef.insert(tName1, tSize + 1))
         tSize++;
       if (beanRef.insert(tName1, tSize + 1))
         tSize++;
-      TestUtil.logMsg("Deleting a row");
+      logger.log(Logger.Level.INFO,"Deleting a row");
       beanRef.delete(tName1, tRngFrom, tRngTo);
       beanRef.dbUnConnect(tName1);
       ut.rollback();
 
-      TestUtil.logMsg("Get test results");
+      logger.log(Logger.Level.INFO,"Get test results");
       ut.begin();
       beanRef.dbConnect(tName1);
       dbResults = beanRef.getResults(tName1);
 
-      TestUtil.logMsg("Verifying the test results");
+      logger.log(Logger.Level.INFO,"Verifying the test results");
       for (int i = 1; i <= tSizeOrig; i++) {
         if (dbResults.contains(new Integer(i))) {
           b1 = true;
@@ -299,15 +304,15 @@ public class Client extends ServiceEETest implements Serializable {
       ut.commit();
 
       if (b1)
-        TestUtil.logTrace("b1 true");
+        logger.log(Logger.Level.TRACE,"b1 true");
       if (b2)
-        TestUtil.logTrace("b2 true");
+        logger.log(Logger.Level.TRACE,"b2 true");
 
       if (b1 && b2)
         testResult = true;
 
     } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
+      logger.log(Logger.Level.ERROR,"Caught exception: " + e.getMessage());
       TestUtil.printStackTrace(e);
       throw new Exception(testname + " failed", e);
     } finally {
@@ -340,6 +345,7 @@ public class Client extends ServiceEETest implements Serializable {
    * Database Access is performed from TxBean EJB.
    *
    */
+  @Test
   public void test3() throws Exception {
     String testname = "test3";
     Vector dbResults = new Vector();
@@ -351,37 +357,37 @@ public class Client extends ServiceEETest implements Serializable {
     int tRng = this.fromKey1.intValue();
 
     try {
-      TestUtil.logTrace(testname);
-      TestUtil.logMsg("Transaction propagation from Servlet, EJB or JSP");
-      TestUtil.logMsg("Insert/Delete followed by a commit to a single table");
-      TestUtil.logMsg("Database access is performed from TxBean EJB");
+      logger.log(Logger.Level.TRACE,testname);
+      logger.log(Logger.Level.INFO,"Transaction propagation from Servlet, EJB or JSP");
+      logger.log(Logger.Level.INFO,"Insert/Delete followed by a commit to a single table");
+      logger.log(Logger.Level.INFO,"Database access is performed from TxBean EJB");
 
-      TestUtil.logMsg("Creating the data");
+      logger.log(Logger.Level.INFO,"Creating the data");
       ut.begin();
       beanRef.dbConnect("EIS");
       beanRef.createData("EIS");
       beanRef.dbUnConnect("EIS");
       ut.commit();
 
-      TestUtil.logMsg("Insert and delete some rows");
+      logger.log(Logger.Level.INFO,"Insert and delete some rows");
       ut.begin();
       beanRef.dbConnect("EIS");
-      TestUtil.logMsg("Inserting 2 new rows");
+      logger.log(Logger.Level.INFO,"Inserting 2 new rows");
       if (beanRef.insert("EIS", tSize + 1))
         tSize++;
       if (beanRef.insert("EIS", tSize + 1))
         tSize++;
-      TestUtil.logMsg("Deleting a row");
+      logger.log(Logger.Level.INFO,"Deleting a row");
       beanRef.delete("EIS", tRng, tRng);
       beanRef.dbUnConnect("EIS");
       ut.commit();
 
-      TestUtil.logMsg("Get test results");
+      logger.log(Logger.Level.INFO,"Get test results");
       ut.begin();
       beanRef.dbConnect("EIS");
       dbResults = beanRef.getResults("EIS");
 
-      TestUtil.logMsg("Verifying the test results");
+      logger.log(Logger.Level.INFO,"Verifying the test results");
       if (!dbResults.contains((new Integer(tRng)).toString()))
         b1 = true;
 
@@ -404,7 +410,7 @@ public class Client extends ServiceEETest implements Serializable {
         testResult = true;
       //
     } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
+      logger.log(Logger.Level.ERROR,"Caught exception: " + e.getMessage());
       TestUtil.printStackTrace(e);
       throw new Exception(testname + " failed", e);
     } finally {
@@ -437,6 +443,7 @@ public class Client extends ServiceEETest implements Serializable {
    * Database Access is performed from TxBean EJB.
    *
    */
+  @Test
   public void test4() throws Exception {
     String testname = "test4";
     Vector dbResults = new Vector();
@@ -450,39 +457,39 @@ public class Client extends ServiceEETest implements Serializable {
     int tRngTo = this.toKey2.intValue();
 
     try {
-      TestUtil.logTrace(testname);
-      TestUtil.logMsg("Transaction propagation from Servlet, EJB or JSP");
-      TestUtil.logMsg("Insert/Delete followed by a rollback to a single table");
-      TestUtil.logMsg("Database access is performed from TxBean EJB");
+      logger.log(Logger.Level.TRACE,testname);
+      logger.log(Logger.Level.INFO,"Transaction propagation from Servlet, EJB or JSP");
+      logger.log(Logger.Level.INFO,"Insert/Delete followed by a rollback to a single table");
+      logger.log(Logger.Level.INFO,"Database access is performed from TxBean EJB");
 
-      TestUtil.logMsg("Creating the table");
+      logger.log(Logger.Level.INFO,"Creating the table");
       ut.begin();
       beanRef.dbConnect("EIS");
       beanRef.createData("EIS");
       beanRef.dbUnConnect("EIS");
       ut.commit();
 
-      TestUtil.logMsg("Insert and delete some rows");
+      logger.log(Logger.Level.INFO,"Insert and delete some rows");
       ut.begin();
       beanRef.dbConnect("EIS");
-      TestUtil.logMsg("Inserting 2 new rows");
+      logger.log(Logger.Level.INFO,"Inserting 2 new rows");
       if (beanRef.insert("EIS", tSize + 1))
         tSize++;
       if (beanRef.insert("EIS", tSize + 1))
         tSize++;
-      TestUtil.logMsg("Deleting a row");
+      logger.log(Logger.Level.INFO,"Deleting a row");
       beanRef.delete("EIS", tRngFrom, tRngTo);
       beanRef.dbUnConnect("EIS");
       ut.rollback();
 
-      TestUtil.logMsg("Get test results");
+      logger.log(Logger.Level.INFO,"Get test results");
       ut.begin();
       beanRef.dbConnect("EIS");
       dbResults = beanRef.getResults("EIS");
       beanRef.dbUnConnect("EIS");
       ut.commit();
 
-      TestUtil.logMsg("Verifying the test results");
+      logger.log(Logger.Level.INFO,"Verifying the test results");
       for (int i = 1; i <= tSizeOrig; i++) {
         if (dbResults.contains((new Integer(i)).toString())) {
           b1 = true;
@@ -501,15 +508,15 @@ public class Client extends ServiceEETest implements Serializable {
       }
 
       if (b1)
-        TestUtil.logTrace("b1 true");
+        logger.log(Logger.Level.TRACE,"b1 true");
       if (b2)
-        TestUtil.logTrace("b2 true");
+        logger.log(Logger.Level.TRACE,"b2 true");
 
       if (b1 && b2)
         testResult = true;
 
     } catch (Exception e) {
-      TestUtil.logErr("Caught exception: " + e.getMessage());
+      logger.log(Logger.Level.ERROR,"Caught exception: " + e.getMessage());
       TestUtil.printStackTrace(e);
       throw new Exception(testname + " failed", e);
     } finally {

@@ -19,6 +19,7 @@
  */
 package com.sun.ts.tests.jdbc.ee.common;
 
+import java.lang.System.Logger;
 import java.rmi.RemoteException;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -26,7 +27,6 @@ import java.sql.Statement;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
-import com.sun.ts.lib.harness.ServiceEETest;
 import com.sun.ts.lib.util.TestUtil;
 
 /**
@@ -37,228 +37,224 @@ import com.sun.ts.lib.util.TestUtil;
  * @version 1.7, 06/16/99
  */
 
-public class rsSchema extends ServiceEETest {
-  private Properties props = null;
+public class rsSchema {
 
-  private Statement stmt = null;
+	private static final Logger logger = (Logger) System.getLogger(rsSchema.class.getName());
 
-  public void createTab(String sTableName, Properties sqlProps, Connection conn)
-      throws RemoteException {
-    String execString = null;
-    String sKeyName = null;
-    String binarySize = null;
-    String varbinarySize = null;
-    String createString = null, createString1 = null, createString2 = null;
+	private Properties props = null;
 
-    TestUtil.logTrace("createTab");
-    // drop table if it exists
-    try {
-      props = sqlProps;
-      dropTab(sTableName, conn);
-      TestUtil.logTrace("deleted rows from table " + sTableName);
-    } catch (Exception e) {
-      TestUtil.logErr("Exception encountered deleting rows from  table: "
-          + sTableName + ": " + e.getMessage(), e);
-    }
+	private Statement stmt = null;
 
-    try {
+	public void createTab(String sTableName, Properties sqlProps, Connection conn) throws RemoteException {
+		String execString = null;
+		String sKeyName = null;
+		String binarySize = null;
+		String varbinarySize = null;
+		String createString = null, createString1 = null, createString2 = null;
 
-      stmt = conn.createStatement();
-      if ((sTableName.startsWith("Binary_Tab"))) {
-        binarySize = props.getProperty("binarySize");
-        logTrace("Binary Table Size : " + binarySize);
+		logger.log(Logger.Level.TRACE, "createTab");
+		// drop table if it exists
+		try {
+			props = sqlProps;
+			dropTab(sTableName, conn);
+			logger.log(Logger.Level.TRACE, "deleted rows from table " + sTableName);
+		} catch (Exception e) {
+			logger.log(Logger.Level.ERROR,
+					"Exception encountered deleting rows from  table: " + sTableName + ": " + e.getMessage(), e);
+		}
 
-        String insertString = props.getProperty("Binary_Tab_Insert");
-        logTrace("Insert String " + insertString);
+		try {
 
-        logTrace("Adding rows to the table");
-        stmt.executeUpdate(insertString);
-        logTrace("Successfully inserted the row");
+			stmt = conn.createStatement();
+			if ((sTableName.startsWith("Binary_Tab"))) {
+				binarySize = props.getProperty("binarySize");
+				logger.log(Logger.Level.TRACE, "Binary Table Size : " + binarySize);
 
-      } else if ((sTableName.startsWith("Varbinary_Tab"))) {
-        varbinarySize = props.getProperty("varbinarySize");
-        logTrace("Varbinary Table Size : " + varbinarySize);
-        String insertString = props.getProperty("Varbinary_Tab_Insert");
-        logTrace("Insert String " + insertString);
+				String insertString = props.getProperty("Binary_Tab_Insert");
+				logger.log(Logger.Level.TRACE, "Insert String " + insertString);
 
-        logTrace("Adding rows to the table");
-        stmt.executeUpdate(insertString);
-        logTrace("Successfully inserted the row");
+				logger.log(Logger.Level.TRACE, "Adding rows to the table");
+				stmt.executeUpdate(insertString);
+				logger.log(Logger.Level.TRACE, "Successfully inserted the row");
 
-      } else {
+			} else if ((sTableName.startsWith("Varbinary_Tab"))) {
+				varbinarySize = props.getProperty("varbinarySize");
+				logger.log(Logger.Level.TRACE, "Varbinary Table Size : " + varbinarySize);
+				String insertString = props.getProperty("Varbinary_Tab_Insert");
+				logger.log(Logger.Level.TRACE, "Insert String " + insertString);
 
-        // Add the prescribed table rows
+				logger.log(Logger.Level.TRACE, "Adding rows to the table");
+				stmt.executeUpdate(insertString);
+				logger.log(Logger.Level.TRACE, "Successfully inserted the row");
 
-        TestUtil.logTrace("Adding rows to the table" + sTableName);
+			} else {
 
-        sKeyName = sTableName.concat("_Insert");
+				// Add the prescribed table rows
 
-        TestUtil.logTrace("sKeyName :" + sKeyName);
-        execString = sqlProps.getProperty(sKeyName);
-        stmt.executeUpdate(execString);
-        logTrace("Rows added to the table " + sTableName);
-        // stmt.close();
-      }
+				logger.log(Logger.Level.TRACE, "Adding rows to the table" + sTableName);
 
-    } catch (SQLException e) {
-      TestUtil.logErr("SQLException creating the Table" + sTableName + ": "
-          + e.getMessage(), e);
-      dropTab(sTableName, conn);
-      throw new RemoteException(e.getMessage());
-    } catch (Exception e) {
-      logErr("Setup Failed!", e);
-      System.exit(1);
-    } finally {
-      if (stmt != null) {
-        try {
-          stmt.close();
-        } catch (SQLException sqle) {
-          logErr("Error closing Statement!", sqle);
-          throw new RemoteException(sqle.getMessage());
-        }
-      }
-    }
+				sKeyName = sTableName.concat("_Insert");
 
-  }
+				logger.log(Logger.Level.TRACE, "sKeyName :" + sKeyName);
+				execString = sqlProps.getProperty(sKeyName);
+				stmt.executeUpdate(execString);
+				logger.log(Logger.Level.TRACE, "Rows added to the table " + sTableName);
+				// stmt.close();
+			}
 
-  public void dropTab(String sTableName, Connection conn)
-      throws RemoteException {
-    logTrace("dropTab");
-    // Delete the Table
-    String sTag = sTableName.concat("_Delete");
-    String removeString = props.getProperty(sTag);
-    logTrace("Executable String " + removeString);
-    try {
-      // Since scrollable resultSet is optional, the parameters
-      // are commented out.
-      Statement stmt = conn.createStatement();
-      stmt.executeUpdate(removeString);
-      stmt.close();
-    } catch (SQLException e) {
-      TestUtil.printStackTrace(e);
+		} catch (SQLException e) {
+			logger.log(Logger.Level.ERROR, "SQLException creating the Table" + sTableName + ": " + e.getMessage(), e);
+			dropTab(sTableName, conn);
+			throw new RemoteException(e.getMessage());
+		} catch (Exception e) {
+			logger.log(Logger.Level.ERROR, "Setup Failed!", e);
+			System.exit(1);
+		} finally {
+			if (stmt != null) {
+				try {
+					stmt.close();
+				} catch (SQLException sqle) {
+					logger.log(Logger.Level.ERROR, "Error closing Statement!", sqle);
+					throw new RemoteException(sqle.getMessage());
+				}
+			}
+		}
 
-      throw new RemoteException(e.getMessage());
-    }
-  }
+	}
 
-  public void dbUnConnect(Connection conn) throws RemoteException {
-    TestUtil.logTrace("dbUnConnect");
-    // Close the DB connections
-    try {
-      conn.close();
-      TestUtil.logMsg("Closed the Data Base connection");
-    } catch (Exception e) {
-      TestUtil.logErr(
-          "Exception occured while trying to close the DB connection", e);
-      throw new RemoteException(e.getMessage());
-    }
-  }
+	public void dropTab(String sTableName, Connection conn) throws RemoteException {
+		logger.log(Logger.Level.TRACE, "dropTab");
+		// Delete the Table
+		String sTag = sTableName.concat("_Delete");
+		String removeString = props.getProperty(sTag);
+		logger.log(Logger.Level.TRACE, "Executable String " + removeString);
+		try {
+			// Since scrollable resultSet is optional, the parameters
+			// are commented out.
+			Statement stmt = conn.createStatement();
+			stmt.executeUpdate(removeString);
+			stmt.close();
+		} catch (SQLException e) {
+			TestUtil.printStackTrace(e);
 
-  /*
-   * This method returns a boolean value based on the string that is pulled out
-   * of the table. A "1" or a case insensitive "true" string results in a
-   * returned value of (boolean) true.
-   *
-   */
-  public boolean extractValAsBoolVal(String sTableName, int count,
-      Properties sqlProps, Connection conn) throws Exception {
-    boolean rval = false; // assume false to be returned
+			throw new RemoteException(e.getMessage());
+		}
+	}
 
-    String str = this.extractVal(sTableName, count, sqlProps, conn);
-    str = str.trim();
+	public void dbUnConnect(Connection conn) throws RemoteException {
+		logger.log(Logger.Level.TRACE, "dbUnConnect");
+		// Close the DB connections
+		try {
+			conn.close();
+			logger.log(Logger.Level.INFO, "Closed the Data Base connection");
+		} catch (Exception e) {
+			logger.log(Logger.Level.ERROR, "Exception occured while trying to close the DB connection", e);
+			throw new RemoteException(e.getMessage());
+		}
+	}
 
-    TestUtil.logTrace("Extracted value:  " + str + "  from table:  "
-        + sTableName + "   using column:  " + count);
+	/*
+	 * This method returns a boolean value based on the string that is pulled out of
+	 * the table. A "1" or a case insensitive "true" string results in a returned
+	 * value of (boolean) true.
+	 *
+	 */
+	public boolean extractValAsBoolVal(String sTableName, int count, Properties sqlProps, Connection conn)
+			throws Exception {
+		boolean rval = false; // assume false to be returned
 
-    if (str.equals("1") || str.equalsIgnoreCase("true")) {
-      rval = true;
-    }
+		String str = this.extractVal(sTableName, count, sqlProps, conn);
+		str = str.trim();
 
-    TestUtil.logTrace("Returning boolean value of:  " + rval);
+		logger.log(Logger.Level.TRACE,
+				"Extracted value:  " + str + "  from table:  " + sTableName + "   using column:  " + count);
 
-    return rval;
-  }
+		if (str.equals("1") || str.equalsIgnoreCase("true")) {
+			rval = true;
+		}
 
-  /*
-   * This method returns a Boolean object based on the string that is pulled out
-   * of the table. A "1" or a case insensitive "true" string results in a
-   * returned Boolean object that equates to true.
-   *
-   */
-  public Boolean extractValAsBoolObj(String sTableName, int count,
-      Properties sqlProps, Connection conn) throws Exception {
-    Boolean bObj;
+		logger.log(Logger.Level.TRACE, "Returning boolean value of:  " + rval);
 
-    String str = this.extractVal(sTableName, count, sqlProps, conn);
-    str = str.trim();
+		return rval;
+	}
 
-    TestUtil.logTrace("Extracted value:  " + str + "  from table:  "
-        + sTableName + "   using column:  " + count);
+	/*
+	 * This method returns a Boolean object based on the string that is pulled out
+	 * of the table. A "1" or a case insensitive "true" string results in a returned
+	 * Boolean object that equates to true.
+	 *
+	 */
+	public Boolean extractValAsBoolObj(String sTableName, int count, Properties sqlProps, Connection conn)
+			throws Exception {
+		Boolean bObj;
 
-    if (str.equals("1") || str.equalsIgnoreCase("true")) {
-      bObj = Boolean.valueOf(true);
-    } else {
-      bObj = Boolean.valueOf(false);
-    }
+		String str = this.extractVal(sTableName, count, sqlProps, conn);
+		str = str.trim();
 
-    TestUtil
-        .logTrace("Returning Boolean object sith val:  " + bObj.booleanValue());
+		logger.log(Logger.Level.TRACE,
+				"Extracted value:  " + str + "  from table:  " + sTableName + "   using column:  " + count);
 
-    return bObj;
-  }
+		if (str.equals("1") || str.equalsIgnoreCase("true")) {
+			bObj = Boolean.valueOf(true);
+		} else {
+			bObj = Boolean.valueOf(false);
+		}
 
-  /*
-   * This method returns a String based on the string that is pulled out of the
-   * table. A case insensitive "true" string results in a returned String object
-   * with a value of "1". A case insensitive "false" string results in a
-   * returned Integer object with a value of 0. All other strings are returned
-   * as obtained from the table. The main purpose of this method is to interpret
-   * boolean values (eg "true" or "false") as a numeric value (ie "1" and "0",
-   * respectively).
-   *
-   */
-  public String extractValAsNumericString(String sTableName, int count,
-      Properties sqlProps, Connection conn) throws Exception {
-    String str = this.extractVal(sTableName, count, sqlProps, conn);
-    str = str.trim();
+		logger.log(Logger.Level.TRACE, "Returning Boolean object sith val:  " + bObj.booleanValue());
 
-    TestUtil.logTrace("Extracted value:  " + str + "  from table:  "
-        + sTableName + "   using column:  " + count);
+		return bObj;
+	}
 
-    if (str.equalsIgnoreCase("true")) {
-      str = "1";
-    } else if (str.equalsIgnoreCase("false")) {
-      str = "0";
-    }
+	/*
+	 * This method returns a String based on the string that is pulled out of the
+	 * table. A case insensitive "true" string results in a returned String object
+	 * with a value of "1". A case insensitive "false" string results in a returned
+	 * Integer object with a value of 0. All other strings are returned as obtained
+	 * from the table. The main purpose of this method is to interpret boolean
+	 * values (eg "true" or "false") as a numeric value (ie "1" and "0",
+	 * respectively).
+	 *
+	 */
+	public String extractValAsNumericString(String sTableName, int count, Properties sqlProps, Connection conn)
+			throws Exception {
+		String str = this.extractVal(sTableName, count, sqlProps, conn);
+		str = str.trim();
 
-    TestUtil.logTrace("Returning NumericString of:  " + str);
+		logger.log(Logger.Level.TRACE,
+				"Extracted value:  " + str + "  from table:  " + sTableName + "   using column:  " + count);
 
-    return str;
-  }
+		if (str.equalsIgnoreCase("true")) {
+			str = "1";
+		} else if (str.equalsIgnoreCase("false")) {
+			str = "0";
+		}
 
-  public String extractVal(String sTableName, int count, Properties sqlProps,
-      Connection conn) throws Exception {
-    String sKeyName = null, insertString = null;
-    String retStr = null, parameters = null;
-    StringTokenizer sToken = null;
-    try {
-      sKeyName = sTableName.concat("_Insert");
+		logger.log(Logger.Level.TRACE, "Returning NumericString of:  " + str);
 
-      insertString = sqlProps.getProperty(sKeyName, "");
+		return str;
+	}
 
-      parameters = insertString.substring(insertString.indexOf("(", 1) + 1,
-          insertString.indexOf(")", 1));
+	public String extractVal(String sTableName, int count, Properties sqlProps, Connection conn) throws Exception {
+		String sKeyName = null, insertString = null;
+		String retStr = null, parameters = null;
+		StringTokenizer sToken = null;
+		try {
+			sKeyName = sTableName.concat("_Insert");
 
-      sToken = new StringTokenizer(parameters, ",");
-      int i = 1;
-      do {
-        retStr = (String) sToken.nextElement();
-      } while (count != i++);
+			insertString = sqlProps.getProperty(sKeyName, "");
 
-      return retStr;
-    } catch (Exception e) {
-      logErr("Exception " + e.getMessage(), e);
-      throw new Exception("Call to extractVal is Failed!", e);
-    }
-  }
+			parameters = insertString.substring(insertString.indexOf("(", 1) + 1, insertString.indexOf(")", 1));
+
+			sToken = new StringTokenizer(parameters, ",");
+			int i = 1;
+			do {
+				retStr = (String) sToken.nextElement();
+			} while (count != i++);
+
+			return retStr;
+		} catch (Exception e) {
+			logger.log(Logger.Level.ERROR, "Exception " + e.getMessage(), e);
+			throw new Exception("Call to extractVal is Failed!", e);
+		}
+	}
 }
