@@ -54,7 +54,7 @@
         <mailboxFolder1>${project.build.directory}/../mailboxes</mailboxFolder1>
         <smtp.port>1025</smtp.port>
         <tck.version>11.0.0-SNAPSHOT</tck.version>
-        <version.jakarta.tck.arquillian>1.0.0-M16</version.jakarta.tck.arquillian>
+        <version.jakarta.tck.arquillian>1.0.0-SNAPSHOT</version.jakarta.tck.arquillian>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -214,25 +214,6 @@
                                     <outputDirectory>${project.build.directory}</outputDirectory>
                                 </artifactItem>
                             </artifactItems>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.0.0</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <phase>copy</phase>
-                        <configuration>
-                            <target>
-                                <copy todir="${glassfish.home}/glassfish/bin">
-                                    <fileset dir="${basedir}/bin"></fileset>
-                                </copy>
-                            </target>
                         </configuration>
                     </execution>
                 </executions>
@@ -439,7 +420,6 @@
                                 <additionalClasspathElement>${glassfish.module.dir}/glassfish-naming.jar</additionalClasspathElement>
                             </additionalClasspathElements>
                             <systemPropertyVariables>
-                                <GLASSFISH_HOME>${project.build.directory}/${glassfish.toplevel.dir}</GLASSFISH_HOME>
                                 <glassfish.home>${project.build.directory}/${glassfish.toplevel.dir}</glassfish.home>
                                 <java.naming.factory.initial>com.sun.enterprise.naming.impl.SerialInitContextFactory</java.naming.factory.initial>
                                 <ts.home>${env.TS_HOME}</ts.home>
@@ -451,7 +431,6 @@
                             </systemPropertyVariables>
                             <environmentVariables>
                                 <GLASSFISH_HOME>${project.build.directory}/${glassfish.toplevel.dir}</GLASSFISH_HOME>
-                                <TS_HOME>/home/g/oracle/tck/javatestprotocol/jakartaee-tck/glassfish-runner/mail-platform-tck/</TS_HOME>
                                 <APPCPATH>${project.build.directory}/appclient/lib/arquillian-protocol-lib.jar:${project.build.directory}/appclient/lib/arquillian-core.jar:${project.build.directory}/appclient/lib/arquillian-junit5.jar:${glassfish.lib.dir}/shrinkwrap-api.jar:${glassfish.lib.dir}/tck-porting-lib.jar</APPCPATH>
                             </environmentVariables>
                         </configuration>
