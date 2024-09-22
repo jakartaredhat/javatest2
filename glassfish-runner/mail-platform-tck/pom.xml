@@ -419,6 +419,13 @@
                                 <additionalClasspathElement>${glassfish.module.dir}/mail-runtime.jar</additionalClasspathElement>
                                 <additionalClasspathElement>${glassfish.module.dir}/glassfish-naming.jar</additionalClasspathElement>
                             </additionalClasspathElements>
+                            <properties>
+                                <configurationParameters>junit.jupiter.extensions.autodetection.enabled = true
+                                    junit.platform.output.capture.stderr = true
+                                    junit.platform.output.capture.stdout = true
+                                    junit.platform.reporting.open.xml.enabled = true
+                                    junit.platform.reporting.output.dir = target/junit5-reports</configurationParameters>
+                            </properties>
                             <systemPropertyVariables>
                                 <glassfish.home>${project.build.directory}/${glassfish.toplevel.dir}</glassfish.home>
                                 <java.naming.factory.initial>com.sun.enterprise.naming.impl.SerialInitContextFactory</java.naming.factory.initial>
